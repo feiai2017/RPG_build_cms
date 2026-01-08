@@ -1,0 +1,545 @@
+rules:
+  str_to_hp: 20.0
+  agi_to_crit_rate: 0.002
+  int_to_inc_elemental: 0.02
+models:
+- id: model_orc
+  name: 兽人素体 (高力)
+  attributes:
+    str: 40
+    agi: 10
+    int: 5
+  base_stats:
+    base_atk: 50
+    crit_dmg: 1.5
+    max_hp_bonus: 200
+- id: model_elf
+  name: 精灵素体 (高敏)
+  attributes:
+    str: 10
+    agi: 40
+    int: 15
+  base_stats:
+    base_atk: 30
+    crit_dmg: 2.0
+    max_hp_bonus: 0
+- id: model_human
+  name: 人类素体 (均衡)
+  attributes:
+    str: 25
+    agi: 25
+    int: 25
+  base_stats:
+    base_atk: 40
+    crit_dmg: 1.7
+    max_hp_bonus: 100
+- id: model_dwarf
+  name: 矮人素体 (高耐/高血)
+  attributes:
+    str: 35
+    agi: 12
+    int: 8
+  base_stats:
+    base_atk: 45
+    crit_dmg: 1.5
+    max_hp_bonus: 350
+- id: model_undead
+  name: 亡灵素体 (诅咒/暗伤倾向)
+  attributes:
+    str: 18
+    agi: 18
+    int: 32
+  base_stats:
+    base_atk: 35
+    crit_dmg: 1.6
+    max_hp_bonus: 50
+talents:
+- id: talent_berserker
+  name: 狂战血统
+  desc: 每损失 1% 血量，攻击力 +1%，攻速 +1
+  dynamic_stats:
+    inc_physical: missing_hp_pct * 0.01
+    atk_spd: missing_hp_pct * 0.01
+- id: talent_scholar
+  name: 奥术智慧
+  desc: 智力转化为暴击率 (每 10 点智力 + 1% 暴击)
+  dynamic_stats:
+    crit_rate: stats['int'] / 10 * 0.01
+- id: talent_glass_cannon
+  name: 玻璃大炮
+  desc: 血量越高，法术越强（满血 +40% 元素增伤，越残越少）
+  dynamic_stats:
+    inc_elemental: (current_hp / max_hp) * 0.40
+- id: talent_precision
+  name: 精准猎手
+  desc: 敏捷越高，暴击伤害越高（每 20 点敏捷 +10% 暴伤）
+  dynamic_stats:
+    crit_dmg: stats['agi'] / 20 * 0.10
+- id: talent_thick_skin
+  name: 硬皮
+  desc: 最大生命越高，物理减伤越强（每 500 HP +5% 物理减伤，上限 30%）
+  dynamic_stats:
+    dr_physical: min((max_hp / 500) * 0.05, 0.30)
+- id: talent_blood_magic
+  name: 血之魔法
+  desc: 生命缺失越多，法术获得独立乘区（缺失 1% HP => +0.5% More Spell）
+  dynamic_stats:
+    more_spell: missing_hp_pct * 0.005
+- id: talent_executioner
+  name: 处决者
+  desc: '对低血量敌人造成额外伤害 (模拟环境: 默认视为满足条件 +30% More)'
+  dynamic_stats:
+    more_damage: '0.30'
+skills:
+- id: skill_blood_strike
+  name: 嗜血狂攻
+  desc: 狂暴的近战攻击，武器系数极高
+  tags:
+  - attack
+  - melee
+  - physical
+  damage_components:
+  - type: physical
+    min: 80
+    max: 100
+    weapon_scale: 1.2
+- id: skill_fireball
+  name: 大火球
+  desc: 经典的火系法术，享受极高的智力加成
+  tags:
+  - spell
+  - fire
+  damage_components:
+  - type: fire
+    min: 60
+    max: 60
+    scaling_source: int
+    scaling_coef: 2.0
+- id: skill_frost_lance
+  name: 霜枪
+  desc: 穿透敌人的冰冷投射物
+  tags:
+  - spell
+  - cold
+  - projectile
+  damage_components:
+  - type: cold
+    min: 45
+    max: 55
+    scaling_source: int
+    scaling_coef: 1.8
+- id: skill_thunder_chain
+  name: 连锁闪电
+  desc: 在敌人之间弹射的闪电，伤害浮动较大
+  tags:
+  - spell
+  - lightning
+  - chain
+  damage_components:
+  - type: lightning
+    min: 30
+    max: 70
+    scaling_source: int
+    scaling_coef: 2.2
+- id: skill_power_slam
+  name: 震地猛击
+  desc: 猛击地面造成范围物理伤害
+  tags:
+  - attack
+  - melee
+  - physical
+  - aoe
+  damage_components:
+  - type: physical
+    min: 90
+    max: 120
+    weapon_scale: 1.4
+- id: skill_poison_dart
+  name: 淬毒飞镖
+  desc: 发射带毒的飞镖，受敏捷加成
+  tags:
+  - attack
+  - projectile
+  - poison
+  damage_components:
+  - type: poison
+    min: 35
+    max: 35
+    scaling_source: agi
+    scaling_coef: 1.5
+- id: skill_shadow_bolt
+  name: 暗影箭
+  desc: 凝聚黑暗能量的箭矢，造成暗影伤害
+  tags:
+  - spell
+  - dark
+  damage_components:
+  - type: dark
+    min: 55
+    max: 65
+    scaling_source: int
+    scaling_coef: 2.0
+modifiers:
+- id: item_iron_ring
+  name: '物品: 铁戒指 (基础点伤)'
+  stats:
+    flat_physical: 12
+- id: item_ruby_ring
+  name: '物品: 红宝石戒 (火焰点伤)'
+  stats:
+    flat_fire: 15
+- id: item_sapphire_ring
+  name: '物品: 蓝宝石戒 (冰冷点伤)'
+  stats:
+    flat_cold: 15
+- id: item_topaz_ring
+  name: '物品: 黄玉戒指 (闪电点伤)'
+  stats:
+    flat_lightning: 10
+    atk_spd: 5
+- id: item_void_amulet
+  name: '物品: 虚空护符 (混沌点伤)'
+  stats:
+    flat_chaos: 20
+    inc_chaos: 0.1
+- id: item_hellgloves
+  name: '物品: 炎魔手套 (50%转火)'
+  conversions:
+  - from: physical
+    to: fire
+    ratio: 0.5
+  stats:
+    inc_fire: 0.25
+- id: item_frost_grip
+  name: '物品: 寒冰之握 (50%转冰)'
+  conversions:
+  - from: physical
+    to: cold
+    ratio: 0.5
+  stats:
+    inc_cold: 0.2
+- id: item_static_shiv
+  name: '物品: 静电匕首 (50%转雷)'
+  conversions:
+  - from: physical
+    to: lightning
+    ratio: 0.5
+  stats:
+    atk_spd: 0.2
+- id: item_ice_crown
+  name: '物品: 寒霜王冠'
+  stats:
+    inc_cold: 0.35
+    crit_rate: 0.05
+- id: item_storm_amulet
+  name: '物品: 风暴护符'
+  stats:
+    inc_lightning: 0.3
+    atk_spd: 0.15
+- id: item_void_ring
+  name: '物品: 虚空指环'
+  stats:
+    inc_dark: 0.3
+    more_spell: 0.1
+- id: item_axe
+  name: '物品: 处决巨斧'
+  stats:
+    more_damage: 0.2
+- id: item_blood_charm
+  name: '物品: 血契护符'
+  stats:
+    more_damage: 0.08
+    inc_physical: 0.2
+- id: mod_shaper_touch
+  name: '机制: 塑界者之触 (力->法伤)'
+  desc: 每 10 点力量提供 1% 法术伤害
+  dynamic_stats:
+    inc_spell: stats['str'] / 10 * 0.01
+- id: mod_archmage
+  name: '机制: 大法师支持 (智->点伤)'
+  desc: 智力的 150% 转化为基础点伤 (Flat)
+  dynamic_stats:
+    flat_lightning: stats['int'] * 1.5
+- id: mod_blood_fury
+  name: '机制: 鲜血狂怒 (血->攻速)'
+  desc: 当前每 100 点血，攻速 +1
+  dynamic_stats:
+    atk_spd: stats['current_hp'] / 100
+- id: buff_giant_strength
+  name: 'Buff: 巨力 (+15力)'
+  stats:
+    str: 15
+- id: buff_swift_agility
+  name: 'Buff: 迅捷 (+15敏)'
+  stats:
+    agi: 15
+- id: buff_sage_intellect
+  name: 'Buff: 睿智 (+15智)'
+  stats:
+    int: 15
+- id: buff_tri_attribute
+  name: 'Buff: 三相祝福 (+8全属性)'
+  stats:
+    str: 8
+    agi: 8
+    int: 8
+- id: buff_adrenaline
+  name: 'Buff: 肾上腺素 (攻速)'
+  stats:
+    atk_spd: 0.25
+- id: buff_battle_focus
+  name: 'Buff: 战斗专注 (暴击)'
+  stats:
+    crit_rate: 0.1
+- id: buff_killing_intent
+  name: 'Buff: 杀意 (暴伤)'
+  stats:
+    crit_dmg: 0.3
+- id: buff_bloodlust
+  name: 'Buff: 嗜血 (More伤/攻速)'
+  stats:
+    more_damage: 0.1
+    atk_spd: 0.15
+- id: buff_haste
+  name: 'Buff: 急速 (纯攻速)'
+  stats:
+    atk_spd: 0.18
+- id: buff_precision_inc
+  name: 'Buff: 精准 (加算)'
+  stats:
+    crit_rate: 0.05
+    inc_all: 0.1
+- id: buff_precision_more
+  name: 'Buff: 致命节奏 (独立)'
+  stats:
+    more_damage: 0.08
+    atk_spd: 0.12
+- id: buff_rage
+  name: 'Buff: 狂怒 (物理Inc)'
+  stats:
+    inc_physical: 0.3
+- id: buff_brutality
+  name: 'Buff: 野蛮 (物理More)'
+  stats:
+    more_physical: 0.18
+- id: buff_heavy_hands
+  name: 'Buff: 重手 (高物伤)'
+  stats:
+    inc_physical: 0.2
+    more_damage: 0.06
+- id: buff_melee_training
+  name: 'Buff: 近战训练'
+  stats:
+    inc_melee: 0.3
+- id: buff_ranged_training
+  name: 'Buff: 远程训练'
+  stats:
+    inc_projectile: 0.3
+- id: buff_war_cry
+  name: 'Buff: 战吼 (物伤/暴击)'
+  stats:
+    inc_physical: 0.25
+    crit_rate: 0.03
+- id: buff_sunder
+  name: 'Buff: 破甲 (物理独立)'
+  stats:
+    more_physical: 0.12
+- id: buff_fire_aura
+  name: 'Buff: 火焰光环'
+  stats:
+    inc_fire: 0.35
+- id: buff_fire_more
+  name: 'Buff: 炽热增幅 (More火)'
+  stats:
+    more_fire: 0.15
+- id: buff_sacrifice
+  name: 'Buff: 献祭 (高火More)'
+  stats:
+    more_fire: 0.2
+- id: buff_burning_weapon
+  name: 'Buff: 燃烧武器 (20%转火)'
+  conversions:
+  - from: physical
+    to: fire
+    ratio: 0.2
+  stats:
+    inc_fire: 0.1
+- id: buff_inner_fire
+  name: 'Buff: 内焰 (混伤)'
+  stats:
+    inc_fire: 0.15
+    more_damage: 0.05
+- id: buff_frost_aura
+  name: 'Buff: 寒霜光环'
+  stats:
+    inc_cold: 0.35
+- id: buff_frost_more
+  name: 'Buff: 极寒增幅 (More冰)'
+  stats:
+    more_cold: 0.15
+- id: buff_chill
+  name: 'Buff: 霜冷增幅'
+  stats:
+    inc_cold: 0.2
+    crit_rate: 0.03
+- id: buff_freezing_weapon
+  name: 'Buff: 冰封武器 (20%转冰)'
+  conversions:
+  - from: physical
+    to: cold
+    ratio: 0.2
+  stats:
+    inc_cold: 0.1
+- id: buff_inner_ice
+  name: 'Buff: 内霜 (混伤)'
+  stats:
+    inc_cold: 0.15
+    more_damage: 0.05
+- id: buff_storm_aura
+  name: 'Buff: 雷霆光环'
+  stats:
+    inc_lightning: 0.35
+- id: buff_storm_more
+  name: 'Buff: 风暴增幅 (More电)'
+  stats:
+    more_lightning: 0.15
+- id: buff_conductivity
+  name: 'Buff: 导电'
+  stats:
+    inc_lightning: 0.2
+    atk_spd: 0.05
+- id: buff_overcharge
+  name: 'Buff: 超载 (电More/减攻速)'
+  stats:
+    more_lightning: 0.25
+    atk_spd: -0.1
+- id: buff_static_weapon
+  name: 'Buff: 静电武器 (20%转雷)'
+  conversions:
+  - from: physical
+    to: lightning
+    ratio: 0.2
+  stats:
+    inc_lightning: 0.1
+- id: buff_inner_storm
+  name: 'Buff: 内雷 (混伤)'
+  stats:
+    inc_lightning: 0.15
+    more_damage: 0.05
+- id: buff_elemental_inc
+  name: 'Buff: 元素学徒'
+  stats:
+    inc_elemental: 0.25
+- id: buff_elemental_more
+  name: 'Buff: 元素宗师'
+  stats:
+    more_elemental: 0.12
+- id: buff_cold_mind
+  name: 'Buff: 冷静思维 (暴击/元素)'
+  stats:
+    crit_rate: 0.05
+    inc_elemental: 0.15
+- id: buff_spell_echo
+  name: 'Buff: 法术回响'
+  stats:
+    more_spell: 0.18
+- id: buff_arcane_power
+  name: 'Buff: 奥术之力'
+  stats:
+    inc_spell: 0.35
+- id: buff_arcane_more
+  name: 'Buff: 奥术涌动'
+  stats:
+    more_spell: 0.12
+- id: buff_arcane_surge
+  name: 'Buff: 奥术激荡'
+  stats:
+    inc_spell: 0.2
+    crit_rate: 0.04
+- id: buff_zen
+  name: 'Buff: 禅定 (More法/减速)'
+  stats:
+    more_spell: 0.1
+    atk_spd: -0.05
+    crit_rate: 0.06
+- id: buff_dark_pact
+  name: 'Buff: 暗契'
+  stats:
+    inc_dark: 0.3
+    more_spell: 0.08
+- id: buff_poison_coating
+  name: 'Buff: 毒刃涂层'
+  stats:
+    inc_poison: 0.35
+- id: buff_venom_more
+  name: 'Buff: 剧毒增幅'
+  stats:
+    more_poison: 0.15
+- id: buff_alchemist_flame
+  name: 'Buff: 炼金·烈焰 (30%转火)'
+  conversions:
+  - from: physical
+    to: fire
+    ratio: 0.3
+  stats:
+    more_fire: 0.08
+- id: buff_alchemist_frost
+  name: 'Buff: 炼金·寒霜 (30%转冰)'
+  conversions:
+  - from: physical
+    to: cold
+    ratio: 0.3
+  stats:
+    more_cold: 0.08
+- id: buff_alchemist_storm
+  name: 'Buff: 炼金·风暴 (30%转雷)'
+  conversions:
+  - from: physical
+    to: lightning
+    ratio: 0.3
+  stats:
+    more_lightning: 0.08
+- id: buff_hot_blood
+  name: 'Buff: 热血'
+  stats:
+    atk_spd: 0.1
+    inc_physical: 0.15
+- id: buff_berserk_more_II
+  name: 'Buff: 狂暴姿态II'
+  stats:
+    more_damage: 0.12
+- id: buff_execution_mark
+  name: 'Buff: 处决标记'
+  stats:
+    more_damage: 0.1
+- id: buff_combo_master
+  name: 'Buff: 连击宗师'
+  stats:
+    atk_spd: 0.1
+    crit_rate: 0.05
+    inc_all: 0.1
+- id: buff_overwhelm
+  name: 'Buff: 碾压'
+  stats:
+    more_damage: 0.14
+    crit_dmg: -0.1
+- id: buff_predator
+  name: 'Buff: 掠食者'
+  stats:
+    crit_rate: 0.06
+    atk_spd: 0.12
+- id: buff_assassin_stance
+  name: 'Buff: 刺客姿态'
+  stats:
+    crit_rate: 0.08
+    crit_dmg: 0.25
+- id: buff_duelist_stance
+  name: 'Buff: 决斗者姿态'
+  stats:
+    inc_melee: 0.2
+    atk_spd: 0.2
+- id: buff_sniper_stance
+  name: 'Buff: 狙击姿态'
+  stats:
+    inc_projectile: 0.25
+    crit_dmg: 0.2
