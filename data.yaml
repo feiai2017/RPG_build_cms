@@ -2,6 +2,40 @@ rules:
   str_to_hp: 20.0
   agi_to_crit_rate: 0.002
   int_to_inc_elemental: 0.02
+  base_hp: 500.0
+  mvp:
+    allowed_models:
+    - model_human
+    allowed_talents:
+    - talent_berserker
+    - talent_thick_skin
+    allowed_skills:
+    - mvp_basic_attack
+    - mvp_crit_execute
+    - mvp_emergency_mend
+    allowed_modifiers:
+    - mvp_mod_damage_20
+    - mvp_mod_crit_10
+    - mvp_mod_haste
+    - mvp_mod_tough
+    allowed_conditions:
+    - on_hit
+    - on_crit
+    - fixed_chance_20
+    - hp_lt_30
+    max_triggers: 2
+    max_depth: 1
+    enemy_presets:
+    - id: dummy
+      name: 木桩（低压，偏输出验证）
+      enemy_hp: 3000
+      enemy_dps: 20
+      max_time: 20
+    - id: brute
+      name: 暴力守关（高压，偏生存验证）
+      enemy_hp: 4500
+      enemy_dps: 85
+      max_time: 25
 models:
 - id: model_orc
   name: 兽人素体 (高力)
@@ -179,6 +213,41 @@ skills:
     max: 65
     scaling_source: int
     scaling_coef: 2.0
+- id: mvp_basic_attack
+  name: MVP·基础普攻
+  desc: 稳定输出底座，用于提供 on_hit / on_crit 触发来源。
+  tags:
+  - attack
+  - physical
+  damage_components:
+  - type: physical
+    min: 8
+    max: 12
+    scaling_source: base_atk
+    scaling_coef: 0.45
+- id: mvp_crit_execute
+  name: MVP·暴击处决
+  desc: 偏爆发的子技能（建议挂在 on_crit / fixed_chance 上）。
+  tags:
+  - attack
+  - physical
+  damage_components:
+  - type: physical
+    min: 20
+    max: 30
+    scaling_source: base_atk
+    scaling_coef: 1.1
+- id: mvp_emergency_mend
+  name: MVP·金蝉护体
+  desc: 低血保命：触发后回血并短暂减伤（带 ICD）。
+  tags:
+  - defense
+  - utility
+  effects:
+    heal_percent_max_hp: 0.25
+    icd: 6.0
+    damage_taken_mult: -0.45
+    duration: 1.5
 modifiers:
 - id: item_iron_ring
   name: '物品: 铁戒指 (基础点伤)'
@@ -543,3 +612,32 @@ modifiers:
   stats:
     inc_projectile: 0.25
     crit_dmg: 0.2
+- id: mvp_mod_damage_20
+  name: MVP·增伤刻印(+20%)
+  stats:
+    inc_all: 0.2
+  tags:
+  - mvp
+  desc: 所有伤害提高 20%（期望增伤，适合任何输出链）。
+- id: mvp_mod_crit_10
+  name: MVP·暴击刻印(+10%)
+  stats:
+    crit_rate: 0.1
+  tags:
+  - mvp
+  desc: 暴击率 +10%（提高 on_crit 触发频率与暴击期望伤害）。
+- id: mvp_mod_haste
+  name: MVP·疾速刻印(+20%)
+  stats:
+    atk_spd: 0.2
+  tags:
+  - mvp
+  desc: 攻速 +20%（提高命中/暴击次数，从而放大触发链）。
+- id: mvp_mod_tough
+  name: MVP·硬皮刻印(血量+减伤)
+  stats:
+    max_hp_bonus: 250
+    damage_taken_mult: -0.15
+  tags:
+  - mvp
+  desc: 最大生命 +250，承伤倍率偏移 -0.15（更耐打，但通常输出更低）。
