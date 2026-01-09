@@ -1,216 +1,155 @@
 import math
+import copy
+
+class SkillNode:
+    """技能链节点：用于新版递归计算"""
+    def __init__(self, skill_data, modifiers=None, triggers=None):
+        self.skill = skill_data
+        self.modifiers = modifiers or []
+        self.triggers = triggers or [] # List of {"condition": str, "node": SkillNode}
 
 class DiabloEngine:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, data_source):
+        self.data = data_source
         self.stats = {}
-        self.modifiers = []
-        self.conversions = []
-        self.simulation_context = {"hp_percent": 1.0}
+        self.simulation_state = {"hp_percent": 1.0}
 
-    def set_simulation_state(self, hp_percent):
-        self.simulation_context['hp_percent'] = hp_percent
+    def set_simulation_state(self, hp_percent=1.0):
+        self.simulation_state["hp_percent"] = hp_percent
 
     def build_hero(self, model_data, talent_data):
-        self.modifiers = []
-        self.conversions = []
+        """初始化角色面板"""
+        self.stats = copy.deepcopy(model_data.get('base_stats', {}))
+        self.stats.update(model_data.get('attributes', {}))
 
-        attrs = model_data['attributes']
-        base = model_data['base_stats']
-        rules = self.config['rules']
-
-        # 计算基础面板
-        max_hp = (attrs['str'] * rules['str_to_hp']) + base.get('max_hp_bonus', 0)
-
-        self.stats = {
-            # 1. 核心三维
-            "str": attrs['str'], "agi": attrs['agi'], "int": attrs['int'],
-
-            # 2. 生存面板
-            "max_hp": max_hp,
-            "current_hp": max_hp * self.simulation_context['hp_percent'],
-
-            # 3. 攻击面板
-            "base_atk": base['base_atk'],
-            "crit_rate": attrs['agi'] * rules['agi_to_crit_rate'],
-            "crit_dmg": base['crit_dmg'],
-            "atk_spd": 100,
-
-            # 4. 属性衍生加成 (Inc)
-            "inc_fire": attrs['int'] * rules.get('int_to_inc_elemental', 0.0),
-            "inc_cold": attrs['int'] * rules.get('int_to_inc_elemental', 0.0),
-            "inc_lightning": attrs['int'] * rules.get('int_to_inc_elemental', 0.0),
-
-            # 5. 全局点伤池 (Flat Damage Pool) - [修复点]
-            # 装备提供的 "flat_physical", "flat_fire" 等会汇总到这里
-            "flat_physical": 0, "flat_fire": 0, "flat_cold": 0, "flat_lightning": 0,
-            "flat_chaos": 0, "flat_poison": 0, "flat_dark": 0,
-
-            # 6. 增伤池
-            "inc_physical": 0.0, "inc_elemental": 0.0, "inc_all": 0.0, "more_damage": 1.0
-        }
-
-        self.apply_dynamic_modifier(talent_data)
-
-    def apply_modifier(self, mod_data):
-        self.modifiers.append(mod_data)
-
-        if 'stats' in mod_data:
-            for k, v in mod_data['stats'].items():
-                self.stats[k] = self.stats.get(k, 0) + v
-
-        if 'conversions' in mod_data:
-            for conv in mod_data['conversions']:
-                self.conversions.append(conv)
-
-        if 'dynamic_stats' in mod_data:
-            self.apply_dynamic_modifier(mod_data)
-
-    def apply_dynamic_modifier(self, mod_data):
-        if 'dynamic_stats' in mod_data:
-            ctx = {
-                "stats": self.stats,
-                "max_hp": self.stats['max_hp'],
-                "current_hp": self.stats['current_hp'],
-                "missing_hp_pct": 1.0 - self.simulation_context['hp_percent']
-            }
-            for k, formula in mod_data['dynamic_stats'].items():
+        # 处理天赋
+        if talent_data and 'dynamic_stats' in talent_data:
+            for k, v in talent_data['dynamic_stats'].items():
                 try:
-                    val = eval(str(formula), {}, ctx)
-                    self.stats[k] = self.stats.get(k, 0) + val
-                except: pass
+                    self.stats[k] = self.stats.get(k, 0) + float(v)
+                except:
+                    pass
 
-    def calculate_skill_damage(self, skill_data):
-        """
-        严谨伤害管线 (The Damage Pipeline)
-        Stage 1: Base (Global Flat + Skill Base)
-        Stage 2: Conversion
-        Stage 3: Additive (Inc)
-        Stage 4: Multiplicative (More)
-        Stage 5: Crit & DPS
-        """
-        damage_packet = {}
-        skill_tags = set(skill_data.get('tags', []))
-        base_explanations = []
+    def _apply_modifier_stats(self, base_stats, mods):
+        """通用工具：将一组模组的属性叠加到面板"""
+        temp_stats = copy.deepcopy(base_stats)
+        for mod in mods:
+            for k, v in mod.get('stats', {}).items():
+                temp_stats[k] = temp_stats.get(k, 0) + v
+        return temp_stats
 
-        # ====================================================
-        # Stage 1: 构建基础伤害池 (Base Construction)
-        # ====================================================
-        # 1.1 先把装备提供的 "Global Flat Damage" 倒进去
-        # 比如戒指提供了 +10 flat_physical，这甚至能让法术附带物理伤
-        for k, v in self.stats.items():
-            if k.startswith("flat_") and v > 0:
-                dtype = k.replace("flat_", "")
-                damage_packet[dtype] = damage_packet.get(dtype, 0) + v
-                if v > 0:
-                    base_explanations.append(f"全局点伤({dtype}): {v}")
+    def _core_math(self, skill, current_stats):
+        """核心数学公式：计算单次伤害 (不含触发)"""
+        # 1. 基础伤害
+        if not skill.get('damage_components'):
+            return {"dps": 0, "avg_hit": 0, "aps": 1.0, "crit_rate": 0, "dmg_type": "none"}
 
-        # 1.2 叠加技能本身的伤害
-        for comp in skill_data['damage_components']:
-            dtype = comp['type']
-            base_val = (comp['min'] + comp['max']) / 2
+        comp = skill['damage_components'][0]
+        min_dmg = comp.get('min', 0)
+        max_dmg = comp.get('max', 0)
 
-            explain_parts = [f"技能{base_val:.0f}"]
+        # 2. 属性Scaling
+        scale_src = comp.get('scaling_source', 'base_atk')
+        scale_coef = comp.get('scaling_coef', 1.0)
+        source_val = current_stats.get(scale_src, 0)
+        flat_bonus = current_stats.get(f"flat_{comp['type']}", 0)
 
-            # 武器系数 (Weapon Damage)
-            if 'weapon_scale' in comp:
-                w_dmg = self.stats['base_atk'] * comp['weapon_scale']
-                base_val += w_dmg
-                explain_parts.append(f"武器({self.stats['base_atk']}x{comp['weapon_scale']})")
+        base_avg = (min_dmg + max_dmg) / 2 + source_val * scale_coef + flat_bonus
 
-            # 属性系数 (Stat Scaling)
-            if 'scaling_source' in comp:
-                attr = comp['scaling_source']
-                attr_val = self.stats.get(attr, 0)
-                s_dmg = attr_val * comp.get('scaling_coef', 1.0)
-                base_val += s_dmg
-                explain_parts.append(f"{attr}({attr_val}x{comp['scaling_coef']})")
+        # 3. 增伤区间
+        inc = 1 + current_stats.get('inc_all', 0) + current_stats.get(f"inc_{comp['type']}", 0)
+        more = 1 * (1 + current_stats.get('more_damage', 0))
 
-            damage_packet[dtype] = damage_packet.get(dtype, 0) + base_val
+        hit_dmg = base_avg * inc * more
 
-            # 记录日志
-            base_explanations.append(f"{dtype.title()}组件: {' + '.join(explain_parts)} = {base_val:.1f}")
+        # 4. 暴击
+        crit_rate = min(1.0, current_stats.get('crit_rate', 0.05))
+        crit_dmg = current_stats.get('crit_dmg', 1.5)
+        avg_hit = hit_dmg * (1 - crit_rate) + (hit_dmg * crit_dmg * crit_rate)
 
-        # ====================================================
-        # Stage 2: 伤害转化 (Conversion)
-        # ====================================================
-        # 物理 -> 火 -> 混沌 (按优先级或顺序，这里简化为单次遍历)
-        temp_packet = damage_packet.copy()
-        for conv in self.conversions:
-            src, dest, ratio = conv['from'], conv['to'], conv['ratio']
-            if damage_packet.get(src, 0) > 0:
-                amount = damage_packet[src] * ratio
-                temp_packet[src] -= amount
-                temp_packet[dest] = temp_packet.get(dest, 0) + amount
-                # 这里可以加个log记录转化
-        damage_packet = temp_packet
-
-        # ====================================================
-        # Stage 3 & 4: 增伤乘区 (Buckets)
-        # ====================================================
-        final_dmg = 0
-        process_logs = []
-
-        for dtype, value in damage_packet.items():
-            if value <= 0: continue
-
-            # --- Stage 3: Additive (Inc) ---
-            # 基础 Inc = 全局Inc + 类型Inc (如 inc_fire)
-            inc_sum = self.stats['inc_all'] + self.stats.get(f"inc_{dtype}", 0)
-
-            # 元素通用 Inc
-            if dtype in ['fire', 'cold', 'lightning']:
-                inc_sum += self.stats.get('inc_elemental', 0)
-
-            # Tag 匹配 (从装备里找 Tag 匹配的 Inc)
-            matched_buffs = []
-            for mod in self.modifiers:
-                if 'stats' not in mod: continue
-                for k, v in mod['stats'].items():
-                    if k.startswith("inc_"):
-                        tag = k.replace("inc_", "")
-                        # 规则: 属性匹配 OR 技能Tag匹配
-                        if tag == dtype or tag in skill_tags:
-                            inc_sum += v
-                            matched_buffs.append(f"{mod['name']}(+{v:.0%})")
-
-            # --- Stage 4: Multiplicative (More) ---
-            more_prod = self.stats['more_damage']
-            more_prod *= (1 + self.stats.get(f"more_{dtype}", 0)) # 类型独立
-
-            if dtype in ['fire', 'cold', 'lightning']:
-                more_prod *= (1 + self.stats.get('more_elemental', 0))
-
-            # 单项结算
-            inc_mult = 1 + inc_sum
-            type_dmg = value * inc_mult * more_prod
-            final_dmg += type_dmg
-
-            process_logs.append({
-                "type": dtype,
-                "base": value,
-                "inc_sum": inc_sum,
-                "inc_mult": inc_mult,
-                "more_mult": more_prod,
-                "final": type_dmg,
-                "matched_buffs": matched_buffs
-            })
-
-        # ====================================================
-        # Stage 5: 暴击与期望 (Crit & DPS)
-        # ====================================================
-        crit_rate = min(1.0, max(0.0, self.stats['crit_rate']))
-        crit_dmg = self.stats['crit_dmg']
-        avg_hit = final_dmg * (1 + (crit_rate * (crit_dmg - 1)))
-
-        aps = max(0.1, self.stats['atk_spd'] / 100.0)
-        dps = avg_hit * aps
+        # 5. 攻速
+        aps = current_stats.get('atk_spd', 1.0)
 
         return {
-            "DPS": dps,
-            "Avg_Hit": avg_hit,
-            "Packet": damage_packet,
-            "Process": process_logs,
-            "Base_Explain": base_explanations,
-            "Crit_Info": {"rate": crit_rate, "dmg": crit_dmg, "aps": aps}
+            "dps": avg_hit * aps,
+            "avg_hit": avg_hit,
+            "aps": aps,
+            "crit_rate": crit_rate,
+            "dmg_type": comp['type']
         }
+
+    # ============================
+    # 接口 A: 旧版简单计算
+    # ============================
+    def calculate_skill_damage(self, skill_data, modifiers_list=None):
+        """兼容旧代码：计算单一技能，无递归"""
+        mods = modifiers_list or []
+        # 1. 计算面板
+        final_stats = self._apply_modifier_stats(self.stats, mods)
+        # 2. 计算伤害
+        res = self._core_math(skill_data, final_stats)
+        # 3. 包装成旧版返回格式
+        return {
+            "DPS": res['dps'],
+            "Avg_Hit": res['avg_hit'],
+            "Crit_Info": {"rate": res['crit_rate'], "aps": res['aps']},
+            "Trigger_Info": [] # 旧版没有触发链
+        }
+
+    # ============================
+    # 接口 B: 新版递归计算
+    # ============================
+    def simulate_chain(self, root_node: SkillNode):
+        """递归计算整条技能链"""
+        logs = []
+        total_dps = 0
+
+        # 1. 计算当前节点
+        node_stats = self._apply_modifier_stats(self.stats, root_node.modifiers)
+        base_res = self._core_math(root_node.skill, node_stats)
+
+        node_dps = base_res['dps']
+        total_dps += node_dps
+
+        logs.append({
+            "skill": root_node.skill['name'],
+            "role": "Main" if not logs else "Sub",
+            "dps": int(node_dps),
+            "aps": f"{base_res['aps']:.2f}",
+            "info": f"基础伤害"
+        })
+
+        # 2. 递归处理触发器
+        for trigger in root_node.triggers:
+            child_node = trigger['node']
+            condition = trigger['condition']
+
+            # 简易频率模拟
+            trigger_freq = 0.0
+            if condition == "on_crit":
+                trigger_freq = base_res['aps'] * base_res['crit_rate']
+            elif condition == "on_hit":
+                trigger_freq = base_res['aps']
+            elif condition == "fixed_chance_20":
+                trigger_freq = base_res['aps'] * 0.2
+
+            if trigger_freq > 0:
+                # 递归调用
+                child_dps, child_logs = self.simulate_chain(child_node)
+
+                # 修正子技能伤害：子技能原本是按它自己的aps算的，现在要强制改为触发频率
+                # 修正公式：(子技能总DPS / 子技能原生APS) * 触发频率
+                child_native_aps = float(child_logs[0]['aps']) if float(child_logs[0]['aps']) > 0 else 1.0
+                real_child_dps = (child_dps / child_native_aps) * trigger_freq
+
+                total_dps += real_child_dps
+
+                logs.append({
+                    "skill": f"↳ {child_node.skill['name']}",
+                    "role": "Trigger",
+                    "dps": int(real_child_dps),
+                    "aps": f"{trigger_freq:.2f}",
+                    "info": f"via {condition}"
+                })
+
+        return total_dps, logs
