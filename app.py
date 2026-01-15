@@ -1,4 +1,3 @@
-from typing import List
 import streamlit as st
 import yaml
 import pandas as pd
@@ -6,12 +5,22 @@ import os
 import shutil
 import datetime
 import glob
-import copy
 import streamlit.components.v1 as components
-from engine import DiabloEngine, SkillNode # 必须确保 engine.py 里有 SkillNode 类
+from typing import List, Dict, Any
+from engine import DiabloEngine, SkillNode
 import generate_doc
+import copy
+import json
+import hashlib
 
 st.set_page_config(page_title="RPG Build CMS", layout="wide", page_icon="⚔️")
+
+
+def stable_hash(obj: Any) -> str:
+    """Stable hash for build snapshots (determinism / replay)."""
+    s = json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
+
 
 # ==========================================
 # 0. 通用组件: 可视化选择器 (带状态记忆)
@@ -405,7 +414,7 @@ elif page_mode == "⛓️ 技能链构建 (新)":
 
             eng = DiabloEngine(data)
             eng.build_hero(model_obj, talent_obj)
-            total_dps, logs = eng.simulate_chain(root)
+            total_dps, logs, _ = eng.simulate_chain_with_profile(root)
 
             st.success(f"🔥 总 DPS: {int(total_dps):,}")
 
@@ -424,253 +433,507 @@ elif page_mode == "⛓️ 技能链构建 (新)":
         except Exception as e:
             st.error(f"模拟失败: {e}")
 
-# ==================================================================
-# PAGE 3: 可视化编辑器
-# ==================================================================
 
 # ==================================================================
-# PAGE 2.5: MVP 验证 Demo（最小可验证：会赢/会输/会超时）
+# PAGE 2.5: MVP 验证 Demo
 # ==================================================================
 elif page_mode == "🧪 MVP 验证 Demo":
     st.title("🧪 MVP 验证 Demo")
-    st.caption("目标：用最小内容验证“技能 + 触发 + 自动战斗（有生存）”是否成立。")
+    st.caption("把这里当作“实验台”：固定试炼 + 固定 Seed + 固定 Build → 反复复测、对比、定位问题（而不是拼操作）。")
 
-    mvp_rules = (data.get("rules", {}).get("mvp") or {})
-    if not mvp_rules:
-        st.warning("⚠️ data.yaml 未配置 rules.mvp。请更新 data.yaml 后再来。")
+    rules = data.get("rules", {}) or {}
+    mvp = (rules.get("mvp", {}) or {})
+    if not mvp:
+        st.error("data.yaml 中缺少 rules.mvp 配置。")
         st.stop()
 
-    allowed_models = set(mvp_rules.get("allowed_models", []))
-    allowed_talents = set(mvp_rules.get("allowed_talents", []))
-    allowed_skills = set(mvp_rules.get("allowed_skills", []))
-    allowed_mods = set(mvp_rules.get("allowed_modifiers", []))
-    allowed_conditions = mvp_rules.get("allowed_conditions", ["on_hit", "on_crit", "fixed_chance_20", "hp_lt_30"])
+    # ---- 白名单过滤（MVP 只开放少量内容，方便验证）----
+    allowed_models = set(mvp.get("allowed_models", []))
+    allowed_talents = set(mvp.get("allowed_talents", []))
+    allowed_skills = set(mvp.get("allowed_skills", []))
+    allowed_mods = set(mvp.get("allowed_modifiers", []))
+    allowed_conds = mvp.get("allowed_conditions", ["on_hit", "on_crit", "fixed_chance_20", "hp_lt_30"])
+    max_triggers = int(mvp.get("max_triggers", 2))
+    max_depth = int(mvp.get("max_depth", 1))
 
-    max_triggers = int(mvp_rules.get("max_triggers", 2))
-    max_depth = int(mvp_rules.get("max_depth", 1))
-    enemy_presets = mvp_rules.get("enemy_presets", [])
+    models_list = [x for x in data.get("models", []) if (not allowed_models or x.get("id") in allowed_models)]
+    talents_list = [x for x in data.get("talents", []) if (not allowed_talents or x.get("id") in allowed_talents)]
+    skills_list = [x for x in data.get("skills", []) if (not allowed_skills or x.get("id") in allowed_skills)]
+    mods_list = [x for x in data.get("modifiers", []) if (not allowed_mods or x.get("id") in allowed_mods)]
 
-    # --- filtered dictionaries ---
-    models = {m["id"]: m for m in data.get("models", []) if m.get("id") in allowed_models}
-    talents = {t["id"]: t for t in data.get("talents", []) if t.get("id") in allowed_talents}
-    skills = {s["id"]: s for s in data.get("skills", []) if s.get("id") in allowed_skills}
-    mods = {m["id"]: m for m in data.get("modifiers", []) if m.get("id") in allowed_mods}
-
-    if not models or not skills:
-        st.warning("⚠️ MVP 白名单过滤后数据为空。请检查 data.yaml rules.mvp 的 allowed_* 配置。")
+    if not models_list or not talents_list or not skills_list:
+        st.error("MVP 白名单过滤后数据不足：请检查 rules.mvp.allowed_* 是否与实际数据 id 匹配。")
         st.stop()
 
-    # --- session defaults ---
-    if "mvp_model" not in st.session_state:
-        st.session_state.mvp_model = list(models.keys())[0]
-    if "mvp_talent" not in st.session_state:
-        st.session_state.mvp_talent = list(talents.keys())[0] if talents else None
-    if "mvp_main_skill" not in st.session_state:
-        st.session_state.mvp_main_skill = list(skills.keys())[0]
-    if "mvp_main_mods" not in st.session_state:
-        st.session_state.mvp_main_mods = []
+    # 为 selector 构造简化 data_source
+    mvp_data_source = {"skills": skills_list, "modifiers": mods_list}
 
-    st.subheader("① 角色 & 敌人")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.session_state.mvp_model = st.selectbox("素体（MVP）", list(models.keys()), format_func=lambda x: models[x]["name"])
-    with c2:
-        if talents:
-            st.session_state.mvp_talent = st.selectbox("天赋（MVP）", list(talents.keys()), format_func=lambda x: talents[x]["name"])
-        else:
-            st.session_state.mvp_talent = None
-            st.info("本 MVP 未启用天赋白名单。")
-    with c3:
-        preset_ids = [p.get("id") for p in enemy_presets] if enemy_presets else []
-        preset_map = {p.get("id"): p for p in enemy_presets} if enemy_presets else {}
-        if preset_ids:
-            preset_id = st.selectbox("敌人预设", preset_ids, format_func=lambda x: preset_map[x].get("name", x))
-            preset = preset_map[preset_id]
-        else:
-            preset = {"enemy_hp": 3000, "enemy_dps": 30, "max_time": 20}
-
-    ec1, ec2, ec3 = st.columns(3)
-    with ec1:
-        enemy_hp = st.number_input("敌人 HP", min_value=100.0, max_value=999999.0, value=float(preset.get("enemy_hp", 3000.0)), step=100.0)
-    with ec2:
-        enemy_dps = st.number_input("敌人 DPS（恒定）", min_value=1.0, max_value=99999.0, value=float(preset.get("enemy_dps", 30.0)), step=1.0)
-    with ec3:
-        max_time = st.number_input("最大战斗时间（秒）", min_value=5.0, max_value=300.0, value=float(preset.get("max_time", 20.0)), step=1.0)
-
-    st.divider()
-
-    st.subheader("② Build（主技能 + 触发链）")
-    st.session_state.mvp_main_skill = st.selectbox("主技能", list(skills.keys()), format_func=lambda x: skills[x]["name"])
-
-    # 主技能模组
-    st.session_state.mvp_main_mods = st.multiselect(
-        "主技能模组（MVP 白名单）",
-        list(mods.keys()),
-        default=[m for m in st.session_state.mvp_main_mods if m in mods],
-        format_func=lambda x: mods[x]["name"]
-    )
-
-    st.markdown("#### 触发器（MVP：最多 {} 个，深度锁死为 {}）".format(max_triggers, max_depth))
-    triggers_cfg = []
-    for i in range(max_triggers):
-        with st.container(border=True):
-            tc1, tc2, tc3 = st.columns([1, 1, 2])
-            with tc1:
-                cond = st.selectbox(f"条件 #{i+1}", allowed_conditions, key=f"mvp_trig_cond_{i}")
-            with tc2:
-                child_skill = st.selectbox(f"子技能 #{i+1}", list(skills.keys()), format_func=lambda x: skills[x]["name"], key=f"mvp_trig_skill_{i}")
-            with tc3:
-                child_mods = st.multiselect(
-                    f"子技能模组 #{i+1}",
-                    list(mods.keys()),
-                    default=[],
-                    format_func=lambda x: mods[x]["name"],
-                    key=f"mvp_trig_mods_{i}"
-                )
-
-            enabled = st.checkbox("启用该触发器", value=(i == 0), key=f"mvp_trig_enabled_{i}")
-            if enabled:
-                triggers_cfg.append({
-                    "condition": cond,
-                    "skill_id": child_skill,
-                    "mod_ids": child_mods,
-                })
-
-    # 组装 SkillNode
-    def build_node(skill_id: str, mod_ids: List[str]) -> SkillNode:
-        return SkillNode(skills[skill_id], modifiers=[mods[mid] for mid in mod_ids if mid in mods], triggers=[])
-
-    root = SkillNode(
-        skills[st.session_state.mvp_main_skill],
-        modifiers=[mods[mid] for mid in st.session_state.mvp_main_mods if mid in mods],
-        triggers=[]
-    )
-    for tcfg in triggers_cfg:
-        child = build_node(tcfg["skill_id"], tcfg["mod_ids"])
-        root.triggers.append({"condition": tcfg["condition"], "node": child})
-
-    st.divider()
-
-    # ---- 运行 & A/B 对比 ----
-    st.subheader("③ 运行 & 对比")
-    run_col1, run_col2, run_col3 = st.columns([1, 1, 2])
-    with run_col1:
-        run_now = st.button("▶️ 运行 MVP 战斗", type="primary", use_container_width=True)
-    with run_col2:
-        save_a = st.button("💾 保存为 A", use_container_width=True)
-        save_b = st.button("💾 保存为 B", use_container_width=True)
-    with run_col3:
-        compare = st.button("🆚 A/B 对比运行", use_container_width=True)
-
-    # Serialize current build
-    def serialize_current_build():
-        return {
-            "model_id": st.session_state.mvp_model,
-            "talent_id": st.session_state.mvp_talent,
-            "main_skill_id": st.session_state.mvp_main_skill,
-            "main_mods": list(st.session_state.mvp_main_mods),
-            "triggers": triggers_cfg,
-            "enemy": {"enemy_hp": float(enemy_hp), "enemy_dps": float(enemy_dps), "max_time": float(max_time)},
+    # ---- session state：build ----
+    if "mvp_build" not in st.session_state:
+        st.session_state.mvp_build = {
+            "model": models_list[0]["id"],
+            "talent": talents_list[0]["id"],
+            "main_skill": skills_list[0]["id"],
+            "main_mods": [],
+            "triggers": [
+                {"enabled": True, "condition": "on_crit", "skill": "mvp_crit_execute", "mods": []},
+                {"enabled": True, "condition": "hp_lt_30", "skill": "mvp_emergency_mend", "mods": []},
+            ]
         }
+    build = st.session_state.mvp_build
 
-    def run_build(build_cfg: dict):
-        eng = DiabloEngine(data)
-        eng.build_hero(models[build_cfg["model_id"]], talents.get(build_cfg["talent_id"]) if build_cfg["talent_id"] else None)
+    # ---- 三套预置 BD ----
+    presets = {
+        "⚡ 输出爆发": {
+            "main_skill": "mvp_basic_attack",
+            "main_mods": ["mvp_mod_damage_20", "mvp_mod_haste"],
+            "triggers": [
+                {"enabled": True, "condition": "on_crit", "skill": "mvp_crit_execute", "mods": ["mvp_mod_damage_20"]},
+                {"enabled": False, "condition": "hp_lt_30", "skill": "mvp_emergency_mend", "mods": []},
+            ]
+        },
+        "🛡️ 铁王八": {
+            "main_skill": "mvp_basic_attack",
+            "main_mods": ["mvp_mod_tough"],
+            "triggers": [
+                {"enabled": False, "condition": "on_crit", "skill": "mvp_crit_execute", "mods": []},
+                {"enabled": True, "condition": "hp_lt_30", "skill": "mvp_emergency_mend", "mods": []},
+            ]
+        },
+        "🔁 闭环翻盘": {
+            "main_skill": "mvp_basic_attack",
+            "main_mods": ["mvp_mod_haste", "mvp_mod_crit_10"],
+            "triggers": [
+                {"enabled": True, "condition": "on_crit", "skill": "mvp_crit_execute", "mods": ["mvp_mod_damage_20"]},
+                {"enabled": True, "condition": "hp_lt_30", "skill": "mvp_emergency_mend", "mods": []},
+            ]
+        }
+    }
 
-        main_skill = build_cfg["main_skill_id"]
-        main_mod_ids = build_cfg.get("main_mods", [])
+    # ---- 工具：显示技能/模组详情 ----
+    def show_skill_help(skill_id: str):
+        sk = next((s for s in skills_list if s["id"] == skill_id), None)
+        if not sk:
+            return
+        with st.container(border=True):
+            st.markdown(f"**📘 {sk['name']}**")
+            if sk.get("desc"):
+                st.caption(sk["desc"])
+            comps = sk.get("damage_components") or []
+            if comps:
+                comp = comps[0]
+                st.write(f"伤害: `{comp.get('type','?')}` {comp.get('min',0)}-{comp.get('max',0)}  (coef={comp.get('scaling_coef',1.0)} src={comp.get('scaling_source','base_atk')})")
+            eff = sk.get("effects") or {}
+            if eff:
+                st.write("effects:")
+                st.json(eff, expanded=False)
 
-        r = SkillNode(skills[main_skill], modifiers=[mods[mid] for mid in main_mod_ids if mid in mods], triggers=[])
+    def show_mods_help(mod_ids: List[str]):
+        picked = [m for m in mods_list if m["id"] in (mod_ids or [])]
+        if not picked:
+            st.info("未选择模组")
+            return
+        total = {}
+        with st.container(border=True):
+            st.markdown("**💍 已选模组效果**")
+            for m in picked:
+                st.write(f"- **{m['name']}**：{m.get('desc','')}")
+                for k, v in (m.get("stats") or {}).items():
+                    try:
+                        fv = float(v)
+                    except Exception:
+                        continue
+                    if str(k).endswith("_mult"):
+                        total[k] = (total.get(k, 1.0) * fv)
+                    else:
+                        total[k] = (total.get(k, 0.0) + fv)
+            st.markdown("**汇总 stats**")
+            st.json(total, expanded=False)
 
-        for tcfg in build_cfg.get("triggers", [])[:max_triggers]:
-            if tcfg.get("skill_id") not in skills:
-                continue
-            child = SkillNode(
-                skills[tcfg["skill_id"]],
-                modifiers=[mods[mid] for mid in (tcfg.get("mod_ids") or []) if mid in mods],
-                triggers=[]
+    # ==========================================================
+    # 布局：左（Build） / 右（试炼 + 运行 + 报告）
+    # ==========================================================
+    left, right = st.columns([1.25, 1.0], gap="large")
+
+    with left:
+        st.subheader("🧩 Build 组装")
+        st.caption("提示：先用预置 BD 快速得到可用起点，再微调一两处去验证差异。")
+
+        with st.container(border=True):
+            st.markdown("#### 0) 一键载入预置 BD")
+            pcols = st.columns(3)
+            for i, (pname, pcfg) in enumerate(presets.items()):
+                if pcols[i % 3].button(pname, use_container_width=True, key=f"mvp_preset_{i}"):
+                    main_skill_id = pcfg.get("main_skill")
+                    main_mod_ids = [x for x in (pcfg.get("main_mods") or []) if (not allowed_mods or x in allowed_mods)]
+
+                    st.session_state["mvp_main_skill_selection_state"] = main_skill_id
+                    st.session_state["mvp_main_mods_selection_state"] = main_mod_ids
+
+                    trig_list = pcfg.get("triggers") or []
+                    for ti in range(max_triggers):
+                        tcfg = trig_list[ti] if ti < len(trig_list) else {"enabled": False, "condition": "on_hit", "skill": skills_list[0]["id"], "mods": []}
+                        st.session_state[f"mvp_t_en_{ti}"] = bool(tcfg.get("enabled", False))
+                        cond = tcfg.get("condition", "on_hit")
+                        st.session_state[f"mvp_t_cond_{ti}"] = cond if cond in allowed_conds else allowed_conds[0]
+                        sk = tcfg.get("skill") or skills_list[0]["id"]
+                        st.session_state[f"mvp_t_skill_{ti}"] = sk if sk in [s["id"] for s in skills_list] else skills_list[0]["id"]
+                        st.session_state[f"mvp_t_mods_{ti}"] = [x for x in (tcfg.get("mods") or []) if (not allowed_mods or x in allowed_mods)]
+
+                    build["main_skill"] = main_skill_id
+                    build["main_mods"] = main_mod_ids
+                    build["triggers"] = []
+                    for ti in range(max_triggers):
+                        build["triggers"].append({
+                            "enabled": bool(st.session_state.get(f"mvp_t_en_{ti}", False)),
+                            "condition": st.session_state.get(f"mvp_t_cond_{ti}", allowed_conds[0]),
+                            "skill": st.session_state.get(f"mvp_t_skill_{ti}", skills_list[0]["id"]),
+                            "mods": st.session_state.get(f"mvp_t_mods_{ti}", []),
+                        })
+
+                    st.session_state.mvp_build = build
+                    st.rerun()
+
+        with st.container(border=True):
+            st.markdown("#### 1) 角色底座")
+            c1, c2 = st.columns(2)
+            build["model"] = c1.selectbox(
+                "素体",
+                [m["id"] for m in models_list],
+                index=[m["id"] for m in models_list].index(build.get("model", models_list[0]["id"])) if build.get("model") in [m["id"] for m in models_list] else 0,
+                format_func=lambda x: next(mm["name"] for mm in models_list if mm["id"] == x),
             )
-            r.triggers.append({"condition": tcfg.get("condition", "on_hit"), "node": child})
+            build["talent"] = c2.selectbox(
+                "天赋",
+                [t["id"] for t in talents_list],
+                index=[t["id"] for t in talents_list].index(build.get("talent", talents_list[0]["id"])) if build.get("talent") in [t["id"] for t in talents_list] else 0,
+                format_func=lambda x: next(tt["name"] for tt in talents_list if tt["id"] == x),
+            )
 
-        e = build_cfg.get("enemy", {})
-        return eng.simulate_mvp_fight(
-            r,
-            enemy_hp=float(e.get("enemy_hp", 3000.0)),
-            enemy_dps=float(e.get("enemy_dps", 30.0)),
-            max_time=float(e.get("max_time", 20.0)),
-            dt=0.1,
-            max_depth=max_depth,
-        )
+            model_obj = next(m for m in models_list if m["id"] == build["model"])
+            talent_obj = next(t for t in talents_list if t["id"] == build["talent"])
 
-    if save_a:
-        st.session_state.mvp_build_a = serialize_current_build()
-        st.success("已保存为方案 A")
-    if save_b:
-        st.session_state.mvp_build_b = serialize_current_build()
-        st.success("已保存为方案 B")
+            # 一个小的概览
+            bs = model_obj.get("base_stats") or {}
+            attrs = model_obj.get("attributes") or {}
+            st.caption("素体面板（只展示关键项）")
+            kpi_cols = st.columns(4)
+            kpi_cols[0].metric("HP", int(bs.get("max_hp", 0) or 0))
+            kpi_cols[1].metric("ATK", int(bs.get("base_atk", 0) or 0))
+            kpi_cols[2].metric("STR", int(attrs.get("str", 0) or 0))
+            kpi_cols[3].metric("AGI", int(attrs.get("agi", 0) or 0))
 
-    def render_result(res: dict, title: str = "结果"):
-        r = res.get("result")
-        if r == "WIN":
-            st.success(f"✅ {title}: WIN（{res.get('time')}s）")
-        elif r == "LOSE":
-            st.error(f"❌ {title}: LOSE（{res.get('time')}s）")
-        else:
-            st.warning(f"⏱️ {title}: TIMEOUT（{res.get('time')}s）")
+        with st.container(border=True):
+            st.markdown("#### 2) 主技能")
+            build["main_skill"] = render_visual_selector(
+                mvp_data_source, "skills", "mvp_main_skill", default_selection=build.get("main_skill")
+            )
+            with st.expander("📘 查看主技能详情", expanded=False):
+                show_skill_help(build["main_skill"])
 
-        summ = res.get("summary") or {}
-        s1, s2, s3, s4 = st.columns(4)
-        s1.metric("英雄最大HP", summ.get("hero_max_hp", "-"))
-        s2.metric("英雄剩余HP", summ.get("hero_hp_left", "-"))
-        s3.metric("敌人剩余HP", summ.get("enemy_hp_left", "-"))
-        s4.metric("平均DPS", summ.get("avg_dps", "-"))
+            st.markdown("#### 3) 主技能模组")
+            build["main_mods"] = render_visual_selector(
+                mvp_data_source,
+                "modifiers",
+                "mvp_main_mods",
+                default_selection=build.get("main_mods", []),
+                multiselect_mode=True
+            )
+            with st.expander("💍 查看主模组汇总", expanded=False):
+                show_mods_help(build["main_mods"])
 
-        s5, s6 = st.columns(2)
-        s5.metric("总治疗量", summ.get("total_heal", "-"))
-        s6.metric("总承伤量", summ.get("total_incoming", "-"))
+        with st.container(border=True):
+            st.markdown(f"#### 4) 触发器（最多 {max_triggers} 个，深度锁死 {max_depth}）")
+            st.caption("触发器是 MVP 的核心：你用它来做“闭环/保命/破盾/斩杀”。")
 
-        tl = res.get("timeline") or []
-        if tl:
-            df = pd.DataFrame(tl)
-            st.markdown("**时间轴（截取最后 120 条）**")
-            st.dataframe(df.tail(120), use_container_width=True)
+            while len(build["triggers"]) < max_triggers:
+                build["triggers"].append({"enabled": False, "condition": "on_hit", "skill": skills_list[0]["id"], "mods": []})
+            if len(build["triggers"]) > max_triggers:
+                build["triggers"] = build["triggers"][:max_triggers]
 
-    if run_now:
-        build_cfg = serialize_current_build()
-        res = run_build(build_cfg)
-        render_result(res, "当前方案")
+            for i in range(max_triggers):
+                t = build["triggers"][i]
+                with st.container(border=True):
+                    h1, h2, h3 = st.columns([1, 2, 2])
+                    t["enabled"] = h1.checkbox(f"启用 T{i+1}", value=bool(t.get("enabled", False)), key=f"mvp_t_en_{i}")
+                    t["condition"] = h2.selectbox(
+                        "条件",
+                        allowed_conds,
+                        index=allowed_conds.index(t.get("condition", allowed_conds[0])) if t.get("condition") in allowed_conds else 0,
+                        key=f"mvp_t_cond_{i}"
+                    )
+                    t["skill"] = h3.selectbox(
+                        "子技能",
+                        [s["id"] for s in skills_list],
+                        index=[s["id"] for s in skills_list].index(t.get("skill", skills_list[0]["id"])) if t.get("skill") in [s["id"] for s in skills_list] else 0,
+                        format_func=lambda x: next(ss["name"] for ss in skills_list if ss["id"] == x),
+                        key=f"mvp_t_skill_{i}"
+                    )
 
-    if compare:
-        a = st.session_state.get("mvp_build_a")
-        b = st.session_state.get("mvp_build_b")
-        if not a or not b:
-            st.warning("请先分别保存方案 A / B。")
-        else:
-            ra = run_build(a)
-            rb = run_build(b)
+                    with st.expander(f"📘 子技能详情：{next(ss['name'] for ss in skills_list if ss['id']==t['skill'])}", expanded=False):
+                        show_skill_help(t["skill"])
 
-            st.markdown("### 🆚 A/B 结果对比")
-            ca, cb = st.columns(2)
-            with ca:
-                render_result(ra, "方案 A")
-            with cb:
-                render_result(rb, "方案 B")
+                    t["mods"] = st.multiselect(
+                        "子技能模组",
+                        [m["id"] for m in mods_list],
+                        default=[x for x in (t.get("mods") or []) if (not allowed_mods or x in allowed_mods)],
+                        format_func=lambda x: next(mm["name"] for mm in mods_list if mm["id"] == x),
+                        key=f"mvp_t_mods_{i}"
+                    )
+                    with st.expander("💍 子技能模组汇总", expanded=False):
+                        show_mods_help(t["mods"])
 
-            def summarize(res):
-                s = res.get("summary") or {}
+    # 右侧：试炼 + Run/Replay + 报告
+    with right:
+        st.subheader("🎯 试炼 / 运行 / 报告")
+
+        # ---- 选择敌人预设（试炼用例库）----
+        presets_enemy = mvp.get("enemy_presets", []) or []
+        if not presets_enemy:
+            presets_enemy = [{"id": "dummy", "name": "木桩", "enemy_hp": 3000, "enemy_dps": 20, "max_time": 20, "boss_crit_interval": 4.0, "boss_crit_mult": 2.5}]
+
+        with st.container(border=True):
+            st.markdown("#### 1) 选择试炼（用例库）")
+            eid = st.selectbox(
+                "试炼",
+                [e["id"] for e in presets_enemy],
+                format_func=lambda x: next(e["name"] for e in presets_enemy if e["id"] == x),
+                key="mvp_trial_select"
+            )
+            enemy = next(e for e in presets_enemy if e["id"] == eid)
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("敌人HP", int(enemy.get("enemy_hp", 3000)))
+            c2.metric("持续DPS", int(enemy.get("enemy_dps", 20)))
+            c3.metric("时限(s)", float(enemy.get("max_time", 20)))
+
+            st.caption(f"机制：每 **{enemy.get('boss_crit_interval', 4.0)}s** 一次重击，倍率 **x{enemy.get('boss_crit_mult', 2.5)}**")
+
+        def get_skill(sid: str):
+            return next(s for s in skills_list if s["id"] == sid)
+
+        def get_mod(mid: str):
+            return next(m for m in mods_list if m["id"] == mid)
+
+        def build_node(skill_id: str, mod_ids: List[str]) -> SkillNode:
+            return SkillNode(get_skill(skill_id), [get_mod(m) for m in (mod_ids or []) if (not allowed_mods or m in allowed_mods)])
+
+        # ---- 实验控制台：Seed / dt / Run / Replay ----
+        with st.container(border=True):
+            st.markdown("#### 2) 实验控制台（确定性 / Seed 复测）")
+
+            top = st.columns([1, 1, 1.2])
+            with top[0]:
+                seed = st.number_input("Seed", min_value=0, value=int(st.session_state.get("mvp_seed", 12345)), step=1, key="mvp_seed")
+            with top[1]:
+                dt = st.number_input("dt (秒)", min_value=0.01, max_value=1.0, value=float(st.session_state.get("mvp_dt", 0.10)), step=0.01, format="%.2f", key="mvp_dt")
+            with top[2]:
+                preview = {
+                    "model": model_obj.get("id"),
+                    "talent": talent_obj.get("id"),
+                    "trial": enemy.get("id"),
+                    "build": build,
+                    "max_depth": max_depth,
+                    "seed": int(seed),
+                    "dt": float(dt),
+                }
+                st.caption(f"snapshot_hash: `{stable_hash(preview)}`")
+
+            btns = st.columns([1, 1, 1])
+            def make_snapshot() -> Dict[str, Any]:
                 return {
-                    "result": res.get("result"),
-                    "time": res.get("time"),
-                    "enemy_hp_left": s.get("enemy_hp_left"),
-                    "hero_hp_left": s.get("hero_hp_left"),
-                    "avg_dps": s.get("avg_dps"),
-                    "total_heal": s.get("total_heal"),
-                    "total_incoming": s.get("total_incoming"),
+                    "model_id": model_obj.get("id"),
+                    "talent_id": talent_obj.get("id"),
+                    "enemy": copy.deepcopy(enemy),
+                    "build": copy.deepcopy(build),
+                    "max_depth": int(max_depth),
+                    "seed": int(seed),
+                    "dt": float(dt),
                 }
 
-            df = pd.DataFrame([summarize(ra), summarize(rb)], index=["A", "B"])
-            st.dataframe(df, use_container_width=True)
+            def run_build(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+                model_id = snapshot["model_id"]
+                talent_id = snapshot.get("talent_id")
 
+                model_obj2 = next(m for m in data.get("models", []) if m.get("id") == model_id)
+                talent_obj2 = next((t for t in data.get("talents", []) if t.get("id") == talent_id), None) if talent_id else None
+
+                build2 = snapshot["build"]
+                enemy2 = snapshot["enemy"]
+                seed2 = int(snapshot.get("seed", 0))
+                dt2 = float(snapshot.get("dt", 0.1))
+                max_depth2 = int(snapshot.get("max_depth", 1))
+
+                root = build_node(build2["main_skill"], build2["main_mods"])
+                for t in build2["triggers"]:
+                    if not t.get("enabled"):
+                        continue
+                    child = build_node(t["skill"], t.get("mods") or [])
+                    child.triggers = []
+                    root.triggers.append({"condition": t["condition"], "node": child})
+
+                eng = DiabloEngine(data)
+                eng.build_hero(model_obj2, talent_obj2)
+
+                result = eng.simulate_mvp_fight(
+                    root,
+                    enemy_hp=float(enemy2.get("enemy_hp", 3000)),
+                    init_enemy_hp=float(enemy2.get("enemy_hp", 3000)),
+                    enemy_dps=float(enemy2.get("enemy_dps", 20)),
+                    max_time=float(enemy2.get("max_time", 20)),
+                    dt=dt2,
+                    seed=seed2,
+                    boss_crit_interval=float(enemy2.get("boss_crit_interval", 4.0)),
+                    boss_crit_mult=float(enemy2.get("boss_crit_mult", 2.5)),
+                    max_depth=max_depth2,
+                )
+
+                header = {
+                    "trial_id": enemy2.get("id"),
+                    "seed": seed2,
+                    "dt": dt2,
+                    "max_depth": max_depth2,
+                    "build_hash": stable_hash(snapshot),
+                    "engine_version": getattr(eng, "version", lambda: "unknown")(),
+                }
+                return {"header": header, "result": result}
+
+            if btns[0].button("🚀 Run", type="primary", use_container_width=True):
+                snap = make_snapshot()
+                out = run_build(snap)
+                st.session_state.mvp_last_snapshot = snap
+                st.session_state.mvp_last_out = out
+                st.session_state.mvp_last_primary_hash = out["result"].get("result_hash")
+                # 清理旧 replay，避免误判
+                st.session_state.pop("mvp_last_replay_out", None)
+                st.session_state.pop("mvp_last_replay_hash", None)
+                st.rerun()
+
+            replay_disabled = "mvp_last_snapshot" not in st.session_state
+            if btns[1].button("🔁 Replay", use_container_width=True, disabled=replay_disabled):
+                snap = st.session_state.mvp_last_snapshot
+                out = run_build(snap)
+                st.session_state.mvp_last_replay_out = out
+                st.session_state.mvp_last_replay_hash = out["result"].get("result_hash")
+                st.rerun()
+
+            if btns[2].button("🧹 清空结果", use_container_width=True):
+                for k in ["mvp_last_snapshot", "mvp_last_out", "mvp_last_primary_hash", "mvp_last_replay_out", "mvp_last_replay_hash"]:
+                    st.session_state.pop(k, None)
+                st.rerun()
+
+            # 确定性提示
+            if "mvp_last_out" in st.session_state:
+                h_run = st.session_state.get("mvp_last_primary_hash")
+                h_rep = st.session_state.get("mvp_last_replay_hash")
+                if h_rep is None:
+                    st.info(f"Run result_hash: `{h_run}`（点 Replay 做确定性校验）")
+                else:
+                    if h_run == h_rep:
+                        st.success(f"✅ 确定性通过：Run={h_run} Replay={h_rep}")
+                    else:
+                        st.error(f"❌ 非确定性：Run={h_run} Replay={h_rep}")
+
+            with st.expander("🧾 Run Header / Result Hash", expanded=False):
+                if "mvp_last_out" in st.session_state:
+                    out = st.session_state.mvp_last_out
+                    st.json({"header": out["header"], "result_hash": out["result"].get("result_hash")})
+                else:
+                    st.caption("先 Run 一次。")
+
+        # ---- 报告区（Tabs）----
+        st.markdown("#### 3) 战斗报告")
+        if "mvp_last_out" not in st.session_state:
+            st.info("先点击 Run 开始一次试炼。")
+        else:
+            out = st.session_state.mvp_last_out
+            res = out["result"]
+            tabs = st.tabs(["总览", "走势", "战斗日志", "技能DPS"])
+            # ===== 总览 =====
+            with tabs[0]:
+                r = res.get("result")
+                reason = res.get("reason")
+                t_cost = res.get("time")
+                seed_r = res.get("seed")
+                dt_r = res.get("dt")
+
+                m1, m2, m3 = st.columns(3)
+                if r == "WIN":
+                    m1.metric("结果", "WIN 🏆")
+                elif r == "TIMEOUT":
+                    m1.metric("结果", "TIMEOUT ⏳")
+                else:
+                    m1.metric("结果", "LOSE ☠️")
+                m2.metric("耗时(s)", float(t_cost))
+                m3.metric("原因", str(reason))
+
+                st.caption(f"seed={seed_r}  dt={dt_r}  boss_crit_interval={res.get('boss_crit_interval')}  boss_crit_mult={res.get('boss_crit_mult')}")
+
+                # 关键指标：剩余HP
+                tl = res.get("timeline") or []
+                if tl:
+                    hero_end = tl[-1].get("hero_hp")
+                    enemy_end = tl[-1].get("enemy_hp")
+                    c = st.columns(2)
+                    c[0].metric("英雄剩余HP", hero_end)
+                    c[1].metric("敌人剩余HP", enemy_end)
+
+            # ===== 走势 =====
+            with tabs[1]:
+                tl = res.get("timeline") or []
+                if not tl:
+                    st.info("无 timeline 数据。")
+                else:
+                    import altair as alt
+                    df = pd.DataFrame(tl)
+                    df_m = df.melt(id_vars=["time", "is_crit"], value_vars=["hero_hp", "enemy_hp"], var_name="who", value_name="hp")
+                    df_m["who"] = df_m["who"].map({"hero_hp": "Hero", "enemy_hp": "Enemy"})
+                    base = alt.Chart(df_m).mark_line().encode(
+                        x=alt.X("time:Q", title="时间(s)"),
+                        y=alt.Y("hp:Q", title="HP"),
+                        color=alt.Color("who:N", title="对象"),
+                        tooltip=["time:Q", "who:N", "hp:Q"]
+                    ).properties(height=260)
+
+                    crit_df = df[df["is_crit"] == True]
+                    if len(crit_df) > 0:
+                        rules = alt.Chart(crit_df).mark_rule(strokeDash=[4,4]).encode(
+                            x="time:Q",
+                            tooltip=[alt.Tooltip("time:Q", title="重击时间(s)")]
+                        )
+                        chart = base + rules
+                    else:
+                        chart = base
+
+                    st.altair_chart(chart, use_container_width=True)
+
+                    if len(crit_df) > 0:
+                        st.caption("虚线为 BOSS 重击时刻（spike）。")
+
+            # ===== 日志 =====
+            with tabs[2]:
+                logs = res.get("combat_log") or []
+                if not logs:
+                    st.info("无关键战斗事件。")
+                else:
+                    st.text_area("Combat Log", value="\n".join(logs), height=260)
+
+            # ===== 技能DPS =====
+            with tabs[3]:
+                dps_logs = res.get("logs") or []
+                if not dps_logs:
+                    st.info("无技能构成数据。")
+                else:
+                    df = pd.DataFrame(dps_logs)
+                    # 尝试更友好一点
+                    show_cols = [c for c in ["skill", "role", "dps", "aps", "info"] if c in df.columns]
+                    st.dataframe(df[show_cols], use_container_width=True, height=260, hide_index=True)
+
+        # ---- 把 build 保存回 session ----
+        st.session_state.mvp_build = build
+# ==================================================================
+# PAGE 3: 可视化编辑器
+# ==================================================================
 elif page_mode == "🎨 可视化编辑器":
     st.title("🎨 游戏内容编辑器")
     tab1, tab2, tab3, tab4 = st.tabs(["🗡️ 技能", "💍 物品/Buff", "👤 角色", "🌟 天赋"])
