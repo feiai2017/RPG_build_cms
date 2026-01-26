@@ -1,26 +1,106 @@
 import streamlit as st
 import yaml
 import pandas as pd
+import copy
+import json
+import hashlib
 import os
 import shutil
 import datetime
 import glob
 import streamlit.components.v1 as components
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from engine import DiabloEngine, SkillNode
 import generate_doc
-import copy
-import json
-import hashlib
 
-st.set_page_config(page_title="RPG Build CMS", layout="wide", page_icon="⚔️")
+# 导入统一系统模块
+from unified_state_manager import get_state_manager, initialize_unified_system
+from wuxing_engine import WuxingEngine
+from enhanced_combat_engine import EnhancedCombatEngine
+from cultivation_school_system import get_school_manager
+from loot_generator import get_loot_generator, get_challenge_manager, get_bd_optimizer
+
+st.set_page_config(page_title="统一RPG系统", layout="wide", page_icon="☯️")
 
 
 def stable_hash(obj: Any) -> str:
-    """Stable hash for build snapshots (determinism / replay)."""
+    """对任意 JSON 兼容对象做稳定 hash（用于实验快照/确定性校验标识）。"""
+    s = json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
+
+
+def stable_hash(obj: Any) -> str:
+    """Stable hash for determinism snapshots (JSON with sorted keys)."""
     s = json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
 
+# ==========================================
+# 统一系统初始化
+# ==========================================
+@st.cache_resource
+def initialize_system():
+    """初始化统一RPG系统"""
+    state_manager = initialize_unified_system()
+    wuxing_engine = WuxingEngine()
+    school_manager = get_school_manager()
+    loot_generator = get_loot_generator()
+    challenge_manager = get_challenge_manager()
+    bd_optimizer = get_bd_optimizer()
+    
+    return {
+        "state_manager": state_manager,
+        "wuxing_engine": wuxing_engine,
+        "school_manager": school_manager,
+        "loot_generator": loot_generator,
+        "challenge_manager": challenge_manager,
+        "bd_optimizer": bd_optimizer
+    }
+
+# 初始化系统
+system = initialize_system()
+state_manager = system["state_manager"]
+
+# ==========================================
+# 统一界面导航
+# ==========================================
+def render_unified_navigation():
+    """渲染统一的导航界面"""
+    st.sidebar.title("☯️ 统一RPG系统")
+    
+    # 系统状态概览
+    with st.sidebar.expander("📊 系统状态", expanded=True):
+        status = state_manager.get_system_status()
+        st.metric("角色", status["character_name"])
+        st.metric("境界", status["character_realm"])
+        st.metric("流派", status["character_school"])
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("灵石", status["bagua_stones_count"])
+        with col2:
+            st.metric("技能", status["active_skills_count"])
+        
+        if not status["state_consistent"]:
+            st.warning("⚠️ 状态不一致")
+            for issue in status["consistency_issues"]:
+                st.caption(f"• {issue}")
+    
+    # 主要功能模块
+    page_mode = st.sidebar.radio(
+        "功能模块",
+        [
+            "🏠 系统概览",
+            "☯️ 五行八卦盘",
+            "⚔️ 战斗模拟",
+            "🎓 流派管理", 
+            "💎 刷宝系统",
+            "📊 BD分析",
+            "⚙️ 系统设置",
+            "📄 传统界面"
+        ]
+    )
+    
+    return page_mode
 
 # ==========================================
 # 0. 通用组件: 可视化选择器 (带状态记忆)
@@ -485,6 +565,8 @@ elif page_mode == "🧪 MVP 验证 Demo":
     # ---- 三套预置 BD ----
     presets = {
         "⚡ 输出爆发": {
+            "tags": ["爆发", "DPS"],
+            "note": "核心：主技能堆伤 + 暴击触发斩杀。适合 DPS Check。",
             "main_skill": "mvp_basic_attack",
             "main_mods": ["mvp_mod_damage_20", "mvp_mod_haste"],
             "triggers": [
@@ -493,6 +575,8 @@ elif page_mode == "🧪 MVP 验证 Demo":
             ]
         },
         "🛡️ 铁王八": {
+            "tags": ["生存", "减伤"],
+            "note": "核心：提高承伤能力，低血触发应急治疗。适合 Survival / Spike。",
             "main_skill": "mvp_basic_attack",
             "main_mods": ["mvp_mod_tough"],
             "triggers": [
@@ -501,6 +585,8 @@ elif page_mode == "🧪 MVP 验证 Demo":
             ]
         },
         "🔁 闭环翻盘": {
+            "tags": ["闭环", "续航"],
+            "note": "核心：攻速/暴击提高触发频率，形成斩杀+保命闭环。适合综合验证。",
             "main_skill": "mvp_basic_attack",
             "main_mods": ["mvp_mod_haste", "mvp_mod_crit_10"],
             "triggers": [
@@ -683,6 +769,135 @@ elif page_mode == "🧪 MVP 验证 Demo":
                     with st.expander("💍 子技能模组汇总", expanded=False):
                         show_mods_help(t["mods"])
 
+
+
+        # ---- BD 总览 / 快速微调（不重复渲染所有控件，避免 key 冲突）----
+        with st.container(border=True):
+            st.markdown("#### 5) BD 总览 / 快速微调")
+            st.caption("用途：导入预设后，快速查看整条 BD，并针对某一个槽位/全局做替换，再 Run/Replay 对比。")
+
+            def _skill_name(sid: str) -> str:
+                s = next((x for x in skills_list if x.get('id') == sid), None)
+                return (s.get('name') if s else sid)
+
+            def _mods_names(mids):
+                mids = mids or []
+                name_map = {m.get('id'): m.get('name') for m in mods_list}
+                return [name_map.get(x, x) for x in mids]
+
+            def _sync_widgets_from_build(b: Dict[str, Any]):
+                # 主技能
+                st.session_state["mvp_main_skill_selection_state"] = b.get("main_skill")
+                st.session_state["mvp_main_mods_selection_state"] = b.get("main_mods", [])
+                # 触发器
+                trs = b.get("triggers") or []
+                while len(trs) < max_triggers:
+                    trs.append({"enabled": False, "condition": allowed_conds[0], "skill": skills_list[0]["id"], "mods": []})
+                for ti in range(max_triggers):
+                    t = trs[ti]
+                    st.session_state[f"mvp_t_en_{ti}"] = bool(t.get("enabled", False))
+                    st.session_state[f"mvp_t_cond_{ti}"] = (t.get("condition") if t.get("condition") in allowed_conds else allowed_conds[0])
+                    sk = t.get("skill") or skills_list[0]["id"]
+                    st.session_state[f"mvp_t_skill_{ti}"] = sk if sk in [s["id"] for s in skills_list] else skills_list[0]["id"]
+                    st.session_state[f"mvp_t_mods_{ti}"] = [x for x in (t.get("mods") or []) if (not allowed_mods or x in allowed_mods)]
+
+            # —— 可视化总览 ——
+            lines = []
+            lines.append(f"**主技能**：`{_skill_name(build.get('main_skill'))}`  |  mods：{', '.join(_mods_names(build.get('main_mods'))) or '（无）'}")
+            trs = build.get('triggers') or []
+            for i in range(max_triggers):
+                t = trs[i] if i < len(trs) else {"enabled": False, "condition": allowed_conds[0], "skill": skills_list[0]["id"], "mods": []}
+                onoff = "✅" if t.get('enabled') else "⛔"
+                lines.append(f"**触发器{i+1}**：{onoff} `{t.get('condition')}` → `{_skill_name(t.get('skill'))}`  |  mods：{', '.join(_mods_names(t.get('mods'))) or '（无）'}")
+            st.markdown("\n\n".join(lines))
+
+            st.markdown("---")
+            st.markdown("**A) 快速编辑某个槽位**")
+            slot = st.selectbox("编辑目标", ["主技能", "触发器1", "触发器2"], key="mvp_quick_slot")
+
+            skill_ids = [s["id"] for s in skills_list]
+            mod_ids = [m["id"] for m in mods_list]
+
+            if slot == "主技能":
+                q_skill = st.selectbox("技能", skill_ids, index=skill_ids.index(build.get('main_skill', skill_ids[0])) if build.get('main_skill') in skill_ids else 0,
+                                       format_func=_skill_name, key="mvp_q_main_skill")
+                q_mods = st.multiselect("模组", mod_ids, default=[x for x in (build.get('main_mods') or []) if (not allowed_mods or x in allowed_mods)],
+                                        format_func=lambda x: next((m.get('name') for m in mods_list if m.get('id')==x), x), key="mvp_q_main_mods")
+
+                if st.button("✅ 应用到主技能", use_container_width=True, key="mvp_q_apply_main"):
+                    build["main_skill"] = q_skill
+                    build["main_mods"] = list(q_mods)
+                    _sync_widgets_from_build(build)
+                    st.session_state.mvp_build = build
+                    st.rerun()
+
+            else:
+                idx = 0 if slot == "触发器1" else 1
+                while len(build.get('triggers') or []) < max_triggers:
+                    build.setdefault('triggers', []).append({"enabled": False, "condition": allowed_conds[0], "skill": skill_ids[0], "mods": []})
+                t = build['triggers'][idx]
+
+                c1, c2 = st.columns(2)
+                q_en = c1.checkbox("启用", value=bool(t.get('enabled', False)), key=f"mvp_q_t_en_{idx}")
+                q_cond = c2.selectbox("条件", allowed_conds, index=allowed_conds.index(t.get('condition')) if t.get('condition') in allowed_conds else 0, key=f"mvp_q_t_cond_{idx}")
+                q_skill = st.selectbox("子技能", skill_ids, index=skill_ids.index(t.get('skill')) if t.get('skill') in skill_ids else 0,
+                                       format_func=_skill_name, key=f"mvp_q_t_skill_{idx}")
+                q_mods = st.multiselect("子技能模组", mod_ids, default=[x for x in (t.get('mods') or []) if (not allowed_mods or x in allowed_mods)],
+                                        format_func=lambda x: next((m.get('name') for m in mods_list if m.get('id')==x), x), key=f"mvp_q_t_mods_{idx}")
+
+                if st.button("✅ 应用到该触发器", use_container_width=True, key=f"mvp_q_apply_t_{idx}"):
+                    t["enabled"] = bool(q_en)
+                    t["condition"] = q_cond
+                    t["skill"] = q_skill
+                    t["mods"] = list(q_mods)
+                    build['triggers'][idx] = t
+                    _sync_widgets_from_build(build)
+                    st.session_state.mvp_build = build
+                    st.rerun()
+
+            st.markdown("---")
+            st.markdown("**B) 全局技能替换（快速对比 Build）**")
+
+            def _collect_used_skills(b: Dict[str, Any]):
+                used = []
+                ms = b.get('main_skill')
+                if ms:
+                    used.append(ms)
+                for tt in (b.get('triggers') or []):
+                    if tt.get('skill'):
+                        used.append(tt.get('skill'))
+                # 去重保序
+                out = []
+                seen = set()
+                for x in used:
+                    if x not in seen:
+                        out.append(x)
+                        seen.add(x)
+                return out
+
+            used = _collect_used_skills(build)
+            r1, r2 = st.columns(2)
+            old = r1.selectbox("把这个技能…", used if used else skill_ids, format_func=_skill_name, key="mvp_replace_old")
+            new = r2.selectbox("替换成…", skill_ids, index=skill_ids.index(old) if old in skill_ids else 0, format_func=_skill_name, key="mvp_replace_new")
+            scope = st.radio("替换范围", ["全局（主技能+触发器）", "仅主技能", "仅触发器"], horizontal=True, key="mvp_replace_scope")
+
+            if st.button("🔁 执行替换", use_container_width=True, key="mvp_replace_apply"):
+                if old == new:
+                    st.warning("old 和 new 一样，没有变化。")
+                else:
+                    if scope != "仅触发器":
+                        if build.get('main_skill') == old and scope in ("全局（主技能+触发器）", "仅主技能"):
+                            build['main_skill'] = new
+                    if scope != "仅主技能":
+                        for tt in (build.get('triggers') or []):
+                            if tt.get('skill') == old:
+                                tt['skill'] = new
+                    _sync_widgets_from_build(build)
+                    st.session_state.mvp_build = build
+                    st.rerun()
+
+            with st.expander("导出 Build JSON", expanded=False):
+                st.code(json.dumps(build, ensure_ascii=False, indent=2), language="json")
     # 右侧：试炼 + Run/Replay + 报告
     with right:
         st.subheader("🎯 试炼 / 运行 / 报告")
@@ -932,6 +1147,8 @@ elif page_mode == "🧪 MVP 验证 Demo":
         # ---- 把 build 保存回 session ----
         st.session_state.mvp_build = build
 # ==================================================================
+
+# ==================================================================
 # PAGE 3: 可视化编辑器
 # ==================================================================
 elif page_mode == "🎨 可视化编辑器":
@@ -1090,3 +1307,18 @@ elif page_mode == "📖 在线白皮书":
         components.html(html, height=1000, scrolling=True)
     except Exception as e:
         st.error(f"文档生成错误: {e}")
+
+# ==========================================
+# 统一界面集成
+# ==========================================
+
+# 在原有页面导航之前添加统一界面选项
+unified_mode = st.sidebar.checkbox("🔄 启用统一界面", value=False, help="切换到新的统一RPG系统界面")
+
+if unified_mode:
+    # 使用统一界面
+    from unified_interface_modules import render_unified_interface
+    render_unified_interface()
+    st.stop()  # 停止执行原有界面代码
+
+# 如果没有启用统一界面，继续执行原有的页面逻辑
