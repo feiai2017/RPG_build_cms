@@ -15,13 +15,15 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
+from app_config import get_app_config
 
 # 设置日志
+_app_config = get_app_config()
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('.kiro/rpg_config/system.log'),
+        logging.FileHandler(_app_config.log_path),
         logging.StreamHandler()
     ]
 )
@@ -55,7 +57,9 @@ class SystemHealth:
 class IntegratedRPGSystem:
     """整合的RPG系统主类"""
     
-    def __init__(self, config_dir: str = ".kiro/rpg_config"):
+    def __init__(self, config_dir: Optional[str] = None):
+        if config_dir is None:
+            config_dir = _app_config.config_root
         self.config_dir = Path(config_dir)
         self.config_dir.mkdir(parents=True, exist_ok=True)
         
@@ -805,7 +809,7 @@ def get_integrated_system() -> IntegratedRPGSystem:
     return _global_integrated_system
 
 
-def initialize_integrated_system(config_dir: str = ".kiro/rpg_config") -> IntegratedRPGSystem:
+def initialize_integrated_system(config_dir: Optional[str] = None) -> IntegratedRPGSystem:
     """初始化整合系统"""
     global _global_integrated_system
     _global_integrated_system = IntegratedRPGSystem(config_dir)

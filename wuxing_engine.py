@@ -180,6 +180,29 @@ class WuxingEngine:
             "generation_bonus": inc_gen,
             "destruction_penalty": inc_des
         }
+
+    def calculate_element_synergy(self, stones: List[Stone]) -> Dict[str, float]:
+        """兼容旧接口：计算五行灵石协同效果"""
+        synergy = self.calculate_element_synergy_v2(stones)
+        inc_delta = synergy.get("inc_delta", 0.0)
+        more_mult = synergy.get("more_mult", 1.0)
+        total_multiplier = more_mult * (1 + inc_delta)
+        total_multiplier = self.clamp(total_multiplier, 0.5, 2.0)
+
+        generation_bonus = max(0.0, synergy.get("generation_bonus", 0.0))
+        destruction_penalty = max(0.0, -synergy.get("destruction_penalty", 0.0))
+
+        return {
+            "generation_bonus": generation_bonus,
+            "destruction_penalty": destruction_penalty,
+            "harmony_bonus": generation_bonus,
+            "conflict_penalty": destruction_penalty,
+            "total_multiplier": total_multiplier,
+            "support_pairs": synergy.get("support_pairs", 0),
+            "conflict_pairs": synergy.get("conflict_pairs", 0),
+            "inc_delta": inc_delta,
+            "more_mult": more_mult
+        }
     
     def validate_bagua_configuration(self, config: Dict[str, Any]) -> Tuple[bool, List[str]]:
         """验证八卦配置的合理性"""
@@ -409,6 +432,10 @@ class WuxingEngine:
             "total_more_mult": total_more,
             "final_multiplier": total_more * (1 + effective_inc)
         }
+
+    def calculate_comprehensive_effects(self, full_config: Dict[str, Any]) -> Dict[str, Any]:
+        """兼容旧接口：计算完整八卦配置综合效果"""
+        return self.calculate_comprehensive_effects_v2(full_config)
     
     def _find_generation_chains(self, element_counts: Dict[str, int]) -> List[List[str]]:
         """寻找相生链"""

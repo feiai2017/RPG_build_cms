@@ -328,6 +328,11 @@ class LootGenerator:
         for element, multiplier in preferences.items():
             if element in weights:
                 weights[element] *= multiplier
+
+        # 提升流派主元素最低占比，降低随机波动造成的偏差
+        if school_element in weights:
+            other_total = sum(value for elem, value in weights.items() if elem != school_element)
+            weights[school_element] = max(weights[school_element], other_total * 2.0)
         
         return weights
     

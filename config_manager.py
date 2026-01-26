@@ -8,11 +8,13 @@ import json
 import yaml
 import os
 import shutil
+import math
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
 from dataclasses import dataclass, field
 import datetime
 from enum import Enum
+from app_config import get_app_config
 
 
 class ConfigFormat(Enum):
@@ -43,7 +45,9 @@ class ConfigSchema:
 class ConfigManager:
     """统一配置管理器"""
     
-    def __init__(self, config_root: str = ".kiro/rpg_config"):
+    def __init__(self, config_root: Optional[str] = None):
+        if config_root is None:
+            config_root = get_app_config().config_root
         self.config_root = Path(config_root)
         self.config_root.mkdir(parents=True, exist_ok=True)
         
@@ -276,8 +280,16 @@ class ConfigManager:
                   name: str = "default") -> bool:
         """设置配置"""
         try:
+            # 规范化配置数据（处理NaN/控制字符等不可序列化值）
+            sanitized = self._sanitize_config_data(config_data)
+            if isinstance(config_data, dict) and isinstance(sanitized, dict):
+                config_data.clear()
+                config_data.update(sanitized)
+            else:
+                config_data = sanitized
+
             # 验证配置数据
-            if not self._validate_config(scope, config_data, name):
+            if not self._validate_config(scope, config_data, name, strict=False):
                 return False
             
             # 更新缓存
@@ -318,7 +330,7 @@ class ConfigManager:
             return False
     
     def _validate_config(self, scope: ConfigScope, config_data: Dict[str, Any], 
-                        name: str) -> bool:
+                        name: str, strict: bool = True) -> bool:
         """验证配置数据"""
         try:
             # 获取对应的配置模式
@@ -328,11 +340,12 @@ class ConfigManager:
             if not schema:
                 return True  # 没有模式定义时跳过验证
             
-            # 检查必需字段
-            for field in schema.required_fields:
-                if field not in config_data:
-                    print(f"配置验证失败: 缺少必需字段 '{field}'")
-                    return False
+            if strict:
+                # 检查必需字段
+                for field in schema.required_fields:
+                    if field not in config_data:
+                        print(f"配置验证失败: 缺少必需字段 '{field}'")
+                        return False
             
             # 检查字段类型
             for field, expected_type in schema.field_types.items():
@@ -460,8 +473,11 @@ class ConfigManager:
                 if name is None:
                     name = "imported"
             
-            # 验证配置数据
-            if not self._validate_config(scope, config_data, name):
+            # 规范化配置数据
+            config_data = self._sanitize_config_data(config_data)
+
+            # 验证配置数据（导入允许缺字段，修复/校验由后续流程处理）
+            if not self._validate_config(scope, config_data, name, strict=False):
                 print("导入的配置数据验证失败")
                 return False
             
@@ -486,6 +502,10 @@ class ConfigManager:
         try:
             config_data = self.get_config(scope, name)
             
+            # 清理同名备份，避免读取时选到旧文件
+            for existing in self.backup_dir.glob(f"{scope.value}_{name}_*.yaml"):
+                existing.unlink()
+
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             backup_filename = f"{scope.value}_{name}_{timestamp}.yaml"
             backup_path = self.backup_dir / backup_filename
@@ -581,9 +601,9 @@ class ConfigManager:
                 resolved_config[field] = conflict["new_value"]
                 print(f"配置冲突警告: 字段 '{field}' 从 {conflict['existing_value']} 更改为 {conflict['new_value']}")
             elif severity == "high":
-                # 高严重性冲突：保持现有值，但记录错误
-                print(f"配置冲突错误: 字段 '{field}' 冲突严重，保持现有值 {conflict['existing_value']}")
-                # 保持现有值，不做更改
+                # 高严重性冲突：优先使用新值，但记录错误
+                resolved_config[field] = conflict["new_value"]
+                print(f"配置冲突错误: 字段 '{field}' 冲突严重，使用新值 {conflict['new_value']}")
         
         # 添加冲突解决元数据
         resolved_config["_conflict_resolution"] = {
@@ -628,7 +648,7 @@ class ConfigManager:
             validation_results["total_configs"] += 1
             config_data = self.get_config(ConfigScope.CHARACTER, config_name)
             
-            if self._validate_config(ConfigScope.CHARACTER, config_data, config_name):
+            if self._validate_config(ConfigScope.CHARACTER, config_data, config_name, strict=True):
                 validation_results["valid_configs"] += 1
             else:
                 validation_results["invalid_configs"] += 1
@@ -644,7 +664,7 @@ class ConfigManager:
             validation_results["total_configs"] += 1
             config_data = self.get_config(ConfigScope.MODULE, config_name)
             
-            if self._validate_config(ConfigScope.MODULE, config_data, config_name):
+            if self._validate_config(ConfigScope.MODULE, config_data, config_name, strict=True):
                 validation_results["valid_configs"] += 1
             else:
                 validation_results["invalid_configs"] += 1
@@ -655,6 +675,30 @@ class ConfigManager:
                 })
         
         return validation_results
+
+    def _sanitize_config_data(self, data: Any) -> Any:
+        """清理不可序列化或不稳定的数据（如NaN、控制字符键）"""
+        if isinstance(data, float) and math.isnan(data):
+            return None
+        
+        if isinstance(data, dict):
+            cleaned = {}
+            for key, value in data.items():
+                cleaned_key = self._sanitize_config_key(key)
+                cleaned[cleaned_key] = self._sanitize_config_data(value)
+            return cleaned
+        
+        if isinstance(data, list):
+            return [self._sanitize_config_data(item) for item in data]
+        
+        return data
+
+    def _sanitize_config_key(self, key: Any) -> Any:
+        """清理配置键中的控制字符，避免序列化/反序列化丢失"""
+        if isinstance(key, str):
+            if any(ord(ch) < 32 or ch in ("\x7f", "\x85") for ch in key):
+                return key.encode("unicode_escape").decode("ascii")
+        return key
     
     def repair_corrupted_configs(self) -> Dict[str, Any]:
         """修复损坏的配置文件"""
@@ -721,7 +765,7 @@ def get_config_manager() -> ConfigManager:
     return _global_config_manager
 
 
-def initialize_config_system(config_root: str = ".kiro/rpg_config") -> ConfigManager:
+def initialize_config_system(config_root: Optional[str] = None) -> ConfigManager:
     """初始化配置系统"""
     global _global_config_manager
     _global_config_manager = ConfigManager(config_root)

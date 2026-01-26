@@ -8,16 +8,23 @@
 """
 
 import streamlit as st
+import logging
 import copy
 from typing import Dict, Any, List, Optional
 from unified_state_manager import get_state_manager
 from wuxing_engine import WuxingEngine
+from wuxing_board import generate_board, NodeType, ELEMENTS
+from wuxing_board.board_render import render_board_plotly
+from streamlit_plotly_events import plotly_events
+from wuxing_rules import evaluate_wuxing_rules, example_builds
 from enhanced_combat_engine import EnhancedCombatEngine
 from cultivation_school_system import get_school_manager
 from loot_generator import get_loot_generator, get_challenge_manager, get_bd_optimizer
 from performance_optimizer import get_performance_optimizer, render_performance_dashboard
 from help_system import get_help_system
 from balance_system import get_balance_system
+
+logger = logging.getLogger(__name__)
 
 
 def render_system_overview():
@@ -1253,10 +1260,108 @@ def render_complete_bagua_interface():
         st.write(f"当前配置：{total_stones} 个灵石，{core_stones} 个核心BIOS")
 
 
-# 更新render_wuxing_bagua_interface函数以使用完整界面
+
+def render_wuxing_board_interface():
+    """渲染新的五行棋盘界面"""
+    st.title("☯️ 五行棋盘")
+    st.caption("圆形扇区 + 对称节点，支持桥接、环线和高亮")
+
+    if st.toggle("使用旧版棋盘（Legacy）", value=False):
+        render_complete_bagua_interface()
+        return
+
+    layout = generate_board()
+
+    st.markdown("### 控制面板")
+    if "board_element_filter" not in st.session_state:
+        st.session_state.board_element_filter = "无"
+    if "board_type_filter" not in st.session_state:
+        st.session_state.board_type_filter = "无"
+
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        highlight_element = st.selectbox(
+            "高亮元素",
+            ["无"] + ELEMENTS,
+            index=0,
+        )
+    with col_b:
+        highlight_type = st.selectbox(
+            "高亮节点类型",
+            ["无"] + [t.value for t in NodeType],
+            index=0,
+        )
+    with col_c:
+        show_bridges = st.checkbox("显示桥接", value=True)
+        show_labels = st.checkbox("显示标签", value=True)
+        show_ring_guides = st.checkbox("显示环线", value=True)
+
+    if st.session_state.board_element_filter != "无":
+        highlight_element = st.session_state.board_element_filter
+    if st.session_state.board_type_filter != "无":
+        highlight_type = st.session_state.board_type_filter
+
+    highlight_type = None if highlight_type == "无" else NodeType(highlight_type)
+
+    if "board_selected_nodes" not in st.session_state:
+        st.session_state.board_selected_nodes = set()
+
+    fig = render_board_plotly(
+        layout.nodes,
+        layout.edges,
+        highlight_element=None if highlight_element == "无" else highlight_element,
+        highlight_type=highlight_type,
+        show_bridges=show_bridges,
+        show_labels=show_labels,
+        show_ring_guides=show_ring_guides,
+        selected_nodes=st.session_state.board_selected_nodes,
+    )
+
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    events = plotly_events(
+        fig,
+        click_event=True,
+        select_event=False,
+        hover_event=False,
+        override_height=820,
+        key="wuxing-board",
+    )
+    if events:
+        node_id = events[0].get("customdata")
+        if node_id:
+            if node_id in st.session_state.board_selected_nodes:
+                st.session_state.board_selected_nodes.remove(node_id)
+            else:
+                st.session_state.board_selected_nodes.add(node_id)
+            st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("**图例与筛选**")
+    elem_cols = st.columns(5)
+    for idx, elem in enumerate(ELEMENTS):
+        if elem_cols[idx].button(elem, key=f"legend-elem-{elem}"):
+            st.session_state.board_element_filter = elem
+            st.rerun()
+    if st.button("清除元素高亮", key="legend-elem-clear"):
+        st.session_state.board_element_filter = "无"
+        st.rerun()
+
+    type_cols = st.columns(3)
+    types = [NodeType.SMALL, NodeType.MEDIUM, NodeType.KEYSTONE, NodeType.SOCKET, NodeType.BRIDGE, NodeType.CONVERT]
+    for idx, t in enumerate(types):
+        if type_cols[idx % 3].button(t.value, key=f"legend-type-{t.value}"):
+            st.session_state.board_type_filter = t.value
+            st.rerun()
+    if st.button("清除类型高亮", key="legend-type-clear"):
+        st.session_state.board_type_filter = "无"
+        st.rerun()
+
+    st.markdown("**节点类型说明**：● 普通 / ◼︎ 中型 / ⬡ 关键 / ◆ 插槽 / ⬡ 桥接 / ⬡⇄ 转化")
+
+
 def render_wuxing_bagua_interface():
-    """渲染五行八卦盘界面（使用完整集成版本）"""
-    render_complete_bagua_interface()
+    """渲染五行棋盘界面（新布局）"""
+    render_wuxing_board_interface()
 
 
 def render_help_center():
@@ -1269,22 +1374,16 @@ def render_performance_monitoring():
     """渲染性能监控界面"""
     st.title("📊 系统性能监控")
     st.caption("监控系统性能，识别和解决性能问题")
-    
-    # 渲染性能仪表板
+
     render_performance_dashboard()
-    
-    # 性能优化建议
+
     optimizer = get_performance_optimizer()
-    
     with st.container(border=True):
         st.subheader("🚀 性能优化")
-        
         col1, col2 = st.columns(2)
-        
         with col1:
             if st.button("🔍 分析性能瓶颈", use_container_width=True):
                 suggestions = optimizer.get_optimization_suggestions()
-                
                 if suggestions:
                     st.subheader("优化建议")
                     for suggestion in suggestions:
@@ -1295,7 +1394,6 @@ def render_performance_monitoring():
                         st.caption(f"建议: {suggestion['suggestion']}")
                 else:
                     st.success("✅ 系统性能良好，暂无优化建议")
-        
         with col2:
             if st.button("⚡ 应用自动优化", use_container_width=True):
                 with st.spinner("正在应用性能优化..."):
@@ -1311,15 +1409,11 @@ def render_balance_adjustment():
     balance_system.render_balance_interface()
 
 
-# 更新主界面路由函数
 def render_unified_interface():
     """渲染统一界面的主函数"""
-    
-    # 渲染导航
     from unified_main_app import render_unified_navigation
     page_mode = render_unified_navigation()
-    
-    # 根据选择的页面渲染对应界面
+
     if page_mode == "🏠 系统概览":
         render_system_overview()
     elif page_mode == "☯️ 五行八卦盘":
@@ -1334,13 +1428,11 @@ def render_unified_interface():
         render_bd_analysis()
     elif page_mode == "⚙️ 系统设置":
         render_system_settings()
+    elif page_mode == "📄 传统界面":
+        render_traditional_interface()
     elif page_mode == "📚 帮助中心":
         render_help_center()
     elif page_mode == "📊 性能监控":
         render_performance_monitoring()
     elif page_mode == "⚖️ 平衡调整":
         render_balance_adjustment()
-    elif page_mode == "📄 传统界面":
-        render_traditional_interface()
-    else:
-        render_system_overview()  # 默认显示系统概览

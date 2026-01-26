@@ -1,0 +1,4 @@
+# file: /Users/wangpengfei/go/src/github.com/RPG_build_cms/RPG_build_cms/wuxing_rules.py
+# hypothesis_version: 6.151.2
+
+[0.05, ':', 'circuit', 'convert', 'description', 'name', 'selected_nodes', 'to:', '五行全链路连接，触发循环奖励', '土-R1-S1', '木-R4-S1', '相克转化构筑', '相生循环构筑', '触发相克规则重写效果']

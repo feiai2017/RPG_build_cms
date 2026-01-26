@@ -1,0 +1,4 @@
+# file: /Users/wangpengfei/go/src/github.com/RPG_build_cms/RPG_build_cms/app_config.py
+# hypothesis_version: 6.151.2
+
+['.kiro/rpg_config', 'RPG_CONFIG_DIR', 'RPG_ENV', 'RPG_LOG_PATH', 'development', 'system.log']

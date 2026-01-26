@@ -1,0 +1,5 @@
+streamlit
+pyyaml
+pandas
+plotly
+streamlit-plotly-events

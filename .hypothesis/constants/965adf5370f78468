@@ -1,0 +1,4 @@
+# file: /Users/wangpengfei/go/src/github.com/RPG_build_cms/RPG_build_cms/wuxing_board.py
+# hypothesis_version: 6.151.2
+
+['__main__', 'bridge', 'convert', 'element', 'element_counts:', 'intra', 'keystone', 'medium', 'radial', 'small', 'socket', '土', '新棋盘节点数应大于旧版本', '木', '水', '火', '炼气', '金']

@@ -13,6 +13,7 @@ from typing import Dict, Any, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from pathlib import Path
 from cultivation_school_system import get_school_manager, SchoolManager
+from app_config import get_app_config
 
 
 @dataclass
@@ -45,7 +46,9 @@ class UnifiedCharacter:
 class UnifiedStateManager:
     """统一状态管理器 - 负责所有模块的数据同步和状态管理"""
     
-    def __init__(self, config_dir: str = ".kiro/rpg_config"):
+    def __init__(self, config_dir: Optional[str] = None):
+        if config_dir is None:
+            config_dir = get_app_config().config_root
         self.config_dir = Path(config_dir)
         self.config_dir.mkdir(parents=True, exist_ok=True)
         
@@ -345,16 +348,19 @@ class UnifiedStateManager:
         """更新角色数据"""
         self.character_data.update(updates)
         self.sync_modules()
+        self._auto_save_if_enabled()
     
     def update_bagua_configuration(self, updates: Dict[str, Any]) -> None:
         """更新五行八卦配置"""
         self.bagua_configuration.update(updates)
         self.sync_modules()
+        self._auto_save_if_enabled()
     
     def update_combat_settings(self, updates: Dict[str, Any]) -> None:
         """更新战斗设置"""
         self.combat_settings.update(updates)
         self.sync_modules()
+        self._auto_save_if_enabled()
     
     def change_character_school(self, new_school: str) -> bool:
         """更改角色流派"""
@@ -469,6 +475,9 @@ class UnifiedStateManager:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(state_data, f, ensure_ascii=False, indent=2)
             
+            # 清理旧备份（即使本次未创建新备份）
+            self._cleanup_old_backups()
+            
             return True
             
         except Exception as e:
@@ -490,7 +499,9 @@ class UnifiedStateManager:
             
             # 加载各模块状态
             self.character_data = state_data.get("character_data", {})
-            self.bagua_configuration = state_data.get("bagua_configuration", {})
+            self.bagua_configuration = self._normalize_bagua_configuration(
+                state_data.get("bagua_configuration", {})
+            )
             self.combat_settings = state_data.get("combat_settings", {})
             self.loot_inventory = state_data.get("loot_inventory", [])
             self._module_states = state_data.get("module_states", {})
@@ -504,6 +515,60 @@ class UnifiedStateManager:
         except Exception as e:
             print(f"加载状态失败: {e}")
             return False
+
+    def _auto_save_if_enabled(self) -> None:
+        """根据配置触发自动保存"""
+        if self._auto_save_enabled or self._read_auto_save_setting():
+            self.save_state()
+
+    def _read_auto_save_setting(self) -> bool:
+        """读取全局配置中的自动保存开关"""
+        try:
+            global_config_path = self.config_dir / "global_config.yaml"
+            if not global_config_path.exists():
+                return False
+            with open(global_config_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f) or {}
+            return bool(data.get("auto_save", False))
+        except Exception:
+            return False
+
+    def _normalize_bagua_configuration(self, bagua_config: Dict[str, Any]) -> Dict[str, Any]:
+        """标准化八卦配置的索引键为整数"""
+        if not isinstance(bagua_config, dict):
+            return {}
+        
+        normalized = copy.deepcopy(bagua_config)
+        stones = normalized.get("stones", {})
+        normalized_stones = {}
+        
+        if isinstance(stones, dict):
+            for tri, slots in stones.items():
+                if isinstance(slots, dict):
+                    normalized_slots = {}
+                    for key, value in slots.items():
+                        try:
+                            normalized_key = int(key)
+                        except (ValueError, TypeError):
+                            normalized_key = key
+                        normalized_slots[normalized_key] = value
+                    normalized_stones[tri] = normalized_slots
+                else:
+                    normalized_stones[tri] = slots
+        
+        core = normalized.get("core", {})
+        normalized_core = {}
+        if isinstance(core, dict):
+            for key, value in core.items():
+                try:
+                    normalized_key = int(key)
+                except (ValueError, TypeError):
+                    normalized_key = key
+                normalized_core[normalized_key] = value
+        
+        normalized["stones"] = normalized_stones
+        normalized["core"] = normalized_core
+        return normalized
     
     def export_configuration(self, filepath: str, format: str = "json") -> bool:
         """导出配置到指定格式文件"""
@@ -1093,7 +1158,7 @@ def get_state_manager() -> UnifiedStateManager:
     return _global_state_manager
 
 
-def initialize_unified_system(config_dir: str = ".kiro/rpg_config") -> UnifiedStateManager:
+def initialize_unified_system(config_dir: Optional[str] = None) -> UnifiedStateManager:
     """初始化统一系统"""
     global _global_state_manager
     _global_state_manager = UnifiedStateManager(config_dir)
