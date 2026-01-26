@@ -1,0 +1,4 @@
+# file: D:\github.com\tools\wuxing_engine.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 'DUI', 'GEN', 'KAN', 'KUN', 'LI', 'QIAN', 'XUN', 'ZHEN', 'base_multiplier', 'common', 'conflict', 'conflict_penalty', 'destruction', 'destruction_penalty', 'direction', 'earth', 'elem', 'element_synergy', 'error', 'final_multiplier', 'fire', 'gem', 'generation', 'generation_bonus', 'global_synergy', 'harmony', 'harmony_bonus', 'metal', 'name', 'position_bonus', 'resonance_effect', 'stones', 'symbol', 'total_multiplier', 'total_stones', 'trigram_effects', 'validation_errors', 'water', 'wood', '☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷', '东', '东北', '东南', '乾', '兑', '北', '南', '土', '坎', '坤', '巽', '无', '木', '水', '火', '离', '艮', '西', '西北', '西南', '配置中缺少八卦灵石数据', '配置数据不完整', '金', '震']

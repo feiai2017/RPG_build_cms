@@ -1,0 +1,4 @@
+# file: D:\github.com\tools\module_interfaces.py
+# hypothesis_version: 6.150.2
+
+[-500, 100, 1000, 'active', 'bagua', 'bagua_changed', 'character', 'character_updated', 'combat', 'combat_result', 'error', 'five_elements', 'item', 'item_obtained', 'loot', 'result', 'skill', 'skill_unlocked', 'state', 'state_sync_required', 'type', 'ui']

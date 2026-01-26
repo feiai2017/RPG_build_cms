@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Roguelike ARPG 数值体系架构说明书</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 40px; }
+        h1 { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 40px; }
+        h2 { color: #2c3e50; border-left: 5px solid #e74c3c; padding-left: 10px; margin-top: 40px; }
+        h3 { color: #34495e; margin-top: 25px; }
+        code { background-color: #f8f9fa; padding: 2px 5px; border-radius: 3px; font-family: Consolas, monospace; color: #c7254e; }
+        pre { background-color: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #ddd; overflow-x: auto; }
+        .box { background-color: #f0f4f8; border-left: 4px solid #3498db; padding: 15px; margin: 20px 0; }
+        .math-block { background-color: #fff; padding: 10px; text-align: center; font-size: 1.1em; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .diagram { text-align: center; margin: 20px 0; font-style: italic; color: #666; border: 1px dashed #ccc; padding: 20px; }
+        @media print {
+            body { max-width: 100%; padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Roguelike ARPG 数值体系架构设计说明书</h1>
+    <p style="text-align: center; color: #666;">版本: 1.0 | 状态: Draft</p>
+
+    <div class="box">
+        <strong>核心理念：</strong> 本体系结合了 <em>DOTA</em> 的属性衍生机制（作为基础架构）与 <em>Path of Exile</em> 的伤害乘区机制（作为构建深度），旨在实现“高随机性”与“严谨构建”的平衡。
+    </div>
+
+    <h2>1. 模块化角色构建 (Modular Composition)</h2>
+    <p>角色不再是单一的数据实体，而是由四个解耦的模块动态组装而成：</p>
+    
+    <div class="diagram">
+        [素体模型 Model] + [先天天赋 Talent] + [技能 Skills] + [外部修正 Modifiers] = 最终角色
+    </div>
+
+    <ul>
+        <li><strong>素体模型 (Model):</strong> 决定角色的基础三维 (Str/Agi/Int)、基础攻速、模型体积。例如：<em>兽人素体、精灵素体</em>。</li>
+        <li><strong>先天天赋 (Innate Talent):</strong> 唯一的全局机制，通常包含动态逻辑。例如：<em>狂战血统（血越少攻越高）</em>。</li>
+        <li><strong>技能 (Skills):</strong> 既是主动攻击手段，也是 BD 的组件。包含 Tags（标签）。</li>
+        <li><strong>外部修正 (Modifiers):</strong> 局内肉鸽获取的装备、Buff、诅咒。</li>
+    </ul>
+
+    <h2>2. 属性衍生系统 (Attribute Derivation)</h2>
+    <p>采用三维属性作为数值基座，向下衍生战斗属性。</p>
+
+    <table>
+        <tr>
+            <th>属性 (Attribute)</th>
+            <th>衍生规则 (Derivation Rule)</th>
+            <th>说明</th>
+        </tr>
+        <tr>
+            <td><strong>力量 (STR)</strong></td>
+            <td>$$HP_{Max} = STR \times 20 + Base$$</td>
+            <td>决定生存上限，部分技能提供物理点伤。</td>
+        </tr>
+        <tr>
+            <td><strong>敏捷 (AGI)</strong></td>
+            <td>$$Crit_{Rate} = AGI \times 0.2\%$$</td>
+            <td>决定暴击率，部分提供攻速/闪避。</td>
+        </tr>
+        <tr>
+            <td><strong>智力 (INT)</strong></td>
+            <td>$$Inc_{Elem} = INT \times 2\%$$</td>
+            <td>提供元素伤害加成 (Fire/Cold/Lightning)。</td>
+        </tr>
+    </table>
+
+    <h2>3. 伤害计算管线 (The Damage Pipeline)</h2>
+    <p>伤害计算严格遵循以下 5 个阶段的流水线处理：</p>
+
+    <h3>阶段 I：基础点伤 (Base Flat Damage)</h3>
+    <p>技能的基础伤害并非定值，而是由武器系数和属性加成动态计算：</p>
+    <div class="math-block">
+        $$Base = \frac{(Skill_{Min} + Skill_{Max})}{2} + (Weapon \times Coef_{W}) + (Stat \times Coef_{S})$$
+    </div>
+
+    <h3>阶段 II：伤害转化 (Conversion)</h3>
+    <p>在应用加成前，改变伤害类型（如物理转火）。这允许伤害享受多种类型的加成。</p>
+    <div class="box">
+        <strong>规则：</strong> 转化后的伤害将完全继承新类型的加成规则。转化源的数值被扣除，目标数值增加。
+    </div>
+
+    <h3>阶段 III：加成计算 (The Buckets)</h3>
+    <p>伤害由三个独立乘区决定：</p>
+    <div class="math-block">
+        $$Damage_{Final} = Base \times (1 + \sum Additive) \times \prod Multiplicative$$
+    </div>
+    <ul>
+        <li><strong>Additive (Inc):</strong> 所有“增加 X% 伤害”的词条相加。来源于属性、天赋、普通装备。</li>
+        <li><strong>Multiplicative (More):</strong> 所有“额外造成 X% 伤害”的词条相乘。来源于稀有天赋、诅咒。</li>
+    </ul>
+
+    <h3>阶段 IV：暴击与期望 (Crit Expectation)</h3>
+    <p>最终的 DPS 期望值：</p>
+    <div class="math-block">
+        $$DPS = Damage_{Final} \times [1 + Crit_{Rate} \times (Crit_{Dmg} - 1)] \times Atk_{Speed}$$
+    </div>
+
+    <h2>4. 数据配置规范 (YAML)</h2>
+    <p>所有数值均通过数据驱动，配置结构如下：</p>
+    <pre>
+skills:
+  - id: "skill_smite"
+    name: "重击"
+    tags: ["attack", "physical"] # 标签决定能吃什么加成
+    damage_components:
+      - type: "physical"
+        min: 100
+        max: 120
+        scaling_source: "str"    # 伤害挂钩属性
+        scaling_coef: 1.5
+
+modifiers:
+  - id: "mod_fire_glove"
+    name: "炎魔手套"
+    conversions:                 # 转化逻辑
+      - from: "physical"
+        to: "fire"
+        ratio: 0.5
+    stats:                       # 数值修正
+        inc_fire: 0.2            # Additive
+        more_damage: 0.1         # Multiplicative
+    </pre>
+
+    <h2>5. 特殊机制说明</h2>
+    <ul>
+        <li><strong>动态状态 (Dynamic State):</strong> 某些天赋（如狂战士）依赖 <code>Current_HP</code> 等运行时状态，在每一帧计算时动态注入公式。</li>
+        <li><strong>技能组件化:</strong> 技能可以是单纯的 Buff（如光环），也可以是触发器（如暴击释放），通过 <code>Tags</code> 进行交互。</li>
+    </ul>
+
+    <hr>
+    <p style="text-align: center;" class="no-print">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #e74c3c; color: white; border: none; border-radius: 5px;">🖨️ 保存为 PDF (Ctrl + P)</button>
+    </p>
+
+</body>
+</html>
