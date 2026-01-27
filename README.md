@@ -116,3 +116,10 @@ pytest
 ```bash
 python test_unified_interface.py
 ```
+
+## Theme: POE
+调整风格与尺寸的位置：
+- 颜色：`wuxing_board/board_render.py` -> `ELEMENT_COLORS`
+- 节点大小/形状/描边：`wuxing_board/board_render.py` -> `NODE_STYLE`
+- 发光与边线权重：`wuxing_board/board_render.py` -> `halo_alpha/halo_boost` 与边线 alpha/width
+- 画布尺寸：`unified_interface_modules.py` -> `render_wuxing_board_interface()` 中 `height=780` / `override_height=780`

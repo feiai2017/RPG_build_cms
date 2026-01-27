@@ -1262,103 +1262,112 @@ def render_complete_bagua_interface():
 
 
 def render_wuxing_board_interface():
-    """渲染新的五行棋盘界面"""
-    st.title("☯️ 五行棋盘")
-    st.caption("圆形扇区 + 对称节点，支持桥接、环线和高亮")
+    """??????????"""
+    st.title("?? ????")
+    st.caption("???? + ???????????????")
 
-    if st.toggle("使用旧版棋盘（Legacy）", value=False):
+    if st.toggle("???????Legacy?", value=False):
         render_complete_bagua_interface()
         return
 
     layout = generate_board()
 
-    st.markdown("### 控制面板")
     if "board_element_filter" not in st.session_state:
-        st.session_state.board_element_filter = "无"
+        st.session_state.board_element_filter = "??"
     if "board_type_filter" not in st.session_state:
-        st.session_state.board_type_filter = "无"
-
-    col_a, col_b, col_c = st.columns(3)
-    with col_a:
-        highlight_element = st.selectbox(
-            "高亮元素",
-            ["无"] + ELEMENTS,
-            index=0,
-        )
-    with col_b:
-        highlight_type = st.selectbox(
-            "高亮节点类型",
-            ["无"] + [t.value for t in NodeType],
-            index=0,
-        )
-    with col_c:
-        show_bridges = st.checkbox("显示桥接", value=True)
-        show_labels = st.checkbox("显示标签", value=True)
-        show_ring_guides = st.checkbox("显示环线", value=True)
-
-    if st.session_state.board_element_filter != "无":
-        highlight_element = st.session_state.board_element_filter
-    if st.session_state.board_type_filter != "无":
-        highlight_type = st.session_state.board_type_filter
-
-    highlight_type = None if highlight_type == "无" else NodeType(highlight_type)
+        st.session_state.board_type_filter = "??"
+    if "board_show_bridges" not in st.session_state:
+        st.session_state.board_show_bridges = True
+    if "board_show_labels" not in st.session_state:
+        st.session_state.board_show_labels = True
+    if "board_show_ring_guides" not in st.session_state:
+        st.session_state.board_show_ring_guides = True
+    if "board_search_query" not in st.session_state:
+        st.session_state.board_search_query = ""
 
     if "board_selected_nodes" not in st.session_state:
         st.session_state.board_selected_nodes = set()
+    if "board_hover_node" not in st.session_state:
+        st.session_state.board_hover_node = None
 
-    fig = render_board_plotly(
-        layout.nodes,
-        layout.edges,
-        highlight_element=None if highlight_element == "无" else highlight_element,
-        highlight_type=highlight_type,
-        show_bridges=show_bridges,
-        show_labels=show_labels,
-        show_ring_guides=show_ring_guides,
-        selected_nodes=st.session_state.board_selected_nodes,
-    )
+    search_matches = set()
+    left_col, right_col = st.columns([4, 1], gap="large")
+    with right_col:
+        st.markdown("### Filters")
+        with st.container(border=True):
+            st.radio("????", ["??"] + ELEMENTS, key="board_element_filter")
+            st.radio("????", ["??"] + [t.value for t in NodeType], key="board_type_filter")
+            search_query = st.text_input("Search node", key="board_search_query", placeholder="node_id / tag / keyword")
+            st.toggle("????", key="board_show_bridges")
+            st.toggle("????", key="board_show_labels")
+            st.toggle("????", key="board_show_ring_guides")
+            if search_query:
+                q = search_query.strip().lower()
+                for n in layout.nodes:
+                    if q in n.node_id.lower() or q in n.element.lower() or q in n.type.value.lower() or any(q in t.lower() for t in n.tags):
+                        search_matches.add(n.node_id)
+                if search_matches:
+                    preview = ", ".join(list(sorted(search_matches))[:6])
+                    st.caption(f"Matches: {preview}")
+            if st.button("????", use_container_width=True):
+                st.session_state.board_element_filter = "??"
+                st.session_state.board_type_filter = "??"
+                st.session_state.board_selected_nodes = set()
+                st.session_state.board_hover_node = None
+                st.session_state.board_search_query = ""
+                st.rerun()
+            st.markdown("---")
+            st.caption("Legend: ? small  ? medium  ? keystone  ? socket  ? bridge  ? convert")
 
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    events = plotly_events(
-        fig,
-        click_event=True,
-        select_event=False,
-        hover_event=False,
-        override_height=820,
-        key="wuxing-board",
-    )
-    if events:
-        node_id = events[0].get("customdata")
-        if node_id:
-            if node_id in st.session_state.board_selected_nodes:
-                st.session_state.board_selected_nodes.remove(node_id)
-            else:
-                st.session_state.board_selected_nodes.add(node_id)
-            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+    highlight_element = None if st.session_state.board_element_filter == "??" else st.session_state.board_element_filter
+    highlight_type = None if st.session_state.board_type_filter == "??" else NodeType(st.session_state.board_type_filter)
+    show_bridges = st.session_state.board_show_bridges
+    show_labels = st.session_state.board_show_labels
+    show_ring_guides = st.session_state.board_show_ring_guides
 
-    st.markdown("**图例与筛选**")
-    elem_cols = st.columns(5)
-    for idx, elem in enumerate(ELEMENTS):
-        if elem_cols[idx].button(elem, key=f"legend-elem-{elem}"):
-            st.session_state.board_element_filter = elem
-            st.rerun()
-    if st.button("清除元素高亮", key="legend-elem-clear"):
-        st.session_state.board_element_filter = "无"
-        st.rerun()
+    with left_col:
+        fig = render_board_plotly(
+            layout.nodes,
+            layout.edges,
+            highlight_element=highlight_element,
+            highlight_type=highlight_type,
+            show_bridges=show_bridges,
+            show_labels=show_labels,
+            show_ring_guides=show_ring_guides,
+            selected_nodes=st.session_state.board_selected_nodes,
+            height=780,
+            hovered_node=st.session_state.board_hover_node,
+            search_matches=search_matches,
+        )
 
-    type_cols = st.columns(3)
-    types = [NodeType.SMALL, NodeType.MEDIUM, NodeType.KEYSTONE, NodeType.SOCKET, NodeType.BRIDGE, NodeType.CONVERT]
-    for idx, t in enumerate(types):
-        if type_cols[idx % 3].button(t.value, key=f"legend-type-{t.value}"):
-            st.session_state.board_type_filter = t.value
-            st.rerun()
-    if st.button("清除类型高亮", key="legend-type-clear"):
-        st.session_state.board_type_filter = "无"
-        st.rerun()
-
-    st.markdown("**节点类型说明**：● 普通 / ◼︎ 中型 / ⬡ 关键 / ◆ 插槽 / ⬡ 桥接 / ⬡⇄ 转化")
-
-
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        events = plotly_events(
+            fig,
+            click_event=True,
+            select_event=False,
+            hover_event=True,
+            override_height=780,
+            key="wuxing-board",
+        )
+        if events:
+            event = events[0]
+            node_id = event.get("customdata")
+            event_type = event.get("event")
+            if node_id:
+                if event_type == "plotly_hover":
+                    st.session_state.board_hover_node = node_id
+                    st.rerun()
+                elif event_type == "plotly_unhover":
+                    st.session_state.board_hover_node = None
+                    st.rerun()
+                else:
+                    if node_id in st.session_state.board_selected_nodes:
+                        st.session_state.board_selected_nodes.remove(node_id)
+                    else:
+                        st.session_state.board_selected_nodes.add(node_id)
+                    st.session_state.board_hover_node = node_id
+                    st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 def render_wuxing_bagua_interface():
     """渲染五行棋盘界面（新布局）"""
     render_wuxing_board_interface()

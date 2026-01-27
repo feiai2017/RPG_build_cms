@@ -328,3 +328,59 @@
 
 ç»“æœï¼š
 - èŠ‚ç‚¹é€‰æ‹©å¯åœ¨æ£‹ç›˜å†…å®Œæˆï¼Œæ— éœ€å•ç‹¬åˆ—è¡¨ã€‚
+
+## Step 1 ¨C POE UI Fix layout & centering
+- Before: Plotly figure used fixed width/height (820x820) inside the card, so the right side stayed blank and the circle did not fill the container.
+- After: Remove fixed width, enable container width, tighten margins, keep aspect lock.
+- Layout params: use_container_width=True, height=780, margin(l=6,r=6,t=6,b=6), paper_bgcolor=#050505, plot_bgcolor=#050505, scaleanchor="x".
+
+Files:
+- unified_interface_modules.py
+- wuxing_board/board_render.py
+
+## Step 2 ¨C POE UI Visual hierarchy (nodes over lines)
+- Reduced base edge weight: intra/radial now width 0.8, alpha 0.12 (dimmed to 0.05 when a node is active); bridge edges width 1.4, alpha 0.22 (dimmed to 0.10 on active).
+- Added local-neighborhood highlight: edges incident to hovered/selected nodes re-drawn with brighter cyan and thicker width.
+- Interaction: hover/click events update board_hover_node and selected nodes to drive edge emphasis.
+
+Files:
+- unified_interface_modules.py
+- wuxing_board/board_render.py
+
+## Step 3 ¨C POE UI Node tier styling
+- Updated node symbols/sizes: SMALL circle 9, MEDIUM diamond 13, KEYSTONE hexagon 19, SOCKET diamond 17, CONVERT hexagon 17, BRIDGE hexagon 13.
+- Added glow via halo scatter behind nodes; keystones get stronger halo.
+- Added socket inner-hole marker and convert overlay text (?). Bridge outlines now cyan-bright.
+
+Files:
+- wuxing_board/board_render.py
+
+## Step 4 ¨C POE UI Regional plates & ring guides
+- Added 5 translucent sector wedges (paths) behind nodes using element colors at low alpha.
+- Ring guides set to low-alpha dotted circles; element labels now larger with a subtle glow (double text traces).
+
+Files:
+- wuxing_board/board_render.py
+
+## Step 5 ¨C POE UI Legend & filters redesigned
+- Layout switched to columns [4,1]: left plot, right compact filter panel.
+- Filters now in a single card: element radio, node type radio, toggles (bridges/labels/rings), plus Reset highlight.
+- Removed scattered legend buttons; legend condensed inside panel.
+
+Files:
+- unified_interface_modules.py
+
+## Step 6 ¨C POE UI Search / highlight
+- Added ¡°Search node¡± input in the filter panel (matches node_id, element, type, or tags).
+- Matching nodes stay bright while others dim; incident edges also brighten via active_nodes.
+- Optional match preview list shown in panel.
+
+Files:
+- unified_interface_modules.py
+- wuxing_board/board_render.py
+
+## Step 7 ¨C POE UI Final polish & docs
+- Added README ¡°Theme: POE¡± section with pointers for sizes/colors/glow adjustments.
+
+Files:
+- README.md
