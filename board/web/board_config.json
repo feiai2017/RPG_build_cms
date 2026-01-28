@@ -1,0 +1,33 @@
+﻿{
+  "ruleset_version": "v1.1",
+  "ring_map": {
+    "core": "inner",
+    "r1": "inner",
+    "r2": "mid",
+    "r3": "outer"
+  },
+  "realm_rules": {
+    "炼气": {"qi_cap": 10, "rings": ["inner", "mid"]},
+    "筑基": {"qi_cap": 14, "rings": ["inner", "mid"]},
+    "金丹": {"qi_cap": 18, "rings": ["inner", "mid", "outer"]},
+    "元婴": {"qi_cap": 22, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["inner_core"]},
+    "化神": {"qi_cap": 26, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "合体": {"qi_cap": 30, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "大乘": {"qi_cap": 34, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "陆地神仙": {"qi_cap": 40, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["reconfig"]}
+  },
+  "inner_core": {"slots": 8, "radius": 90},
+  "bridge_threshold_deg": 12,
+  "bridge_slots": {
+    "inner": [0, 3, 6, 9],
+    "mid": [1, 5, 9, 13],
+    "outer": [2, 7, 12, 17],
+    "inner_core": [0, 2, 4, 6]
+  },
+  "bridge_pairs": [
+    ["inner", "mid"],
+    ["mid", "outer"],
+    ["inner_core", "inner"]
+  ],
+  "qi_cost": {"small": 1, "major": 2}
+}

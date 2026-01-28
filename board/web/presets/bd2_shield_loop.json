@@ -1,0 +1,6 @@
+﻿{
+  "name": "shield_loop",
+  "realm": "元婴",
+  "rot_deg": {"inner": 0, "mid": 15, "outer": 0},
+  "invested": ["core", "inner_0", "inner_1", "inner_2", "mid_1", "mid_2", "mid_3", "inner_core_0", "inner_core_2"]
+}

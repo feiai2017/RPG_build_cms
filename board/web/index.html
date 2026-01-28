@@ -3,35 +3,167 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>五行同心环棋盘</title>
+  <title>五行天赋盘 · Play Mode</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
 </head>
 <body>
   <div id="app">
     <div id="canvas-container"></div>
-    <div id="panel">
-      <div class="panel-header">五行棋盘 · 参数面板</div>
-      <div class="panel-group">
-        <label><input type="checkbox" id="toggle-sectors" checked /> 显示扇区底色</label>
-        <label><input type="checkbox" id="toggle-rings" checked /> 显示环线</label>
-        <label><input type="checkbox" id="toggle-edges" checked /> 显示连线</label>
+
+    <div id="steps-bar">
+      <div class="step" data-step="1">① 点亮节点</div>
+      <div class="step" data-step="2">② 保持供电（带宽/断电）</div>
+      <div class="step" data-step="3">③ 旋转改变连通性</div>
+    </div>
+
+    <div id="hud">
+      <div class="hud-title">五行天赋盘 · Play Mode</div>
+      <div class="hud-item">
+        <span class="hud-icon">◇</span>
+        境界
+        <select id="realm-select"></select>
       </div>
-      <div class="panel-group">
-        <label>Glow 强度 <input type="range" id="glow-strength" min="0" max="1" step="0.01" value="0.18" /></label>
-        <label>Edges 强度 <input type="range" id="edge-strength" min="0.1" max="1" step="0.01" value="0.55" /></label>
-        <label>Sector 透明度 <input type="range" id="sector-opacity" min="0" max="0.12" step="0.005" value="0.05" /></label>
-        <label>Ring 强度 <input type="range" id="ring-strength" min="0.1" max="1" step="0.01" value="0.55" /></label>
-        <label>缩放 <input type="range" id="scale" min="0.6" max="1.6" step="0.01" value="1" /></label>
+      <div class="hud-item">
+        <span class="hud-icon">⚡</span>
+        Qi 带宽
+        <span id="hud-qi">0 / 0</span>
       </div>
-      <div class="panel-group">
-        <label>搜索 node_id</label>
-        <input type="text" id="search" placeholder="例如 r2-木-3" />
-        <div id="search-result"></div>
+      <div class="hud-item">
+        <span class="hud-icon">◈</span>
+        已点亮 / 通电
+        <span id="hud-counts">0 / 0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⚖</span>
+        生克 / 噪声
+        <span id="hud-bonus">无</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⬤</span>
+        高对比
+        <input type="checkbox" id="toggle-contrast" />
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⛓</span>
+        显示断线
+        <input type="checkbox" id="toggle-broken" />
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">◎</span>
+        选择环
+        <select id="ring-select">
+          <option value="inner">内环</option>
+          <option value="mid" selected>中环</option>
+          <option value="outer">外环</option>
+        </select>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⟳</span>
+        连续旋转
+        <input type="checkbox" id="rotate-continuous" />
+      </div>
+      <div class="hud-rotate">
+        <button id="rotate-left" aria-label="rotate left">Q</button>
+        <div id="rotate-knob">旋转中环</div>
+        <button id="rotate-right" aria-label="rotate right">E</button>
+      </div>
+      <div class="hud-sub">Shift+滚轮 旋转</div>
+      <button id="reconfig-btn" class="hud-action hidden">重构模式</button>
+      <div class="hud-meta">
+        <div>cfg_hash <span id="cfg-hash">-</span></div>
+        <div>ruleset <span id="cfg-version">-</span></div>
+        <div>rot_deg <span id="cfg-rot">-</span></div>
       </div>
     </div>
+
+    <div id="panel">
+      <div class="panel-header">节点详情</div>
+      <div class="detail-grid">
+        <div>名称 <span id="detail-name">核心 BIOS</span></div>
+        <div>元素 <span id="detail-element">土</span></div>
+        <div>类型 <span id="detail-type">core</span></div>
+        <div>卦象 <span id="detail-trigram">坤 · 基底</span></div>
+        <div>元件 <span id="detail-component">—</span></div>
+        <div>效果 <span id="detail-effect">点击相邻节点开始</span></div>
+        <div>供电状态 <span id="detail-power">未通电</span></div>
+        <div>断电原因 <span id="detail-reason">—</span></div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <div class="panel-header">构筑属性汇总</div>
+      <div class="stat-grid">
+        <div>攻击 <span id="stat-atk">0</span></div>
+        <div>暴击 <span id="stat-crit">0</span></div>
+        <div>生命 <span id="stat-hp">0</span></div>
+        <div>护盾 <span id="stat-shield">0</span></div>
+        <div>回蓝 <span id="stat-mana">0</span></div>
+        <div>回能 <span id="stat-regen">0</span></div>
+      </div>
+      <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
+
+      <div id="reconfig-panel" class="reconfig hidden">
+        <div class="panel-header">槽位重构</div>
+        <label>节点
+          <select id="reconfig-node"></select>
+        </label>
+        <label>目标槽位
+          <select id="reconfig-slot"></select>
+        </label>
+        <button id="reconfig-apply">应用重构</button>
+      </div>
+
+      <div class="how-to">怎么玩：点亮→保持通电→旋转寻找新接触。</div>
+    </div>
+
+    <button id="dev-toggle" title="Dev Mode">🛠</button>
+    <div id="dev-drawer" class="hidden">
+      <div class="dev-header">Dev Mode</div>
+      <label><input type="checkbox" id="toggle-sectors" checked /> 显示扇区底色</label>
+      <label><input type="checkbox" id="toggle-rings" checked /> 显示环线</label>
+      <label><input type="checkbox" id="toggle-edges" checked /> 显示连线</label>
+      <label><input type="checkbox" id="toggle-labels" /> 显示节点编号</label>
+      <label>配置版本 <span id="cfg-mtime">-</span></label>
+      <label>滑环通道 <input type="range" id="channel-count" min="1" max="5" step="1" value="3" /></label>
+      <label>接触阈值 <input type="range" id="contact-threshold" min="35" max="90" step="1" value="62" /></label>
+      <label>Glow 强度 <input type="range" id="glow-strength" min="0" max="1" step="0.01" value="0.18" /></label>
+      <label>Edges 强度 <input type="range" id="edge-strength" min="0.1" max="1" step="0.01" value="0.6" /></label>
+      <label>Sector 透明度 <input type="range" id="sector-opacity" min="0" max="0.12" step="0.005" value="0.05" /></label>
+      <label>Ring 强度 <input type="range" id="ring-strength" min="0.1" max="1" step="0.01" value="0.55" /></label>
+      <label>缩放 <input type="range" id="scale" min="0.7" max="1.6" step="0.01" value="1" /></label>
+      <label>搜索节点 <input type="text" id="search" placeholder="node_id" /></label>
+      <div id="search-result"></div>
+      <div class="dev-row">
+        <button id="reload-config">Reload Config</button>
+        <button id="export-current">Export Current</button>
+        <button id="reset-session">Reset Session</button>
+      </div>
+      <label>预设</label>
+      <select id="preset-select"></select>
+      <button id="load-preset">Load Preset</button>
+      <label><input type="checkbox" id="toggle-sfx" checked /> 音效</label>
+      <button id="undo-btn">撤销 (右键)</button>
+      <button id="guide-btn">重新查看引导</button>
+    </div>
+
+    <div id="guide" class="guide hidden">
+      <div class="guide-card">
+        <div class="guide-title">新手引导</div>
+        <div class="guide-step" data-step="1">① 点击核心开始通电</div>
+        <div class="guide-step" data-step="2">② 点亮相邻节点传导灵力</div>
+        <div class="guide-step" data-step="3">③ 使用旋转触发连通变化</div>
+        <div class="guide-actions">
+          <button id="guide-skip">跳过</button>
+          <button id="guide-next">下一步</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="feedback" class="feedback hidden"></div>
     <div id="tooltip" class="tooltip"></div>
   </div>
+
   <script src="board.js"></script>
 </body>
 </html>
