@@ -1,0 +1,1718 @@
+{
+  "meta": {
+    "version": 1,
+    "elements": [
+      "木",
+      "金",
+      "土",
+      "火",
+      "水"
+    ],
+    "colors": {
+      "金": "#E6E6E6",
+      "木": "#39D98A",
+      "水": "#3AA0FF",
+      "火": "#FF4D4D",
+      "土": "#FFD166"
+    }
+  },
+  "rings": [
+    {
+      "id": "core",
+      "radius": 0
+    },
+    {
+      "id": "r1",
+      "radius": 140
+    },
+    {
+      "id": "r2",
+      "radius": 220
+    },
+    {
+      "id": "r3",
+      "radius": 305
+    }
+  ],
+  "nodes": [
+    {
+      "id": "core",
+      "ring": "core",
+      "element": "土",
+      "type": "core",
+      "angle": 0.0,
+      "radius": 0.0,
+      "x": 0.0,
+      "y": 0.0,
+      "label": "BIOS",
+      "tags": [
+        "core",
+        "bios"
+      ]
+    },
+    {
+      "id": "r1-木-1",
+      "ring": "r1",
+      "element": "木",
+      "type": "keystone",
+      "angle": 0.15708,
+      "radius": 140,
+      "x": 138.276,
+      "y": 21.901,
+      "label": "1",
+      "tags": [
+        "ring:r1",
+        "sector:木",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r1-木-2",
+      "ring": "r1",
+      "element": "木",
+      "type": "small",
+      "angle": 0.471239,
+      "radius": 140,
+      "x": 124.741,
+      "y": 63.559,
+      "label": "2",
+      "tags": [
+        "ring:r1",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-木-3",
+      "ring": "r1",
+      "element": "木",
+      "type": "small",
+      "angle": 0.785398,
+      "radius": 140,
+      "x": 98.995,
+      "y": 98.995,
+      "label": "3",
+      "tags": [
+        "ring:r1",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-木-4",
+      "ring": "r1",
+      "element": "木",
+      "type": "small",
+      "angle": 1.099557,
+      "radius": 140,
+      "x": 63.559,
+      "y": 124.741,
+      "label": "4",
+      "tags": [
+        "ring:r1",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-金-1",
+      "ring": "r1",
+      "element": "金",
+      "type": "keystone",
+      "angle": 1.466077,
+      "radius": 140,
+      "x": 14.634,
+      "y": 139.233,
+      "label": "1",
+      "tags": [
+        "ring:r1",
+        "sector:金",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r1-金-2",
+      "ring": "r1",
+      "element": "金",
+      "type": "small",
+      "angle": 1.884956,
+      "radius": 140,
+      "x": -43.262,
+      "y": 133.148,
+      "label": "2",
+      "tags": [
+        "ring:r1",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-金-3",
+      "ring": "r1",
+      "element": "金",
+      "type": "small",
+      "angle": 2.303835,
+      "radius": 140,
+      "x": -93.678,
+      "y": 104.04,
+      "label": "3",
+      "tags": [
+        "ring:r1",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-土-1",
+      "ring": "r1",
+      "element": "土",
+      "type": "keystone",
+      "angle": 2.722714,
+      "radius": 140,
+      "x": -127.896,
+      "y": 56.943,
+      "label": "1",
+      "tags": [
+        "ring:r1",
+        "sector:土",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r1-土-2",
+      "ring": "r1",
+      "element": "土",
+      "type": "small",
+      "angle": 3.141593,
+      "radius": 140,
+      "x": -140.0,
+      "y": 0.0,
+      "label": "2",
+      "tags": [
+        "ring:r1",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-土-3",
+      "ring": "r1",
+      "element": "土",
+      "type": "small",
+      "angle": 3.560472,
+      "radius": 140,
+      "x": -127.896,
+      "y": -56.943,
+      "label": "3",
+      "tags": [
+        "ring:r1",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-火-1",
+      "ring": "r1",
+      "element": "火",
+      "type": "keystone",
+      "angle": 3.979351,
+      "radius": 140,
+      "x": -93.678,
+      "y": -104.04,
+      "label": "1",
+      "tags": [
+        "ring:r1",
+        "sector:火",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r1-火-2",
+      "ring": "r1",
+      "element": "火",
+      "type": "small",
+      "angle": 4.39823,
+      "radius": 140,
+      "x": -43.262,
+      "y": -133.148,
+      "label": "2",
+      "tags": [
+        "ring:r1",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-火-3",
+      "ring": "r1",
+      "element": "火",
+      "type": "small",
+      "angle": 4.817109,
+      "radius": 140,
+      "x": 14.634,
+      "y": -139.233,
+      "label": "3",
+      "tags": [
+        "ring:r1",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-水-1",
+      "ring": "r1",
+      "element": "水",
+      "type": "keystone",
+      "angle": 5.235988,
+      "radius": 140,
+      "x": 70.0,
+      "y": -121.244,
+      "label": "1",
+      "tags": [
+        "ring:r1",
+        "sector:水",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r1-水-2",
+      "ring": "r1",
+      "element": "水",
+      "type": "small",
+      "angle": 5.654867,
+      "radius": 140,
+      "x": 113.262,
+      "y": -82.29,
+      "label": "2",
+      "tags": [
+        "ring:r1",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r1-水-3",
+      "ring": "r1",
+      "element": "水",
+      "type": "small",
+      "angle": 6.073746,
+      "radius": 140,
+      "x": 136.941,
+      "y": -29.108,
+      "label": "3",
+      "tags": [
+        "ring:r1",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-木-1",
+      "ring": "r2",
+      "element": "木",
+      "type": "keystone",
+      "angle": 0.125664,
+      "radius": 220,
+      "x": 218.265,
+      "y": 27.573,
+      "label": "1",
+      "tags": [
+        "ring:r2",
+        "sector:木",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r2-木-2",
+      "ring": "r2",
+      "element": "木",
+      "type": "small",
+      "angle": 0.376991,
+      "radius": 220,
+      "x": 204.551,
+      "y": 80.987,
+      "label": "2",
+      "tags": [
+        "ring:r2",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-木-3",
+      "ring": "r2",
+      "element": "木",
+      "type": "convert",
+      "angle": 0.628319,
+      "radius": 220,
+      "x": 177.984,
+      "y": 129.313,
+      "label": "3",
+      "tags": [
+        "ring:r2",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-木-4",
+      "ring": "r2",
+      "element": "木",
+      "type": "bridge",
+      "angle": 0.879646,
+      "radius": 220,
+      "x": 140.233,
+      "y": 169.513,
+      "label": "4",
+      "tags": [
+        "ring:r2",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-木-5",
+      "ring": "r2",
+      "element": "木",
+      "type": "medium",
+      "angle": 1.130973,
+      "radius": 220,
+      "x": 93.671,
+      "y": 199.062,
+      "label": "5",
+      "tags": [
+        "ring:r2",
+        "sector:木",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r2-金-1",
+      "ring": "r2",
+      "element": "金",
+      "type": "keystone",
+      "angle": 1.382301,
+      "radius": 220,
+      "x": 41.224,
+      "y": 216.103,
+      "label": "1",
+      "tags": [
+        "ring:r2",
+        "sector:金",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r2-金-2",
+      "ring": "r2",
+      "element": "金",
+      "type": "small",
+      "angle": 1.633628,
+      "radius": 220,
+      "x": -13.814,
+      "y": 219.566,
+      "label": "2",
+      "tags": [
+        "ring:r2",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-金-3",
+      "ring": "r2",
+      "element": "金",
+      "type": "convert",
+      "angle": 1.884956,
+      "radius": 220,
+      "x": -67.984,
+      "y": 209.232,
+      "label": "3",
+      "tags": [
+        "ring:r2",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-金-4",
+      "ring": "r2",
+      "element": "金",
+      "type": "bridge",
+      "angle": 2.136283,
+      "radius": 220,
+      "x": -117.882,
+      "y": 185.752,
+      "label": "4",
+      "tags": [
+        "ring:r2",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-金-5",
+      "ring": "r2",
+      "element": "金",
+      "type": "medium",
+      "angle": 2.38761,
+      "radius": 220,
+      "x": -160.373,
+      "y": 150.6,
+      "label": "5",
+      "tags": [
+        "ring:r2",
+        "sector:金",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r2-土-1",
+      "ring": "r2",
+      "element": "土",
+      "type": "keystone",
+      "angle": 2.638938,
+      "radius": 220,
+      "x": -192.787,
+      "y": 105.986,
+      "label": "1",
+      "tags": [
+        "ring:r2",
+        "sector:土",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r2-土-2",
+      "ring": "r2",
+      "element": "土",
+      "type": "small",
+      "angle": 2.890265,
+      "radius": 220,
+      "x": -213.088,
+      "y": 54.712,
+      "label": "2",
+      "tags": [
+        "ring:r2",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-土-3",
+      "ring": "r2",
+      "element": "土",
+      "type": "convert",
+      "angle": 3.141593,
+      "radius": 220,
+      "x": -220.0,
+      "y": 0.0,
+      "label": "3",
+      "tags": [
+        "ring:r2",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-土-4",
+      "ring": "r2",
+      "element": "土",
+      "type": "bridge",
+      "angle": 3.39292,
+      "radius": 220,
+      "x": -213.088,
+      "y": -54.712,
+      "label": "4",
+      "tags": [
+        "ring:r2",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-土-5",
+      "ring": "r2",
+      "element": "土",
+      "type": "medium",
+      "angle": 3.644247,
+      "radius": 220,
+      "x": -192.787,
+      "y": -105.986,
+      "label": "5",
+      "tags": [
+        "ring:r2",
+        "sector:土",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r2-火-1",
+      "ring": "r2",
+      "element": "火",
+      "type": "keystone",
+      "angle": 3.895575,
+      "radius": 220,
+      "x": -160.373,
+      "y": -150.6,
+      "label": "1",
+      "tags": [
+        "ring:r2",
+        "sector:火",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r2-火-2",
+      "ring": "r2",
+      "element": "火",
+      "type": "small",
+      "angle": 4.146902,
+      "radius": 220,
+      "x": -117.882,
+      "y": -185.752,
+      "label": "2",
+      "tags": [
+        "ring:r2",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-火-3",
+      "ring": "r2",
+      "element": "火",
+      "type": "convert",
+      "angle": 4.39823,
+      "radius": 220,
+      "x": -67.984,
+      "y": -209.232,
+      "label": "3",
+      "tags": [
+        "ring:r2",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-火-4",
+      "ring": "r2",
+      "element": "火",
+      "type": "bridge",
+      "angle": 4.649557,
+      "radius": 220,
+      "x": -13.814,
+      "y": -219.566,
+      "label": "4",
+      "tags": [
+        "ring:r2",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-火-5",
+      "ring": "r2",
+      "element": "火",
+      "type": "medium",
+      "angle": 4.900885,
+      "radius": 220,
+      "x": 41.224,
+      "y": -216.103,
+      "label": "5",
+      "tags": [
+        "ring:r2",
+        "sector:火",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r2-水-1",
+      "ring": "r2",
+      "element": "水",
+      "type": "keystone",
+      "angle": 5.183628,
+      "radius": 220,
+      "x": 99.878,
+      "y": -196.021,
+      "label": "1",
+      "tags": [
+        "ring:r2",
+        "sector:水",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r2-水-2",
+      "ring": "r2",
+      "element": "水",
+      "type": "convert",
+      "angle": 5.497787,
+      "radius": 220,
+      "x": 155.563,
+      "y": -155.563,
+      "label": "2",
+      "tags": [
+        "ring:r2",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-水-3",
+      "ring": "r2",
+      "element": "水",
+      "type": "bridge",
+      "angle": 5.811946,
+      "radius": 220,
+      "x": 196.021,
+      "y": -99.878,
+      "label": "3",
+      "tags": [
+        "ring:r2",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r2-水-4",
+      "ring": "r2",
+      "element": "水",
+      "type": "small",
+      "angle": 6.126106,
+      "radius": 220,
+      "x": 217.291,
+      "y": -34.416,
+      "label": "4",
+      "tags": [
+        "ring:r2",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-木-1",
+      "ring": "r3",
+      "element": "木",
+      "type": "keystone",
+      "angle": 0.08976,
+      "radius": 305,
+      "x": 303.772,
+      "y": 27.34,
+      "label": "1",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r3-木-2",
+      "ring": "r3",
+      "element": "木",
+      "type": "small",
+      "angle": 0.269279,
+      "radius": 305,
+      "x": 294.009,
+      "y": 81.141,
+      "label": "2",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-木-3",
+      "ring": "r3",
+      "element": "木",
+      "type": "small",
+      "angle": 0.448799,
+      "radius": 305,
+      "x": 274.796,
+      "y": 132.335,
+      "label": "3",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-木-4",
+      "ring": "r3",
+      "element": "木",
+      "type": "small",
+      "angle": 0.628319,
+      "radius": 305,
+      "x": 246.75,
+      "y": 179.275,
+      "label": "4",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-木-5",
+      "ring": "r3",
+      "element": "木",
+      "type": "convert",
+      "angle": 0.807838,
+      "radius": 305,
+      "x": 210.774,
+      "y": 220.452,
+      "label": "5",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r3-木-6",
+      "ring": "r3",
+      "element": "木",
+      "type": "bridge",
+      "angle": 0.987358,
+      "radius": 305,
+      "x": 168.024,
+      "y": 254.545,
+      "label": "6",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-木-7",
+      "ring": "r3",
+      "element": "木",
+      "type": "small",
+      "angle": 1.166877,
+      "radius": 305,
+      "x": 119.873,
+      "y": 280.456,
+      "label": "7",
+      "tags": [
+        "ring:r3",
+        "sector:木",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-金-1",
+      "ring": "r3",
+      "element": "金",
+      "type": "keystone",
+      "angle": 1.361357,
+      "radius": 305,
+      "x": 63.413,
+      "y": 298.335,
+      "label": "1",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r3-金-2",
+      "ring": "r3",
+      "element": "金",
+      "type": "small",
+      "angle": 1.570796,
+      "radius": 305,
+      "x": 0.0,
+      "y": 305.0,
+      "label": "2",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-金-3",
+      "ring": "r3",
+      "element": "金",
+      "type": "small",
+      "angle": 1.780236,
+      "radius": 305,
+      "x": -63.413,
+      "y": 298.335,
+      "label": "3",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-金-4",
+      "ring": "r3",
+      "element": "金",
+      "type": "convert",
+      "angle": 1.989675,
+      "radius": 305,
+      "x": -124.055,
+      "y": 278.631,
+      "label": "4",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-金-5",
+      "ring": "r3",
+      "element": "金",
+      "type": "bridge",
+      "angle": 2.199115,
+      "radius": 305,
+      "x": -179.275,
+      "y": 246.75,
+      "label": "5",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r3-金-6",
+      "ring": "r3",
+      "element": "金",
+      "type": "small",
+      "angle": 2.408554,
+      "radius": 305,
+      "x": -226.659,
+      "y": 204.085,
+      "label": "6",
+      "tags": [
+        "ring:r3",
+        "sector:金",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-土-1",
+      "ring": "r3",
+      "element": "土",
+      "type": "keystone",
+      "angle": 2.603034,
+      "radius": 305,
+      "x": -261.827,
+      "y": 156.434,
+      "label": "1",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r3-土-2",
+      "ring": "r3",
+      "element": "土",
+      "type": "small",
+      "angle": 2.782553,
+      "radius": 305,
+      "x": -285.552,
+      "y": 107.169,
+      "label": "2",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-土-3",
+      "ring": "r3",
+      "element": "土",
+      "type": "small",
+      "angle": 2.962073,
+      "radius": 305,
+      "x": -300.099,
+      "y": 54.46,
+      "label": "3",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-土-4",
+      "ring": "r3",
+      "element": "土",
+      "type": "small",
+      "angle": 3.141593,
+      "radius": 305,
+      "x": -305.0,
+      "y": 0.0,
+      "label": "4",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-土-5",
+      "ring": "r3",
+      "element": "土",
+      "type": "convert",
+      "angle": 3.321112,
+      "radius": 305,
+      "x": -300.099,
+      "y": -54.46,
+      "label": "5",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r3-土-6",
+      "ring": "r3",
+      "element": "土",
+      "type": "bridge",
+      "angle": 3.500632,
+      "radius": 305,
+      "x": -285.552,
+      "y": -107.169,
+      "label": "6",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-土-7",
+      "ring": "r3",
+      "element": "土",
+      "type": "small",
+      "angle": 3.680151,
+      "radius": 305,
+      "x": -261.827,
+      "y": -156.434,
+      "label": "7",
+      "tags": [
+        "ring:r3",
+        "sector:土",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-火-1",
+      "ring": "r3",
+      "element": "火",
+      "type": "keystone",
+      "angle": 3.874631,
+      "radius": 305,
+      "x": -226.659,
+      "y": -204.085,
+      "label": "1",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r3-火-2",
+      "ring": "r3",
+      "element": "火",
+      "type": "small",
+      "angle": 4.08407,
+      "radius": 305,
+      "x": -179.275,
+      "y": -246.75,
+      "label": "2",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-火-3",
+      "ring": "r3",
+      "element": "火",
+      "type": "small",
+      "angle": 4.29351,
+      "radius": 305,
+      "x": -124.055,
+      "y": -278.631,
+      "label": "3",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-火-4",
+      "ring": "r3",
+      "element": "火",
+      "type": "convert",
+      "angle": 4.502949,
+      "radius": 305,
+      "x": -63.413,
+      "y": -298.335,
+      "label": "4",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-火-5",
+      "ring": "r3",
+      "element": "火",
+      "type": "bridge",
+      "angle": 4.712389,
+      "radius": 305,
+      "x": -0.0,
+      "y": -305.0,
+      "label": "5",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r3-火-6",
+      "ring": "r3",
+      "element": "火",
+      "type": "small",
+      "angle": 4.921828,
+      "radius": 305,
+      "x": 63.413,
+      "y": -298.335,
+      "label": "6",
+      "tags": [
+        "ring:r3",
+        "sector:火",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-水-1",
+      "ring": "r3",
+      "element": "水",
+      "type": "keystone",
+      "angle": 5.131268,
+      "radius": 305,
+      "x": 124.055,
+      "y": -278.631,
+      "label": "1",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:keystone"
+      ]
+    },
+    {
+      "id": "r3-水-2",
+      "ring": "r3",
+      "element": "水",
+      "type": "small",
+      "angle": 5.340708,
+      "radius": 305,
+      "x": 179.275,
+      "y": -246.75,
+      "label": "2",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-水-3",
+      "ring": "r3",
+      "element": "水",
+      "type": "small",
+      "angle": 5.550147,
+      "radius": 305,
+      "x": 226.659,
+      "y": -204.085,
+      "label": "3",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-水-4",
+      "ring": "r3",
+      "element": "水",
+      "type": "convert",
+      "angle": 5.759587,
+      "radius": 305,
+      "x": 264.138,
+      "y": -152.5,
+      "label": "4",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:small"
+      ]
+    },
+    {
+      "id": "r3-水-5",
+      "ring": "r3",
+      "element": "水",
+      "type": "bridge",
+      "angle": 5.969026,
+      "radius": 305,
+      "x": 290.072,
+      "y": -94.25,
+      "label": "5",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:medium"
+      ]
+    },
+    {
+      "id": "r3-水-6",
+      "ring": "r3",
+      "element": "水",
+      "type": "small",
+      "angle": 6.178466,
+      "radius": 305,
+      "x": 303.329,
+      "y": -31.881,
+      "label": "6",
+      "tags": [
+        "ring:r3",
+        "sector:水",
+        "type:small"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "a": "r1-木-1",
+      "b": "r1-木-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-木-2",
+      "b": "r1-木-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-木-3",
+      "b": "r1-木-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-金-1",
+      "b": "r1-金-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-金-2",
+      "b": "r1-金-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-土-1",
+      "b": "r1-土-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-土-2",
+      "b": "r1-土-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-火-1",
+      "b": "r1-火-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-火-2",
+      "b": "r1-火-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-水-1",
+      "b": "r1-水-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-水-2",
+      "b": "r1-水-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-木-1",
+      "b": "r2-木-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-木-2",
+      "b": "r2-木-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-木-3",
+      "b": "r2-木-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-木-4",
+      "b": "r2-木-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-金-1",
+      "b": "r2-金-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-金-2",
+      "b": "r2-金-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-金-3",
+      "b": "r2-金-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-金-4",
+      "b": "r2-金-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-土-1",
+      "b": "r2-土-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-土-2",
+      "b": "r2-土-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-土-3",
+      "b": "r2-土-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-土-4",
+      "b": "r2-土-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-火-1",
+      "b": "r2-火-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-火-2",
+      "b": "r2-火-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-火-3",
+      "b": "r2-火-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-火-4",
+      "b": "r2-火-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-水-1",
+      "b": "r2-水-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-水-2",
+      "b": "r2-水-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r2-水-3",
+      "b": "r2-水-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-1",
+      "b": "r3-木-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-2",
+      "b": "r3-木-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-3",
+      "b": "r3-木-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-4",
+      "b": "r3-木-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-5",
+      "b": "r3-木-6",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-木-6",
+      "b": "r3-木-7",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-金-1",
+      "b": "r3-金-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-金-2",
+      "b": "r3-金-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-金-3",
+      "b": "r3-金-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-金-4",
+      "b": "r3-金-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-金-5",
+      "b": "r3-金-6",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-1",
+      "b": "r3-土-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-2",
+      "b": "r3-土-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-3",
+      "b": "r3-土-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-4",
+      "b": "r3-土-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-5",
+      "b": "r3-土-6",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-土-6",
+      "b": "r3-土-7",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-火-1",
+      "b": "r3-火-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-火-2",
+      "b": "r3-火-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-火-3",
+      "b": "r3-火-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-火-4",
+      "b": "r3-火-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-火-5",
+      "b": "r3-火-6",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-水-1",
+      "b": "r3-水-2",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-水-2",
+      "b": "r3-水-3",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-水-3",
+      "b": "r3-水-4",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-水-4",
+      "b": "r3-水-5",
+      "kind": "ring"
+    },
+    {
+      "a": "r3-水-5",
+      "b": "r3-水-6",
+      "kind": "ring"
+    },
+    {
+      "a": "r1-木-2",
+      "b": "r2-木-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-木-3",
+      "b": "r2-木-4",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-金-1",
+      "b": "r2-金-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-金-3",
+      "b": "r2-金-4",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-土-1",
+      "b": "r2-土-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-土-3",
+      "b": "r2-土-4",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-火-1",
+      "b": "r2-火-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-火-3",
+      "b": "r2-火-4",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-水-1",
+      "b": "r2-水-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r1-水-3",
+      "b": "r2-水-3",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-木-2",
+      "b": "r3-木-3",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-木-4",
+      "b": "r3-木-5",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-金-2",
+      "b": "r3-金-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-金-4",
+      "b": "r3-金-5",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-土-2",
+      "b": "r3-土-3",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-土-4",
+      "b": "r3-土-5",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-火-2",
+      "b": "r3-火-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-火-4",
+      "b": "r3-火-5",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-水-2",
+      "b": "r3-水-2",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-水-3",
+      "b": "r3-水-5",
+      "kind": "radial"
+    },
+    {
+      "a": "core",
+      "b": "r1-木-1",
+      "kind": "radial"
+    },
+    {
+      "a": "core",
+      "b": "r1-金-1",
+      "kind": "radial"
+    },
+    {
+      "a": "core",
+      "b": "r1-土-1",
+      "kind": "radial"
+    },
+    {
+      "a": "core",
+      "b": "r1-火-1",
+      "kind": "radial"
+    },
+    {
+      "a": "core",
+      "b": "r1-水-1",
+      "kind": "radial"
+    },
+    {
+      "a": "r2-木-3",
+      "b": "r2-水-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-木-4",
+      "b": "r2-金-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-金-3",
+      "b": "r2-木-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-金-4",
+      "b": "r2-土-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-土-3",
+      "b": "r2-金-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-土-4",
+      "b": "r2-火-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-火-3",
+      "b": "r2-土-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-火-4",
+      "b": "r2-水-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-水-2",
+      "b": "r2-火-3",
+      "kind": "special"
+    },
+    {
+      "a": "r2-水-3",
+      "b": "r2-木-3",
+      "kind": "special"
+    },
+    {
+      "a": "r3-木-5",
+      "b": "r3-水-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-木-6",
+      "b": "r3-金-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-金-4",
+      "b": "r3-木-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-金-5",
+      "b": "r3-土-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-土-5",
+      "b": "r3-金-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-土-6",
+      "b": "r3-火-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-火-4",
+      "b": "r3-土-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-火-5",
+      "b": "r3-水-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-水-4",
+      "b": "r3-火-4",
+      "kind": "special"
+    },
+    {
+      "a": "r3-水-5",
+      "b": "r3-木-4",
+      "kind": "special"
+    }
+  ]
+}
