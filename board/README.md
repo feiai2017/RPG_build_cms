@@ -35,6 +35,14 @@ python -m http.server 8000
 ```
 浏览器访问 `http://localhost:8000`。
 
+## 交互操作
+- 拖拽棋盘：旋转当前选中环（松手带惯性，2~4 秒内停止）。
+- 滚轮：微调当前选中环（键盘不需要按 Shift）。
+- 快捷键：`Q/E` 或 `A/D` 旋转当前选中环。
+- 吸附开关：HUD 里的“吸附”勾选后，旋转停止时会吸附到最近节点角度。
+- 断线规则：同环相邻节点可连；跨环仅允许配置的 `bridge_pairs` + `bridge_slots`，且角度差小于阈值（可在 Dev 面板调整）。
+- Debug Overlay：Dev 面板打开后可查看每环角度、节点坐标、FPS 与连接数量。
+
 ## Godot 使用
 - 打开 Godot 4.x，新建项目并指向 `board/godot/`。
 - 新建场景，根节点选择 `Node2D`，挂载 `BoardView.gd`。

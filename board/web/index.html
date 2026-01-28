@@ -12,9 +12,9 @@
     <div id="canvas-container"></div>
 
     <div id="steps-bar">
-      <div class="step" data-step="1">① 点亮节点</div>
-      <div class="step" data-step="2">② 保持供电（带宽/断电）</div>
-      <div class="step" data-step="3">③ 旋转改变连通性</div>
+      <div class="step" data-step="1">① 连线模式：连接相邻节点</div>
+      <div class="step" data-step="2">② 通电模式：点击节点申请供电</div>
+      <div class="step" data-step="3">③ 旋转：改变相邻关系搭建路径</div>
     </div>
 
     <div id="hud">
@@ -26,8 +26,13 @@
       </div>
       <div class="hud-item">
         <span class="hud-icon">⚡</span>
-        Qi 带宽
-        <span id="hud-qi">0 / 0</span>
+        Power
+        <span id="hud-power">0 / 0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">〰</span>
+        Bandwidth
+        <span id="hud-bandwidth">0 / 0</span>
       </div>
       <div class="hud-item">
         <span class="hud-icon">◈</span>
@@ -59,16 +64,37 @@
         </select>
       </div>
       <div class="hud-item">
+        <span class="hud-icon">⟲</span>
+        角度
+        <span id="hud-rot">0°</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">⤴</span>
+        吸附
+        <input type="checkbox" id="toggle-snap" checked />
+      </div>
+      <div class="hud-item">
         <span class="hud-icon">⟳</span>
         连续旋转
         <input type="checkbox" id="rotate-continuous" />
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">🧷</span>
+        模式
+        <button id="mode-toggle" class="hud-action">通电模式</button>
+      </div>
+      <div class="hud-item">
+        <span class="hud-icon">🔌</span>
+        显示邻接
+        <input type="checkbox" id="toggle-neighbors" />
       </div>
       <div class="hud-rotate">
         <button id="rotate-left" aria-label="rotate left">Q</button>
         <div id="rotate-knob">旋转中环</div>
         <button id="rotate-right" aria-label="rotate right">E</button>
       </div>
-      <div class="hud-sub">Shift+滚轮 旋转</div>
+      <div class="hud-sub">L 切换模式 | Shift 拖拽快速布线</div>
+      <button id="clear-lit" class="hud-action">一键熄灭</button>
       <button id="reconfig-btn" class="hud-action hidden">重构模式</button>
       <div class="hud-meta">
         <div>cfg_hash <span id="cfg-hash">-</span></div>
@@ -89,6 +115,7 @@
         <div>供电状态 <span id="detail-power">未通电</span></div>
         <div>断电原因 <span id="detail-reason">—</span></div>
       </div>
+      <button id="toggle-switch" class="hud-action hidden">切换开关</button>
 
       <div class="panel-divider"></div>
 
@@ -103,6 +130,40 @@
       </div>
       <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
 
+      <div class="legend">
+        <div class="legend-title">节点图例</div>
+        <div class="legend-row">
+          <span class="legend-dot core"></span> 核心
+          <span class="legend-dot major"></span> 主节点
+          <span class="legend-dot normal"></span> 普通
+          <span class="legend-dot disabled"></span> 禁用
+        </div>
+        <div class="legend-title">五行颜色</div>
+        <div class="legend-row">
+          <span class="legend-chip metal"></span>金
+          <span class="legend-chip wood"></span>木
+          <span class="legend-chip water"></span>水
+          <span class="legend-chip fire"></span>火
+          <span class="legend-chip earth"></span>土
+        </div>
+        <div class="legend-title">连线图例</div>
+        <div class="legend-row">
+          <span class="legend-line powered"></span>通电
+          <span class="legend-line normal"></span>普通
+          <span class="legend-line candidate"></span>候选
+          <span class="legend-line broken"></span>断线
+        </div>
+        <div class="legend-title">元件说明</div>
+        <div class="legend-row legend-components">
+          <span class="legend-text">SOURCE 电源</span>
+          <span class="legend-text">RESISTOR 电阻</span>
+          <span class="legend-text">CAPACITOR 电容</span>
+          <span class="legend-text">DIODE 二极管</span>
+          <span class="legend-text">SWITCH 开关</span>
+          <span class="legend-text">AMPLIFIER 放大器</span>
+        </div>
+      </div>
+
       <div id="reconfig-panel" class="reconfig hidden">
         <div class="panel-header">槽位重构</div>
         <label>节点
@@ -114,7 +175,7 @@
         <button id="reconfig-apply">应用重构</button>
       </div>
 
-      <div class="how-to">怎么玩：点亮→保持通电→旋转寻找新接触。</div>
+      <div class="how-to">怎么玩：连线→通电→旋转改变相邻关系。</div>
     </div>
 
     <button id="dev-toggle" title="Dev Mode">🛠</button>
@@ -124,6 +185,8 @@
       <label><input type="checkbox" id="toggle-rings" checked /> 显示环线</label>
       <label><input type="checkbox" id="toggle-edges" checked /> 显示连线</label>
       <label><input type="checkbox" id="toggle-labels" /> 显示节点编号</label>
+      <label><input type="checkbox" id="toggle-autoedges" /> 启用自动连线(调试)</label>
+      <label><input type="checkbox" id="toggle-debug" /> Debug Overlay</label>
       <label>配置版本 <span id="cfg-mtime">-</span></label>
       <label>滑环通道 <input type="range" id="channel-count" min="1" max="5" step="1" value="3" /></label>
       <label>接触阈值 <input type="range" id="contact-threshold" min="35" max="90" step="1" value="62" /></label>
@@ -131,7 +194,7 @@
       <label>Edges 强度 <input type="range" id="edge-strength" min="0.1" max="1" step="0.01" value="0.6" /></label>
       <label>Sector 透明度 <input type="range" id="sector-opacity" min="0" max="0.12" step="0.005" value="0.05" /></label>
       <label>Ring 强度 <input type="range" id="ring-strength" min="0.1" max="1" step="0.01" value="0.55" /></label>
-      <label>缩放 <input type="range" id="scale" min="0.7" max="1.6" step="0.01" value="1" /></label>
+      <label>缩放 <input type="range" id="scale" min="0.7" max="1.6" step="0.01" value="0.7" /></label>
       <label>搜索节点 <input type="text" id="search" placeholder="node_id" /></label>
       <div id="search-result"></div>
       <div class="dev-row">
@@ -162,6 +225,7 @@
 
     <div id="feedback" class="feedback hidden"></div>
     <div id="tooltip" class="tooltip"></div>
+    <div id="debug-overlay" class="debug-overlay hidden"></div>
   </div>
 
   <script src="board.js"></script>
