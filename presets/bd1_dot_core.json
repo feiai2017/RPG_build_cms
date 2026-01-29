@@ -1,0 +1,6 @@
+﻿{
+  "name": "dot_core",
+  "realm": "金丹",
+  "rot": {"inner": 0, "mid": 0, "outer": 0},
+  "invested": ["core", "inner_0", "inner_3", "inner_6", "mid_1", "mid_5", "outer_2"]
+}

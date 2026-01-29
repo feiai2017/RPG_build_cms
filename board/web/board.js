@@ -8,6 +8,7 @@
   hudBonus: document.getElementById('hud-bonus'),
   toggleContrast: document.getElementById('toggle-contrast'),
   toggleBroken: document.getElementById('toggle-broken'),
+  togglePorts: document.getElementById('toggle-ports'),
   toggleSnap: document.getElementById('toggle-snap'),
   modeToggle: document.getElementById('mode-toggle'),
   clearLit: document.getElementById('clear-lit'),
@@ -23,6 +24,13 @@
   cfgVersion: document.getElementById('cfg-version'),
   cfgRot: document.getElementById('cfg-rot'),
   cfgMtime: document.getElementById('cfg-mtime'),
+  hex: {
+    bits: document.getElementById('hex-bits'),
+    trigrams: document.getElementById('hex-trigrams'),
+    name: document.getElementById('hex-name'),
+    id: document.getElementById('hex-id'),
+    mods: document.getElementById('hex-mods'),
+  },
   detail: {
     name: document.getElementById('detail-name'),
     element: document.getElementById('detail-element'),
@@ -32,6 +40,21 @@
     effect: document.getElementById('detail-effect'),
     power: document.getElementById('detail-power'),
     reason: document.getElementById('detail-reason'),
+  },
+  bd: {
+    atk: document.getElementById('bd-atk'),
+    crit: document.getElementById('bd-crit'),
+    hp: document.getElementById('bd-hp'),
+    fire: document.getElementById('bd-fire'),
+    mana: document.getElementById('bd-mana'),
+    energy: document.getElementById('bd-energy'),
+    active: document.getElementById('bd-active'),
+    main: document.getElementById('bd-main'),
+    skillMods: document.getElementById('bd-skillmods'),
+    triggers: document.getElementById('bd-triggers'),
+    summary: document.getElementById('bd-summary'),
+    changes: document.getElementById('bd-changes'),
+    violations: document.getElementById('bd-violations'),
   },
   toggleSwitch: document.getElementById('toggle-switch'),
   stats: {
@@ -107,6 +130,7 @@ const runtime = {
   showNeighborHints: false,
   rejectedNodeId: null,
   rejectUntil: 0,
+  evalResult: null,
 };
 
 const TRIGRAMS = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
@@ -117,6 +141,28 @@ const WUXING_COLORS = {
   水: '#3AA0FF',
   火: '#FF4D4D',
   土: '#FFD166',
+};
+const ELEMENT_MAP = {
+  金: 'metal',
+  木: 'wood',
+  水: 'water',
+  火: 'fire',
+  土: 'earth',
+};
+const ELEMENT_LABEL = {
+  metal: '金',
+  wood: '木',
+  water: '水',
+  fire: '火',
+  earth: '土',
+};
+const EDGE_COMPONENT_MAP = {
+  WIRE: 'wire',
+  RESISTOR: 'resistor',
+  CAPACITOR: 'capacitor',
+  DIODE: 'diode',
+  AMPLIFIER: 'amplifier',
+  SWITCH: 'switch',
 };
 const NODE_STYLE = {
   baseFill: 0.52,
@@ -143,6 +189,53 @@ const NEIGHBOR_RULES = {
   crossCount: 2,
   coreInnerMax: 'all',
 };
+const TRIGRAM_BITS = {
+  '乾': [1, 1, 1],
+  '兑': [0, 1, 1],
+  '离': [1, 0, 1],
+  '震': [0, 0, 1],
+  '巽': [1, 1, 0],
+  '坎': [0, 1, 0],
+  '艮': [1, 0, 0],
+  '坤': [0, 0, 0],
+};
+const BITS_TRIGRAM = Object.fromEntries(
+  Object.entries(TRIGRAM_BITS).map(([name, bits]) => [bits.join(''), name]),
+);
+const HEX_MOD_DEFAULTS = {
+  qi_cap_mul: 1,
+  qi_cap_add: 0,
+  bandwidth_cap_mul: 1,
+  bandwidth_cap_add: 0,
+  link_cost_mul: 1,
+  power_loss_per_edge: 0,
+  max_link_range_steps: 1,
+  crossCount: NEIGHBOR_RULES.crossCount,
+  contactThresholdDegAdd: 0,
+  rotate_disconnect_grace: 0,
+  overload_soft_cap: 0,
+  noise_flip_chance: 0,
+};
+const UPPER_TRIGRAM_MODS = {
+  '乾': { max_link_range_steps: 2, rotate_disconnect_grace: 1 },
+  '兑': { crossCount: 3, link_cost_mul: 0.9 },
+  '离': { qi_cap_mul: 1.15, power_loss_per_edge: 0.05 },
+  '震': { rotate_disconnect_grace: 1 },
+  '巽': { link_cost_mul: 0.85, power_loss_per_edge: -0.02 },
+  '坎': { overload_soft_cap: 1, qi_cap_mul: 0.95 },
+  '艮': { max_link_range_steps: 1, power_loss_per_edge: -0.05, force_link_range: true },
+  '坤': { qi_cap_mul: 1.2, link_cost_mul: 1.1 },
+};
+const LOWER_TRIGRAM_MODS = {
+  '乾': { qi_cap_mul: 1.1 },
+  '兑': { link_cost_mul: 0.9 },
+  '离': { power_loss_per_edge: 0.05 },
+  '震': { link_cost_mul: 0.8 },
+  '巽': { power_loss_per_edge: -0.03 },
+  '坎': { overload_soft_cap: 1 },
+  '艮': { rotate_disconnect_grace: 1 },
+  '坤': { link_cost_mul: 1.05, qi_cap_mul: 1.15 },
+};
 
 function normDeg(deg) {
   let v = deg % 360;
@@ -165,6 +258,31 @@ function deltaAngleDeg(fromDeg, toDeg) {
 function trigramByAngle(theta) {
   const idx = Math.floor(normDeg(theta) / 45) % TRIGRAMS.length;
   return TRIGRAMS[idx];
+}
+
+function bits3ToTrigramName(bits3) {
+  const key = bits3.join('');
+  return BITS_TRIGRAM[key] || '坤';
+}
+
+function trigramNameToBits3(name) {
+  return TRIGRAM_BITS[name] ? [...TRIGRAM_BITS[name]] : [0, 0, 0];
+}
+
+function bits6ToHexId(bits6) {
+  return bits6.reduce((sum, bit, idx) => sum + ((bit ? 1 : 0) << idx), 0);
+}
+
+function hexIdToBits6(hexId) {
+  const bits = [];
+  for (let i = 0; i < 6; i += 1) {
+    bits.push((hexId >> i) & 1);
+  }
+  return bits;
+}
+
+function describeHex(upper, lower) {
+  return `${upper}上${lower}下`;
 }
 
 function hexToRgb(hex) {
@@ -200,6 +318,68 @@ function assignComponent(node) {
   node.componentType = COMPONENT_TYPES[idx];
   if (node.componentType === 'SWITCH') node.switchOn = true;
   if (node.componentType === 'CAPACITOR') node.capBuffer = 2;
+}
+
+function pickPortSlots(nSlots, k = 3, phase = 0) {
+  if (!nSlots || nSlots <= 0) return [];
+  const slots = [];
+  for (let i = 0; i < k; i += 1) {
+    const idx = Math.floor((i * nSlots) / k + phase) % nSlots;
+    slots.push(idx);
+  }
+  return Array.from(new Set(slots));
+}
+
+function mergeMods(base, add) {
+  const merged = { ...base };
+  Object.keys(add || {}).forEach((key) => {
+    if (key.endsWith('_mul')) {
+      merged[key] *= add[key];
+    } else if (key === 'max_link_range_steps') {
+      merged[key] = Math.max(1, add[key]);
+    } else if (key === 'crossCount') {
+      merged[key] = add[key];
+    } else if (key === 'force_link_range') {
+      merged.force_link_range = true;
+    } else {
+      merged[key] += add[key];
+    }
+  });
+  return merged;
+}
+
+function combineMods(upper, lower) {
+  let mods = { ...HEX_MOD_DEFAULTS };
+  const upperMods = UPPER_TRIGRAM_MODS[upper] || {};
+  const lowerMods = LOWER_TRIGRAM_MODS[lower] || {};
+  mods = mergeMods(mods, upperMods);
+  mods = mergeMods(mods, lowerMods);
+  if (upperMods.force_link_range) {
+    mods.max_link_range_steps = 1;
+  }
+  return {
+    mods,
+    effects: [
+      {
+        id: `upper-${upper}`,
+        title: `${upper}上卦`,
+        desc: JSON.stringify(upperMods),
+        mods: upperMods,
+      },
+      {
+        id: `lower-${lower}`,
+        title: `${lower}下卦`,
+        desc: JSON.stringify(lowerMods),
+        mods: lowerMods,
+      },
+      {
+        id: 'combo',
+        title: '组合增益',
+        desc: `带宽倍率×${mods.bandwidth_cap_mul.toFixed(2)} | 电力倍率×${mods.qi_cap_mul.toFixed(2)}`,
+        mods,
+      },
+    ],
+  };
 }
 
 async function hashText(text) {
@@ -337,10 +517,17 @@ function buildBoardState(preset) {
     }
   });
   const qiCap = cfgData.realm_rules[realm]?.qi_cap || 10;
+  const baseBandwidth = cfgData.bandwidth_cap || 12;
+  const baseStability = 10;
+  const presetResources = preset?.resources || {};
+  const baseQiCap = presetResources.power ?? qiCap;
+  const baseBandwidthCap = presetResources.bandwidth ?? baseBandwidth;
+  const baseStabilityCap = presetResources.stability ?? baseStability;
 
   boardState = {
     realm,
-    qi_cap: qiCap,
+    base_qi_cap: baseQiCap,
+    qi_cap: baseQiCap,
     qi_used: 0,
     ring_rot_deg: ringRot,
     nodes,
@@ -348,12 +535,36 @@ function buildBoardState(preset) {
     wires: new Map(),
     neighborMap: new Map(),
     lit: litSet,
-    bandwidth_cap: cfgData.bandwidth_cap || 12,
+    base_bandwidth_cap: baseBandwidthCap,
+    bandwidth_cap: baseBandwidthCap,
+    stability_cap: baseStabilityCap,
+    hex_bits: [0, 0, 0, 0, 0, 0],
+    hex_id: 0,
+    trigram_lower: '坤',
+    trigram_upper: '坤',
+    hex_name: '坤上坤下',
+    hex_effects: [],
+    hex_mods: { ...HEX_MOD_DEFAULTS },
     ruleset_version: cfgData.ruleset_version || 'v1',
     cfg_hash: cfgHash,
     ui: {},
   };
   window.boardState = boardState;
+
+  if (Array.isArray(preset?.wires)) {
+    preset.wires.forEach((edge) => {
+      if (!edge?.a || !edge?.b) return;
+      const key = wireKey(edge.a, edge.b);
+      boardState.wires.set(key, {
+        a: edge.a,
+        b: edge.b,
+        enabled: edge.enabled !== false,
+        component: edge.component || 'wire',
+        directed: edge.directed || false,
+        bandwidthCost: edge.bandwidthCost ?? edgeBandwidthCost(edge.component || 'wire'),
+      });
+    });
+  }
 }
 
 function initUIState() {
@@ -453,6 +664,19 @@ function nodePowerCost(node) {
   if (node.id === 'core') return 0;
   const base = node.size === 'major' || node.type === 'major' || node.type === 'keystone' ? 2 : 1;
   return base + (node.componentType === 'RESISTOR' ? 1 : 0);
+}
+
+function edgeBandwidthCost(component) {
+  switch (component) {
+    case 'amplifier':
+      return 1.2;
+    case 'resistor':
+      return 0.9;
+    case 'capacitor':
+      return 0.8;
+    default:
+      return 1;
+  }
 }
 
 function isConductive(node) {
@@ -667,6 +891,8 @@ function recomputeConnectivity(cause = '') {
 
   const activeSet = new Set(edges.filter((e) => e.active).map(edgeKey));
   runtime.lastActiveEdges = activeSet;
+
+  runBoardEvaluation();
 }
 
 function nodePosition(node) {
@@ -1060,7 +1286,11 @@ function updateHud() {
   const lit = boardState.nodes.filter((n) => n.lit).length - 1;
   const powered = boardState.nodes.filter((n) => n.powered).length - 1;
   dom.hudCounts.textContent = `${Math.max(lit, 0)} / ${Math.max(powered, 0)}`;
-  dom.hudBonus.textContent = boardState.ui?.mode === 'wire' ? '连线模式' : '通电模式';
+  if (runtime.evalResult?.derived?.mainElement) {
+    dom.hudBonus.textContent = `主元素: ${runtime.evalResult.derived.mainElement}`;
+  } else {
+    dom.hudBonus.textContent = boardState.ui?.mode === 'wire' ? '连线模式' : '通电模式';
+  }
   if (dom.modeToggle) {
     dom.modeToggle.textContent = boardState.ui?.mode === 'wire' ? '连线模式' : '通电模式';
   }
@@ -1084,7 +1314,13 @@ function updateDetail(nodeId) {
   dom.detail.type.textContent = node.size;
   dom.detail.trigram.textContent = node.trigram;
   dom.detail.component.textContent = node.componentType || '-';
-  dom.detail.effect.textContent = COMPONENT_DESC[node.componentType] || '-';
+  const effectId = assignEffectId(node);
+  if (effectId && window.BD_CATALOG?.nodeEffects?.[effectId]) {
+    const effect = window.BD_CATALOG.nodeEffects[effectId];
+    dom.detail.effect.textContent = `${effect.category}: ${effect.id}`;
+  } else {
+    dom.detail.effect.textContent = COMPONENT_DESC[node.componentType] || '-';
+  }
   dom.detail.power.textContent = node.powered ? '通电' : node.lit ? '已点亮' : '未点亮';
   dom.detail.reason.textContent = nodeReason.get(node.id) || (node.componentType === 'SWITCH' && !node.switchOn ? '开关关闭' : '-');
   if (dom.toggleSwitch) {
@@ -1097,6 +1333,168 @@ function updateDetail(nodeId) {
   dom.stats.shield.textContent = Math.round(6 + poweredStat('shield'));
   dom.stats.mana.textContent = Math.round(6 + poweredStat('mana'));
   dom.stats.regen.textContent = Math.round(3 + poweredStat('regen'));
+}
+
+function currentTrigramDeg() {
+  return boardState.ring_rot_deg?.mid ?? 0;
+}
+
+function mapRing(ring) {
+  if (ring === 'inner_core') return 'CORE';
+  if (ring === 'inner') return 'INNER';
+  if (ring === 'mid') return 'MIDDLE';
+  if (ring === 'outer') return 'OUTER';
+  return 'INNER';
+}
+
+function assignEffectId(node) {
+  if (node.type === 'core') return null;
+  const isMajor = node.size === 'major' || node.type === 'major' || node.type === 'keystone';
+  if (isMajor) {
+    if (node.elem === '火') return 'TRG_ONHIT_BURN_15';
+    if (node.elem === '金') return 'SKM_CONVERT_MAIN_TO_METAL';
+    if (node.elem === '水') return 'SKM_ADD_TAG_WATER';
+  }
+  switch (node.elem) {
+    case '火':
+      return 'STAT_FIRE_DMG_3';
+    case '土':
+      return 'STAT_EARTH_HP_5';
+    case '金':
+      return 'STAT_METAL_CRIT_2';
+    case '水':
+      return 'STAT_WATER_MANA_3';
+    case '木':
+      return 'STAT_WOOD_REGEN_2';
+    default:
+      return null;
+  }
+}
+
+function buildBoardEvalState() {
+  const sectors = [
+    { element: 'FIRE', startDeg: 0, endDeg: 72 },
+    { element: 'EARTH', startDeg: 72, endDeg: 144 },
+    { element: 'METAL', startDeg: 144, endDeg: 216 },
+    { element: 'WATER', startDeg: 216, endDeg: 288 },
+    { element: 'WOOD', startDeg: 288, endDeg: 360 },
+  ];
+
+  const nodes = boardState.nodes.map((node) => ({
+    id: node.id,
+    ring: mapRing(node.ring),
+    element: (ELEMENT_MAP[node.elem] || 'earth').toUpperCase(),
+    visualType: node.type === 'core' ? 'CORE' : node.size === 'major' ? 'MAJOR' : 'NORMAL',
+    isLit: node.lit,
+    effectId: assignEffectId(node),
+    componentSlot: {
+      type: node.type === 'core' ? 'SOURCE' : (node.componentType || 'NONE'),
+      params: { isOn: node.switchOn !== false },
+    },
+    tags: [],
+  }));
+
+  const edges = [];
+  boardState.wires.forEach((edge, key) => {
+    edges.push({
+      id: key,
+      from: edge.a,
+      to: edge.b,
+      baseCost: edge.bandwidthCost ?? 1,
+      state: edge.enabled === false ? 'DISABLED' : 'ENABLED',
+      componentSlot: {
+        type: edge.component ? edge.component.toUpperCase() : 'NONE',
+        params: { isOn: edge.enabled !== false },
+      },
+    });
+  });
+
+  return {
+    boardId: 'wuxing_board',
+    rotationDeg: currentTrigramDeg(),
+    budgets: {
+      powerCap: boardState.qi_cap,
+      bandwidthCap: boardState.bandwidth_cap,
+    },
+    nodes,
+    edges,
+    pointerRule: { sectors },
+  };
+}
+
+function updateBdOutput(evalResult) {
+  if (!evalResult || !dom.bd?.atk) return;
+  const stats = evalResult.combatOutput.stats;
+  const add = stats.add;
+  const mul = stats.mul;
+  dom.bd.atk.textContent = `${Math.round((mul.ATK_PCT || 0) * 100)}%`;
+  dom.bd.crit.textContent = `${Math.round(((add.CRIT_RATE || 0) + (mul.CRIT_RATE || 0)) * 100)}%`;
+  dom.bd.hp.textContent = `${Math.round((mul.HP_PCT || 0) * 100)}%`;
+  dom.bd.fire.textContent = `${Math.round((mul.FIRE_DMG_PCT || 0) * 100)}%`;
+  dom.bd.mana.textContent = Math.round(add.MANA_REGEN || 0);
+  dom.bd.energy.textContent = Math.round(add.ENERGY_REGEN || 0);
+  dom.bd.active.textContent = evalResult.combatOutput.active ? '激活' : '未生效';
+  dom.bd.main.textContent = evalResult.derived.mainElement || '-';
+
+  dom.bd.skillMods.innerHTML = evalResult.combatOutput.skillMods.length
+    ? evalResult.combatOutput.skillMods.map((mod) => {
+      if (mod.modType === 'CONVERT_ELEMENT') {
+        return `<div>转元素 → ${mod.params?.element || ''}</div>`;
+      }
+      if (mod.modType === 'ADD_TAG') {
+        return `<div>附加标签 → ${mod.params?.tag || ''}</div>`;
+      }
+      return `<div>${mod.modType}</div>`;
+    }).join('')
+    : '<div>—</div>';
+  dom.bd.triggers.innerHTML = evalResult.combatOutput.triggers.length
+    ? evalResult.combatOutput.triggers.map((trg) => {
+      const status = trg.effect?.applyStatus?.status || '';
+      const chance = trg.effect?.chance ? ` ${(trg.effect.chance * 100).toFixed(0)}%` : '';
+      return `<div>${trg.event} ${status}${chance}</div>`;
+    }).join('')
+    : '<div>—</div>';
+  dom.bd.summary.innerHTML = evalResult.preview.summaryLines.map((line) => `<div>${line}</div>`).join('');
+  if (!evalResult.combatOutput.active) {
+    dom.bd.summary.innerHTML += '<div class="neg">⚠ 预算超限，输出未生效</div>';
+  }
+  dom.bd.violations.innerHTML = evalResult.violations.length
+    ? evalResult.violations.map((v) => `<div>${v.type}: ${v.message}</div>`).join('')
+    : '<div>—</div>';
+}
+
+function runBoardEvaluation() {
+  if (!window.BDEvaluator?.EvaluateBoard || !window.BD_CATALOG) return;
+  const evalState = buildBoardEvalState();
+  const evalResult = window.BDEvaluator.EvaluateBoard(evalState, window.BD_CATALOG, {
+    enforceBudgets: true,
+    computeStructureMetrics: false,
+  });
+  const prev = runtime.evalResult;
+  runtime.evalResult = evalResult;
+  updateBdOutput(evalResult);
+  if (dom.bd?.changes) {
+    const changes = [];
+    if (prev) {
+      const prevStats = prev.combatOutput.stats;
+      const nextStats = evalResult.combatOutput.stats;
+      const diff = (key) => ((nextStats.mul[key] || 0) - (prevStats.mul[key] || 0)) * 100;
+      const diffAdd = (key) => (nextStats.add[key] || 0) - (prevStats.add[key] || 0);
+      const fireDiff = diff('FIRE_DMG_PCT');
+      if (fireDiff) changes.push(`<div class="${fireDiff > 0 ? 'pos' : 'neg'}">火伤 ${fireDiff > 0 ? '+' : ''}${fireDiff.toFixed(0)}%</div>`);
+      const hpDiff = diff('HP_PCT');
+      if (hpDiff) changes.push(`<div class="${hpDiff > 0 ? 'pos' : 'neg'}">生命 ${hpDiff > 0 ? '+' : ''}${hpDiff.toFixed(0)}%</div>`);
+      const critDiff = diffAdd('CRIT_RATE');
+      if (critDiff) changes.push(`<div class="${critDiff > 0 ? 'pos' : 'neg'}">暴击 ${critDiff > 0 ? '+' : ''}${(critDiff * 100).toFixed(0)}%</div>`);
+      const manaDiff = diffAdd('MANA_REGEN');
+      if (manaDiff) changes.push(`<div class="${manaDiff > 0 ? 'pos' : 'neg'}">回蓝 ${manaDiff > 0 ? '+' : ''}${manaDiff.toFixed(0)}</div>`);
+    }
+    if (!changes.length) changes.push('<div>—</div>');
+    dom.bd.changes.innerHTML = changes.join('');
+    if (!prev) {
+      dom.bd.changes.innerHTML = '<div>—</div>';
+    }
+  }
 }
 
 function poweredStat(key) {
@@ -1237,7 +1635,14 @@ function toggleWire(aId, bId) {
     boardState.wires.delete(key);
     runtime.flash = { broken: [key], gained: [], start: performance.now(), duration: 160 };
   } else {
-    boardState.wires.set(key, { a: aId, b: bId, enabled: true, bandwidthCost: 1 });
+    boardState.wires.set(key, {
+      a: aId,
+      b: bId,
+      enabled: true,
+      component: 'wire',
+      directed: false,
+      bandwidthCost: edgeBandwidthCost('wire'),
+    });
   }
   recomputeConnectivity('wire');
   runtime.needsRender = true;
@@ -1396,9 +1801,12 @@ function attachEvents() {
       dom.tooltip.style.opacity = 1;
       dom.tooltip.style.left = `${event.clientX}px`;
       dom.tooltip.style.top = `${event.clientY}px`;
-      const effectText = node.effects ? Object.keys(node.effects).join(',') : '-';
       const switchState = node.componentType === 'SWITCH' ? (node.switchOn ? '开' : '关') : '';
-      dom.tooltip.textContent = `${node.name || node.id} | ${node.componentType || node.type}${switchState ? `(${switchState})` : ''} | ${node.ring} | ${node.slot_idx} | 连接 ${node.connectionCount || 0}`;
+      const effectId = assignEffectId(node);
+      const effect = effectId ? window.BD_CATALOG?.nodeEffects?.[effectId] : null;
+      const effectText = effect ? `${effect.category}:${effect.id}` : '无效果';
+      const powerState = node.powered ? '通电' : node.lit ? '已点亮' : '未点亮';
+      dom.tooltip.textContent = `${node.name || node.id} | ${powerState} | ${node.componentType || node.type}${switchState ? `(${switchState})` : ''} | ${effectText}`;
     }
     runtime.showNeighborHints = event.shiftKey || boardState.ui.mode === 'wire' || boardState.ui.showNeighborHints;
     runtime.needsRender = true;
@@ -1465,6 +1873,8 @@ function attachEvents() {
     runtime.needsRender = true;
     updateDetail(node.id);
   });
+
+  // BD 输出采用自动评估，无需手动触发
 
   dom.panel.reload.addEventListener('click', async () => {
     await loadConfig();

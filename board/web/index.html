@@ -101,6 +101,17 @@
         <div>ruleset <span id="cfg-version">-</span></div>
         <div>rot_deg <span id="cfg-rot">-</span></div>
       </div>
+      <div id="hex-panel" class="hex-panel">
+        <div class="panel-header">卦象编译</div>
+        <div class="hex-row">bits <span id="hex-bits">000000</span></div>
+        <div class="hex-row">上/下 <span id="hex-trigrams">坤上坤下</span></div>
+        <div class="hex-row">卦名 <span id="hex-name">坤上坤下</span> #<span id="hex-id">0</span></div>
+        <div id="hex-mods" class="hex-mods"></div>
+        <label class="hex-toggle">
+          <input type="checkbox" id="toggle-ports" />
+          端口高亮
+        </label>
+      </div>
     </div>
 
     <div id="panel">
@@ -129,6 +140,39 @@
         <div>回能 <span id="stat-regen">0</span></div>
       </div>
       <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
+
+      <div class="panel-divider"></div>
+      <div class="panel-header">BD 输出</div>
+      <div class="bd-grid">
+        <div>ATK% <span id="bd-atk">0</span></div>
+        <div>CRIT <span id="bd-crit">0</span></div>
+        <div>HP% <span id="bd-hp">0</span></div>
+        <div>FIRE% <span id="bd-fire">0</span></div>
+        <div>MANA <span id="bd-mana">0</span></div>
+        <div>ENERGY <span id="bd-energy">0</span></div>
+        <div>状态 <span id="bd-active">-</span></div>
+        <div>主元素 <span id="bd-main">-</span></div>
+      </div>
+      <div class="bd-section">
+        <div class="panel-header small">SkillMods</div>
+        <div id="bd-skillmods" class="bd-list"></div>
+      </div>
+      <div class="bd-section">
+        <div class="panel-header small">Triggers</div>
+        <div id="bd-triggers" class="bd-list"></div>
+      </div>
+      <div class="bd-section">
+        <div class="panel-header small">Summary</div>
+        <div id="bd-summary" class="bd-list"></div>
+      </div>
+      <div class="bd-section">
+        <div class="panel-header small">变化提示</div>
+        <div id="bd-changes" class="bd-list"></div>
+      </div>
+      <div class="bd-section">
+        <div class="panel-header small">Violations</div>
+        <div id="bd-violations" class="bd-list"></div>
+      </div>
 
       <div class="legend">
         <div class="legend-title">节点图例</div>
@@ -228,6 +272,13 @@
     <div id="debug-overlay" class="debug-overlay hidden"></div>
   </div>
 
+  <script src="core/circuit_types.js"></script>
+  <script src="core/trigram_rules.js"></script>
+  <script src="core/catalog.js"></script>
+  <script src="core/board_evaluator.js"></script>
+  <script src="core/evaluator_tests.js"></script>
+  <script src="core/circuit_solver.js"></script>
+  <script src="core/combat_sim.js"></script>
   <script src="board.js"></script>
 </body>
 </html>

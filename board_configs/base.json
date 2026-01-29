@@ -1,0 +1,33 @@
+{
+  "ruleset_version": "v1.0",
+  "rings": {
+    "inner": {"radius": 120, "slots": 12, "size": "small", "bridge_slots": [0, 3, 6, 9]},
+    "mid": {"radius": 185, "slots": 16, "size": "small", "bridge_slots": [1, 5, 9, 13]},
+    "outer": {"radius": 250, "slots": 20, "size": "small", "bridge_slots": [2, 7, 12, 17]},
+    "inner_core": {"radius": 70, "slots": 8, "size": "major", "bridge_slots": [0, 2, 4, 6]}
+  },
+  "trigrams": ["乾", "兑", "离", "震", "巽", "坎", "艮", "坤"],
+  "trigram_elements": {
+    "乾": "金",
+    "兑": "金",
+    "离": "火",
+    "震": "木",
+    "巽": "木",
+    "坎": "水",
+    "艮": "土",
+    "坤": "土"
+  },
+  "bridge_threshold_deg": 12,
+  "bridges": [
+    {"a": "inner", "b": "mid"},
+    {"a": "mid", "b": "outer"},
+    {"a": "inner_core", "b": "inner"}
+  ],
+  "colors": {
+    "金": "#E6E6E6",
+    "木": "#39D98A",
+    "水": "#3AA0FF",
+    "火": "#FF4D4D",
+    "土": "#FFD166"
+  }
+}

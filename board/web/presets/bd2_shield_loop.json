@@ -1,6 +1,17 @@
-﻿{
+{
   "name": "shield_loop",
   "realm": "元婴",
   "rot_deg": {"inner": 0, "mid": 15, "outer": 0},
-  "invested": ["core", "inner_0", "inner_1", "inner_2", "mid_1", "mid_2", "mid_3", "inner_core_0", "inner_core_2"]
+  "resources": {"power": 22, "bandwidth": 18, "stability": 15},
+  "invested": ["core", "inner_0", "inner_1", "inner_2", "mid_1", "mid_2", "mid_3", "inner_core_0", "inner_core_2"],
+  "wires": [
+    {"a": "core", "b": "inner_0", "component": "wire"},
+    {"a": "inner_0", "b": "inner_1", "component": "wire"},
+    {"a": "inner_1", "b": "inner_2", "component": "resistor"},
+    {"a": "inner_1", "b": "mid_2", "component": "wire"},
+    {"a": "mid_1", "b": "mid_2", "component": "wire"},
+    {"a": "mid_2", "b": "mid_3", "component": "capacitor"},
+    {"a": "inner_core_0", "b": "inner_0", "component": "wire"},
+    {"a": "inner_core_2", "b": "inner_1", "component": "wire"}
+  ]
 }

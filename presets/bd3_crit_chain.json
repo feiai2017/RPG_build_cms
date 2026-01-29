@@ -1,0 +1,6 @@
+﻿{
+  "name": "crit_chain",
+  "realm": "陆地神仙",
+  "rot": {"inner": 0, "mid": -15, "outer": 20},
+  "invested": ["core", "inner_0", "inner_6", "mid_5", "mid_9", "outer_7", "outer_12", "outer_17"]
+}

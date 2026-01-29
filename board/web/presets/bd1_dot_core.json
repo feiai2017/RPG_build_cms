@@ -1,6 +1,16 @@
-﻿{
+{
   "name": "dot_core",
   "realm": "金丹",
   "rot_deg": {"inner": 0, "mid": 0, "outer": 0},
-  "invested": ["core", "inner_0", "inner_3", "inner_6", "mid_1", "mid_5", "outer_2"]
+  "resources": {"power": 18, "bandwidth": 14, "stability": 12},
+  "invested": ["core", "inner_0", "inner_3", "inner_6", "mid_1", "mid_5", "outer_2"],
+  "wires": [
+    {"a": "core", "b": "inner_0", "component": "wire"},
+    {"a": "inner_0", "b": "inner_1", "component": "wire"},
+    {"a": "inner_1", "b": "inner_2", "component": "resistor"},
+    {"a": "inner_2", "b": "inner_3", "component": "capacitor"},
+    {"a": "inner_3", "b": "mid_5", "component": "wire"},
+    {"a": "inner_0", "b": "mid_1", "component": "wire"},
+    {"a": "mid_1", "b": "outer_2", "component": "wire"}
+  ]
 }

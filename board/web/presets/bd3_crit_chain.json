@@ -1,6 +1,25 @@
-﻿{
+{
   "name": "crit_chain",
   "realm": "陆地神仙",
   "rot_deg": {"inner": 0, "mid": -15, "outer": 20},
-  "invested": ["core", "inner_0", "inner_6", "mid_5", "mid_9", "outer_7", "outer_12", "outer_17"]
+  "resources": {"power": 26, "bandwidth": 22, "stability": 16},
+  "invested": ["core", "inner_0", "inner_6", "mid_5", "mid_9", "outer_7", "outer_12", "outer_17"],
+  "wires": [
+    {"a": "core", "b": "inner_0", "component": "wire"},
+    {"a": "inner_0", "b": "inner_1", "component": "wire"},
+    {"a": "inner_1", "b": "inner_2", "component": "wire"},
+    {"a": "inner_2", "b": "inner_3", "component": "amplifier"},
+    {"a": "inner_3", "b": "inner_4", "component": "wire"},
+    {"a": "inner_4", "b": "inner_5", "component": "wire"},
+    {"a": "inner_5", "b": "inner_6", "component": "wire"},
+    {"a": "inner_3", "b": "mid_5", "component": "wire"},
+    {"a": "inner_6", "b": "mid_9", "component": "wire"},
+    {"a": "mid_5", "b": "outer_7", "component": "wire"},
+    {"a": "mid_9", "b": "outer_12", "component": "amplifier"},
+    {"a": "outer_12", "b": "outer_13", "component": "wire"},
+    {"a": "outer_13", "b": "outer_14", "component": "wire"},
+    {"a": "outer_14", "b": "outer_15", "component": "wire"},
+    {"a": "outer_15", "b": "outer_16", "component": "wire"},
+    {"a": "outer_16", "b": "outer_17", "component": "wire"}
+  ]
 }
