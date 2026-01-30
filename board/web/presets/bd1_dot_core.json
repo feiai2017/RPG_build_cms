@@ -1,16 +1,15 @@
 {
-  "name": "dot_core",
+  "name": "bd_water_flow",
   "realm": "金丹",
-  "rot_deg": {"inner": 0, "mid": 0, "outer": 0},
-  "resources": {"power": 18, "bandwidth": 14, "stability": 12},
-  "invested": ["core", "inner_0", "inner_3", "inner_6", "mid_1", "mid_5", "outer_2"],
-  "wires": [
-    {"a": "core", "b": "inner_0", "component": "wire"},
-    {"a": "inner_0", "b": "inner_1", "component": "wire"},
-    {"a": "inner_1", "b": "inner_2", "component": "resistor"},
-    {"a": "inner_2", "b": "inner_3", "component": "capacitor"},
-    {"a": "inner_3", "b": "mid_5", "component": "wire"},
-    {"a": "inner_0", "b": "mid_1", "component": "wire"},
-    {"a": "mid_1", "b": "outer_2", "component": "wire"}
-  ]
+  "linggen": "four_color",
+  "slots": {
+    "inner_0": "skill_water",
+    "inner_1": "stat_water",
+    "inner_2": "stat_water",
+    "inner_3": "mod_guard",
+    "mid_0": "stat_water",
+    "mid_1": "mod_guard",
+    "outer_2": "stat_water",
+    "outer_4": "stat_wood"
+  }
 }

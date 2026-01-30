@@ -2,35 +2,20 @@
   container: document.getElementById('canvas-container'),
   steps: Array.from(document.querySelectorAll('#steps-bar .step')),
   realmSelect: document.getElementById('realm-select'),
+  linggenSelect: document.getElementById('linggen-select'),
+  stoneSelect: document.getElementById('stone-select'),
+  clearSlot: document.getElementById('clear-slot'),
   hudPower: document.getElementById('hud-power'),
   hudBandwidth: document.getElementById('hud-bandwidth'),
   hudCounts: document.getElementById('hud-counts'),
   hudBonus: document.getElementById('hud-bonus'),
   toggleContrast: document.getElementById('toggle-contrast'),
   toggleBroken: document.getElementById('toggle-broken'),
-  togglePorts: document.getElementById('toggle-ports'),
-  toggleSnap: document.getElementById('toggle-snap'),
-  modeToggle: document.getElementById('mode-toggle'),
   clearLit: document.getElementById('clear-lit'),
-  toggleAutoEdges: document.getElementById('toggle-autoedges'),
-  toggleNeighborHints: document.getElementById('toggle-neighbors'),
-  ringSelect: document.getElementById('ring-select'),
-  rotateContinuous: document.getElementById('rotate-continuous'),
-  rotateLeft: document.getElementById('rotate-left'),
-  rotateRight: document.getElementById('rotate-right'),
-  rotateKnob: document.getElementById('rotate-knob'),
-  hudRot: document.getElementById('hud-rot'),
   cfgHash: document.getElementById('cfg-hash'),
   cfgVersion: document.getElementById('cfg-version'),
-  cfgRot: document.getElementById('cfg-rot'),
   cfgMtime: document.getElementById('cfg-mtime'),
-  hex: {
-    bits: document.getElementById('hex-bits'),
-    trigrams: document.getElementById('hex-trigrams'),
-    name: document.getElementById('hex-name'),
-    id: document.getElementById('hex-id'),
-    mods: document.getElementById('hex-mods'),
-  },
+  simulateBtn: document.getElementById('simulate-btn'),
   detail: {
     name: document.getElementById('detail-name'),
     element: document.getElementById('detail-element'),
@@ -41,20 +26,15 @@
     power: document.getElementById('detail-power'),
     reason: document.getElementById('detail-reason'),
   },
-  bd: {
-    atk: document.getElementById('bd-atk'),
-    crit: document.getElementById('bd-crit'),
-    hp: document.getElementById('bd-hp'),
-    fire: document.getElementById('bd-fire'),
-    mana: document.getElementById('bd-mana'),
-    energy: document.getElementById('bd-energy'),
-    active: document.getElementById('bd-active'),
-    main: document.getElementById('bd-main'),
-    skillMods: document.getElementById('bd-skillmods'),
-    triggers: document.getElementById('bd-triggers'),
-    summary: document.getElementById('bd-summary'),
-    changes: document.getElementById('bd-changes'),
-    violations: document.getElementById('bd-violations'),
+  sim: {
+    dps: document.getElementById('sim-dps'),
+    ehp: document.getElementById('sim-ehp'),
+    sustain: document.getElementById('sim-sustain'),
+    stability: document.getElementById('sim-stability'),
+    win: document.getElementById('sim-win'),
+    ttk: document.getElementById('sim-ttk'),
+    survive: document.getElementById('sim-survive'),
+    logs: document.getElementById('sim-logs'),
   },
   toggleSwitch: document.getElementById('toggle-switch'),
   stats: {
@@ -65,6 +45,9 @@
     mana: document.getElementById('stat-mana'),
     regen: document.getElementById('stat-regen'),
   },
+  lineMode: document.getElementById('line-mode'),
+  lineElement: document.getElementById('line-element'),
+  resetZoom: document.getElementById('reset-zoom'),
   reconfig: {
     panel: document.getElementById('reconfig-panel'),
     node: document.getElementById('reconfig-node'),
@@ -104,19 +87,13 @@ let boardState = null;
 let nodeReason = new Map();
 let presetFiles = [];
 const runtime = {
-  anim: null,
   flash: null,
   lastActiveEdges: new Set(),
   needsRender: true,
   needsConnectivityUpdate: true,
-  sparks: true,
   lastRender: 0,
   hoveredNodeId: null,
-  selectedNodeId: 'core',
-  drag: null,
-  inertia: null,
-  suppressClickUntil: 0,
-  lastDragTime: 0,
+  selectedNodeId: null,
   fps: 0,
   frames: 0,
   lastFpsTime: performance.now(),
@@ -125,15 +102,17 @@ const runtime = {
   lastRingOptionsKey: '',
   lastDynamicEdges: new Set(),
   feedbackTimer: null,
-  wireStartId: null,
-  wireDragActive: false,
-  showNeighborHints: false,
   rejectedNodeId: null,
   rejectUntil: 0,
   evalResult: null,
+  selectedStoneId: null,
+  pathEdges: null,
+  panning: false,
+  panStart: null,
 };
 
-const TRIGRAMS = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+const TRIGRAM_SECTORS = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+const TRIGRAMS = TRIGRAM_SECTORS;
 const DEFAULT_REALM = '金丹';
 const WUXING_COLORS = {
   金: '#E6E6E6',
@@ -141,6 +120,115 @@ const WUXING_COLORS = {
   水: '#3AA0FF',
   火: '#FF4D4D',
   土: '#FFD166',
+};
+const TRIGRAM_SYMBOLS = {
+  乾: '☰',
+  兑: '☱',
+  离: '☲',
+  震: '☳',
+  巽: '☴',
+  坎: '☵',
+  艮: '☶',
+  坤: '☷',
+};
+const TRIGRAM_COLORS = {
+  乾: 'rgba(120, 190, 255, 0.08)',
+  兑: 'rgba(180, 200, 255, 0.08)',
+  离: 'rgba(255, 140, 120, 0.08)',
+  震: 'rgba(160, 255, 170, 0.08)',
+  巽: 'rgba(120, 220, 190, 0.08)',
+  坎: 'rgba(110, 160, 255, 0.08)',
+  艮: 'rgba(210, 210, 230, 0.08)',
+  坤: 'rgba(255, 220, 140, 0.08)',
+};
+const VISUAL_CFG = {
+  line: {
+    baseAlpha: 0.16,
+    glowAlpha: 0.85,
+    baseWidth: 5.2,
+    pathWidth: 7,
+    glowWidth: 7,
+    dashedWidth: 2,
+  },
+  inject: {
+    width: 2.6,
+    glowWidth: 7,
+    inset: 8,
+  },
+  labels: {
+    trigramSymbol: 16,
+    trigramName: 13,
+    watermark: 46,
+  },
+  slot: {
+    outline: 6,
+    text: 10,
+  },
+};
+
+const QI_CFG = {
+  k_gen: 0.06,
+  k_ke: 0.08,
+  k_turb: 0.12,
+  turbulence_dash: 0.45,
+  iterations: 18,
+};
+const SLOT_TYPES = {
+  normal: 'normal',
+  skill: 'skill',
+  stat: 'stat',
+  mod: 'mod',
+  core_adjacent: 'core_adjacent',
+};
+const STONE_CATEGORIES = {
+  SKILL: 'SKILL',
+  STAT: 'STAT',
+  MOD: 'MOD',
+};
+const STONES = [
+  { id: 'stat_metal', name: '金属性石', element: '金', category: STONE_CATEGORIES.STAT, effects: { dps: 4, crit: 2 } },
+  { id: 'stat_wood', name: '木属性石', element: '木', category: STONE_CATEGORIES.STAT, effects: { sustain: 3, regen: 2 } },
+  { id: 'stat_water', name: '水属性石', element: '水', category: STONE_CATEGORIES.STAT, effects: { sustain: 4, mana: 3 } },
+  { id: 'stat_fire', name: '火属性石', element: '火', category: STONE_CATEGORIES.STAT, effects: { dps: 6, stability: -1 } },
+  { id: 'stat_earth', name: '土属性石', element: '土', category: STONE_CATEGORIES.STAT, effects: { ehp: 6, stability: 2 } },
+  { id: 'skill_fire', name: '火诀石', element: '火', category: STONE_CATEGORIES.SKILL, effects: { dps: 5, crit: 1 } },
+  { id: 'skill_water', name: '水诀石', element: '水', category: STONE_CATEGORIES.SKILL, effects: { sustain: 5, mana: 2 } },
+  { id: 'mod_amp', name: '增幅石', element: '金', category: STONE_CATEGORIES.MOD, effects: { dps: 3, stability: -1 } },
+  { id: 'mod_guard', name: '护持石', element: '土', category: STONE_CATEGORIES.MOD, effects: { ehp: 3, stability: 2 } },
+];
+const LINGGEN_PROFILES = [
+  {
+    id: 'four_color',
+    name: '四色灵根',
+    sources: [
+      { element: '金', capacity: 6, regen: 1, stability: 1 },
+      { element: '木', capacity: 6, regen: 1, stability: 1 },
+      { element: '水', capacity: 6, regen: 1, stability: 1 },
+      { element: '火', capacity: 6, regen: 1, stability: 1 },
+      { element: '土', capacity: 6, regen: 1, stability: 1 },
+    ],
+  },
+  {
+    id: 'pure_water',
+    name: '先天水灵根',
+    sources: [
+      { element: '水', capacity: 10, regen: 2, stability: 2 },
+      { element: '水', capacity: 8, regen: 2, stability: 2 },
+      { element: '水', capacity: 6, regen: 1, stability: 1 },
+      { element: '水', capacity: 5, regen: 1, stability: 1 },
+      { element: '水', capacity: 4, regen: 1, stability: 1 },
+    ],
+  },
+];
+const TRIGRAM_MODS = {
+  乾: { dps: 0.1, stability: -0.05 },
+  兑: { crit: 0.1 },
+  离: { dps: 0.15, stability: -0.1 },
+  震: { dps: 0.12, sustain: -0.05 },
+  巽: { sustain: 0.12 },
+  坎: { sustain: 0.18 },
+  艮: { ehp: 0.18, stability: 0.1 },
+  坤: { ehp: 0.12, sustain: 0.05 },
 };
 const ELEMENT_MAP = {
   金: 'metal',
@@ -260,6 +348,11 @@ function trigramByAngle(theta) {
   return TRIGRAMS[idx];
 }
 
+function coreSourceIndex(theta) {
+  const step = 360 / 5;
+  return Math.floor(normDeg(theta) / step) % 5;
+}
+
 function bits3ToTrigramName(bits3) {
   const key = bits3.join('');
   return BITS_TRIGRAM[key] || '坤';
@@ -298,6 +391,25 @@ function hexToRgb(hex) {
 function rgba(hex, alpha) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function mixColorFromRatio(ratio) {
+  const base = { r: 0, g: 0, b: 0 };
+  const keys = Object.keys(WUXING_COLORS);
+  let total = 0;
+  keys.forEach((k) => {
+    const v = ratio?.[k] ?? 0;
+    total += v;
+  });
+  const norm = total > 0 ? total : 1;
+  keys.forEach((k) => {
+    const weight = (ratio?.[k] ?? 0) / norm;
+    const { r, g, b } = hexToRgb(WUXING_COLORS[k]);
+    base.r += r * weight;
+    base.g += g * weight;
+    base.b += b * weight;
+  });
+  return `rgba(${Math.round(base.r)},${Math.round(base.g)},${Math.round(base.b)},1)`;
 }
 
 function hashId(text) {
@@ -414,6 +526,30 @@ function buildBoardState(preset) {
   const nodes = [];
   const ringMap = cfgData.ring_map;
   const ringBuckets = { inner: [], mid: [], outer: [] };
+  const slotStones = preset?.slots || {};
+
+  const assignSlotTypes = (ring, list) => {
+    const groups = {};
+    list.forEach((node) => {
+      if (!groups[node.trigram]) groups[node.trigram] = [];
+      groups[node.trigram].push(node);
+    });
+    Object.values(groups).forEach((group) => {
+      group.sort((a, b) => a.slot_idx - b.slot_idx);
+      group.forEach((node, idx) => {
+        if (ring === 'inner') {
+          if (idx === 0) node.slot_type = SLOT_TYPES.skill;
+          else if (idx === 1) node.slot_type = SLOT_TYPES.mod;
+          else node.slot_type = SLOT_TYPES.stat;
+        } else if (ring === 'mid') {
+          if (idx === 0) node.slot_type = SLOT_TYPES.mod;
+          else node.slot_type = SLOT_TYPES.stat;
+        } else if (ring === 'outer') {
+          node.slot_type = idx % 2 === 0 ? SLOT_TYPES.stat : SLOT_TYPES.normal;
+        }
+      });
+    });
+  };
 
   boardData.nodes.forEach((raw) => {
     if (raw.id === 'core' || raw.ring === 'core') return;
@@ -424,59 +560,35 @@ function buildBoardState(preset) {
       id: raw.id,
       name: raw.label || raw.id,
       elem: raw.element,
-      type: raw.type || 'normal',
       ring,
       slot_idx: 0,
       base_theta: baseTheta,
       r: radius,
-      size: raw.type === 'keystone' || raw.type === 'core' ? 'major' : 'small',
+      size: raw.type === 'keystone' ? 'major' : 'small',
       trigram: trigramByAngle(baseTheta),
-      effects: raw.effects || {},
-      lit: false,
+      slot_type: SLOT_TYPES.normal,
+      stone_id: null,
       powered: false,
     });
   });
 
   Object.keys(ringBuckets).forEach((ring) => {
     ringBuckets[ring].sort((a, b) => normDeg(a.base_theta) - normDeg(b.base_theta));
-    if (ring === 'outer') {
-      const byElem = {};
-      ringBuckets[ring].forEach((node) => {
-        if (!byElem[node.elem]) byElem[node.elem] = [];
-        byElem[node.elem].push(node);
-      });
-      Object.values(byElem).forEach((list) => {
-        list.slice(0, 2).forEach((node) => {
-          if (node.type === 'keystone') return;
-          node.type = 'major';
-          node.size = 'major';
-        });
-      });
-    }
     ringBuckets[ring].forEach((node, idx) => {
       node.slot_idx = idx;
       node.id = `${ring}_${idx}`;
-      assignComponent(node);
+      node.core_adjacent = false;
+      node.core_source_idx = null;
+      if (ring === 'inner') {
+        node.core_adjacent = true;
+        node.core_source_idx = coreSourceIndex(node.base_theta);
+      }
+      node.stone_id = slotStones[node.id] || null;
+      node.lit = !!node.stone_id;
       nodes.push(node);
     });
+    assignSlotTypes(ring, ringBuckets[ring]);
   });
-
-  nodes.push({
-    id: 'core',
-    name: '核心',
-    elem: '土',
-    type: 'core',
-    ring: 'inner',
-    slot_idx: -1,
-    base_theta: 0,
-    r: 0,
-    size: 'major',
-    trigram: '坤',
-    effects: { core: 1 },
-    lit: true,
-    powered: true,
-  });
-  assignComponent(nodes[nodes.length - 1]);
 
   if (cfgData.inner_core) {
     const slots = cfgData.inner_core.slots;
@@ -487,89 +599,49 @@ function buildBoardState(preset) {
         id: `inner_core_${i}`,
         name: `内核-${i}`,
         elem: '土',
-        type: 'major',
         ring: 'inner_core',
         slot_idx: i,
         base_theta: theta,
         r: radius,
         size: 'major',
         trigram: trigramByAngle(theta),
-        effects: { inner_core: 1 },
-        lit: false,
+        slot_type: SLOT_TYPES.skill,
+        core_adjacent: false,
+        core_source_idx: null,
+        stone_id: slotStones[`inner_core_${i}`] || null,
+        lit: !!slotStones[`inner_core_${i}`],
         powered: false,
       });
-      assignComponent(nodes[nodes.length - 1]);
     }
-  }
-
-  const ringRot = { inner: 0, mid: 0, outer: 0, inner_core: 0 };
-  if (preset && preset.rot_deg) {
-    Object.keys(preset.rot_deg).forEach((key) => {
-      ringRot[key] = preset.rot_deg[key];
-    });
   }
 
   const realm = preset?.realm || DEFAULT_REALM;
-  const litSet = new Set(preset?.invested || []);
-  nodes.forEach((node) => {
-    if (litSet.has(node.id)) {
-      node.lit = true;
-    }
-  });
-  const qiCap = cfgData.realm_rules[realm]?.qi_cap || 10;
-  const baseBandwidth = cfgData.bandwidth_cap || 12;
-  const baseStability = 10;
-  const presetResources = preset?.resources || {};
-  const baseQiCap = presetResources.power ?? qiCap;
-  const baseBandwidthCap = presetResources.bandwidth ?? baseBandwidth;
-  const baseStabilityCap = presetResources.stability ?? baseStability;
+  const linggenId = preset?.linggen || LINGGEN_PROFILES[0].id;
+  const linggenProfile = LINGGEN_PROFILES.find((p) => p.id === linggenId) || LINGGEN_PROFILES[0];
+  const qiCap = linggenProfile.sources.reduce((sum, s) => sum + s.capacity, 0);
+  const bandwidthCap = Math.round(qiCap * 0.8);
 
   boardState = {
     realm,
-    base_qi_cap: baseQiCap,
-    qi_cap: baseQiCap,
+    linggen_id: linggenProfile.id,
+    linggen_profile: linggenProfile,
+    core_sources: linggenProfile.sources,
+    qi_cap: qiCap,
     qi_used: 0,
-    ring_rot_deg: ringRot,
+    bandwidth_cap: bandwidthCap,
+    bandwidth_used: 0,
     nodes,
     edges: [],
-    wires: new Map(),
     neighborMap: new Map(),
-    lit: litSet,
-    base_bandwidth_cap: baseBandwidthCap,
-    bandwidth_cap: baseBandwidthCap,
-    stability_cap: baseStabilityCap,
-    hex_bits: [0, 0, 0, 0, 0, 0],
-    hex_id: 0,
-    trigram_lower: '坤',
-    trigram_upper: '坤',
-    hex_name: '坤上坤下',
-    hex_effects: [],
-    hex_mods: { ...HEX_MOD_DEFAULTS },
-    ruleset_version: cfgData.ruleset_version || 'v1',
+    ruleset_version: cfgData.ruleset_version || 'v2',
     cfg_hash: cfgHash,
     ui: {},
   };
   window.boardState = boardState;
-
-  if (Array.isArray(preset?.wires)) {
-    preset.wires.forEach((edge) => {
-      if (!edge?.a || !edge?.b) return;
-      const key = wireKey(edge.a, edge.b);
-      boardState.wires.set(key, {
-        a: edge.a,
-        b: edge.b,
-        enabled: edge.enabled !== false,
-        component: edge.component || 'wire',
-        directed: edge.directed || false,
-        bandwidthCost: edge.bandwidthCost ?? edgeBandwidthCost(edge.component || 'wire'),
-      });
-    });
-  }
 }
 
 function initUIState() {
   boardState.ui = {
-    selectedRing: dom.ringSelect?.value || 'mid',
     highContrast: dom.toggleContrast?.checked ?? false,
     showBroken: dom.toggleBroken?.checked ?? false,
     showEdges: dom.panel.edges?.checked ?? true,
@@ -577,7 +649,6 @@ function initUIState() {
     showSectors: dom.toggleSectors?.checked ?? true,
     showRings: dom.toggleRings?.checked ?? true,
     debug: dom.toggleDebug?.checked ?? false,
-    snap: dom.toggleSnap?.checked ?? true,
     edgeStrength: parseFloat(dom.edgeStrength?.value ?? 0.6),
     glowStrength: parseFloat(dom.glowStrength?.value ?? 0.18),
     sectorOpacity: parseFloat(dom.sectorOpacity?.value ?? 0.05),
@@ -585,11 +656,13 @@ function initUIState() {
     scale: parseFloat(dom.scale?.value ?? 0.7),
     contactThreshold: parseFloat(dom.contactThreshold?.value ?? cfgData.bridge_threshold_deg ?? 12),
     channelCount: parseInt(dom.channelCount?.value ?? 3, 10),
-    mode: 'power',
     allowAutoEdges: false,
-    showNeighborHints: dom.toggleNeighborHints?.checked ?? false,
+    lineMode: dom.lineMode?.value || 'all',
+    lineElement: dom.lineElement?.value || '水',
+    panX: 0,
+    panY: 0,
   };
-  runtime.selectedNodeId = 'core';
+  runtime.selectedNodeId = boardState.nodes[0]?.id || null;
 }
 
 function debugLog(message) {
@@ -626,9 +699,9 @@ function enabledRings() {
   return cfgData.realm_rules[boardState.realm]?.rings || ['inner', 'mid', 'outer'];
 }
 
-function ringIndex() {
+function ringIndex(nodes = boardState.nodes) {
   const map = {};
-  boardState.nodes.forEach((node) => {
+  nodes.forEach((node) => {
     if (!map[node.ring]) map[node.ring] = [];
     map[node.ring].push(node);
   });
@@ -638,9 +711,9 @@ function ringIndex() {
   return map;
 }
 
-function ringOrder() {
+function ringOrder(nodes = boardState.nodes) {
   const order = ['inner_core', 'inner', 'mid', 'outer'];
-  const available = new Set(Object.keys(ringIndex()));
+  const available = new Set(Object.keys(ringIndex(nodes)));
   return order.filter((r) => available.has(r));
 }
 
@@ -653,7 +726,7 @@ function ringDistance(aRing, bRing) {
 }
 
 function nodeAngleDeg(node) {
-  return normDeg(node.base_theta + (boardState.ring_rot_deg[node.ring] || 0));
+  return normDeg(node.base_theta);
 }
 
 function wireKey(a, b) {
@@ -700,8 +773,8 @@ function ringLevel(ring) {
   return idx === -1 ? 0 : idx;
 }
 
-function buildNeighborMap() {
-  const ringMap = ringIndex();
+function buildNeighborMap(nodes = boardState.nodes) {
+  const ringMap = ringIndex(nodes);
   const map = new Map();
   const addNeighbor = (a, b) => {
     if (!a || !b || a.id === b.id) return;
@@ -721,19 +794,7 @@ function buildNeighborMap() {
     }
   });
 
-  const order = ringOrder();
-  const core = boardState.nodes.find((n) => n.id === 'core');
-  if (core) {
-    const innerNodes = (ringMap.inner || []).filter((n) => n.id !== 'core');
-    const maxCore = NEIGHBOR_RULES.coreInnerMax;
-    const list = maxCore === 'all' ? innerNodes : innerNodes
-      .map((node) => ({ node, diff: angleDiff(nodeAngleDeg(node), 0) }))
-      .sort((a, b) => a.diff - b.diff)
-      .slice(0, Math.min(maxCore || 6, innerNodes.length))
-      .map((entry) => entry.node);
-    list.forEach((node) => addNeighbor(core, node));
-  }
-
+  const order = ringOrder(nodes);
   order.forEach((ring) => {
     const nodes = (ringMap[ring] || []).filter((n) => n.id !== 'core');
     const ringIdx = order.indexOf(ring);
@@ -751,7 +812,6 @@ function buildNeighborMap() {
     });
   });
 
-  boardState.neighborMap = map;
   return map;
 }
 
@@ -767,137 +827,372 @@ function validateWires(neighborMap) {
   return removed;
 }
 
-function computePowerState(litSet) {
-  const nodeMap = new Map(boardState.nodes.map((n) => [n.id, n]));
-  const enabled = new Set(enabledRings());
+function buildAutoEdges(nodes = boardState.nodes) {
+  const neighborMap = buildNeighborMap(nodes);
+  const edges = [];
+  const seen = new Set();
+  neighborMap.forEach((neighbors, id) => {
+    neighbors.forEach((nid) => {
+      const key = wireKey(id, nid);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const a = nodes.find((n) => n.id === id);
+      const b = nodes.find((n) => n.id === nid);
+      if (!a || !b) return;
+      const connected = !!a.stone_id && !!b.stone_id;
+      edges.push({
+        a: id,
+        b: nid,
+        active: false,
+        connected,
+        kind: 'auto',
+      });
+    });
+  });
+  return { edges, neighborMap };
+}
+
+const ELEMENT_PRIORITY = ['金', '木', '水', '火', '土'];
+const SHENG = {
+  木: '火',
+  火: '土',
+  土: '金',
+  金: '水',
+  水: '木',
+};
+const KE = {
+  金: '木',
+  木: '土',
+  土: '水',
+  水: '火',
+  火: '金',
+};
+
+function computeQiFlow(edges, nodes = boardState.nodes) {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const adjacency = new Map();
-  boardState.wires.forEach((edge) => {
-    if (!edge.enabled) return;
+  edges.forEach((edge) => {
+    if (!edge.connected) return;
     if (!adjacency.has(edge.a)) adjacency.set(edge.a, []);
     if (!adjacency.has(edge.b)) adjacency.set(edge.b, []);
     adjacency.get(edge.a).push(edge.b);
     adjacency.get(edge.b).push(edge.a);
   });
 
-  const parent = new Map();
-  const visited = new Set(['core']);
-  const queue = ['core'];
+  const coreSources = boardState.core_sources || [];
+  nodes.forEach((node) => {
+    if (!node.core_adjacent) return;
+    const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
+    const src = coreSources[idx];
+    node.core_source_element = src?.element || null;
+  });
+
+  const startNodes = nodes.filter((n) => {
+    if (!n.core_adjacent || !n.stone_id) return false;
+    const idx = n.core_source_idx ?? coreSourceIndex(n.base_theta);
+    const src = coreSources[idx];
+    if (!src) return false;
+    return (src.capacity ?? 0) > 0;
+  });
+  startNodes.sort((a, b) => {
+    const ea = a.core_source_element || '';
+    const eb = b.core_source_element || '';
+    const pa = ELEMENT_PRIORITY.indexOf(ea);
+    const pb = ELEMENT_PRIORITY.indexOf(eb);
+    if (pa !== pb) return pa - pb;
+    return a.id.localeCompare(b.id);
+  });
+  const queue = startNodes.map((n) => n.id);
+  const energized = new Set(queue);
+  const parentMap = new Map();
+  const sourceMap = new Map();
+  startNodes.forEach((n) => {
+    if (n.core_source_element) sourceMap.set(n.id, n.core_source_element);
+  });
+
   while (queue.length) {
     const current = queue.shift();
     const neighbors = adjacency.get(current) || [];
     neighbors.forEach((next) => {
-      if (visited.has(next)) return;
-      const curNode = nodeMap.get(current);
-      const nextNode = nodeMap.get(next);
-      if (!curNode || !nextNode) return;
-      if (!enabled.has(nextNode.ring)) return;
-      if (!isConductive(nextNode)) return;
-      if (!diodeAllows(curNode, nextNode)) return;
-      visited.add(next);
-      parent.set(next, current);
+      if (energized.has(next)) return;
+      energized.add(next);
       queue.push(next);
+      parentMap.set(next, current);
+      const src = sourceMap.get(current);
+      if (src) sourceMap.set(next, src);
     });
   }
 
-  const reachableLit = new Set([...litSet].filter((id) => visited.has(id)));
-  const activeSet = new Set();
-  reachableLit.forEach((id) => {
-    let cur = id;
-    while (cur && cur !== 'core') {
-      const p = parent.get(cur);
-      if (!p) break;
-      activeSet.add(wireKey(cur, p));
-      cur = p;
+  const activeEdges = new Set();
+  edges.forEach((edge) => {
+    if (!edge.connected) return;
+    if (energized.has(edge.a) && energized.has(edge.b)) {
+      activeEdges.add(wireKey(edge.a, edge.b));
     }
   });
 
-  let powerBudget = boardState.qi_cap;
-  let bandwidthBudget = boardState.bandwidth_cap;
-  reachableLit.forEach((id) => {
-    const node = nodeMap.get(id);
-    if (!node) return;
-    if (node.componentType === 'SOURCE') powerBudget += 2;
-    if (node.componentType === 'CAPACITOR') bandwidthBudget += 2;
-    if (node.componentType === 'AMPLIFIER') bandwidthBudget += 1;
+  return { energized, activeEdges, parentMap, sourceMap };
+}
+
+function zeroQi() {
+  return { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 };
+}
+
+function addQi(a, b) {
+  const out = zeroQi();
+  Object.keys(out).forEach((k) => {
+    out[k] = (a[k] || 0) + (b[k] || 0);
+  });
+  return out;
+}
+
+function scaleQi(q, s) {
+  const out = zeroQi();
+  Object.keys(out).forEach((k) => {
+    out[k] = (q[k] || 0) * s;
+  });
+  return out;
+}
+
+function dominantElement(q) {
+  let best = '金';
+  let bestVal = -Infinity;
+  Object.keys(q).forEach((k) => {
+    if (q[k] > bestVal) {
+      bestVal = q[k];
+      best = k;
+    }
+  });
+  return best;
+}
+
+function normalizeQi(q) {
+  const total = Object.values(q).reduce((s, v) => s + v, 0) || 1;
+  const out = {};
+  Object.keys(q).forEach((k) => {
+    out[k] = q[k] / total;
+  });
+  return out;
+}
+
+function trigramModifiers(trigram) {
+  const mods = { k_gen: 1, k_ke: 1, k_turb: 1, sustain: 0 };
+  if (trigram === '坎') {
+    mods.k_turb *= 0.7;
+    mods.sustain += 0.1;
+  }
+  if (trigram === '离') {
+    mods.k_gen *= 1.35;
+    mods.k_turb *= 1.2;
+  }
+  if (trigram === '艮') {
+    mods.k_turb *= 0.55;
+  }
+  if (trigram === '巽') {
+    mods.k_gen *= 1.1;
+  }
+  return mods;
+}
+
+function applyReactions(qIn, trigram, slotType) {
+  const q = { ...qIn };
+  let turbulence = 0;
+  const residue = zeroQi();
+  const triMod = trigramModifiers(trigram);
+  let k_gen = QI_CFG.k_gen * triMod.k_gen;
+  let k_ke = QI_CFG.k_ke * triMod.k_ke;
+  let k_turb = QI_CFG.k_turb * triMod.k_turb;
+
+  if (slotType === SLOT_TYPES.mod) {
+    k_ke *= 0.85;
+    k_turb *= 0.75;
+  }
+
+  Object.entries(KE).forEach(([a, b]) => {
+    const n = k_ke * Math.min(q[a] || 0, q[b] || 0);
+    if (n <= 0) return;
+    q[a] -= n;
+    q[b] -= n;
+    turbulence += n;
+    residue[b] += n;
   });
 
-  let powerUsed = 0;
-  reachableLit.forEach((id) => {
-    const node = nodeMap.get(id);
-    if (node) powerUsed += nodePowerCost(node);
+  Object.entries(SHENG).forEach(([a, b]) => {
+    const g = k_gen * (q[a] || 0);
+    if (g <= 0) return;
+    q[b] += g;
   });
 
-  let bandwidthUsed = 0;
-  activeSet.forEach((key) => {
-    const edge = boardState.wires.get(key);
-    bandwidthUsed += edge?.bandwidthCost ?? 1;
+  const transmit = Math.exp(-k_turb * turbulence);
+  return { qOut: scaleQi(q, transmit), turbulence, residue, transmit };
+}
+
+function computeQiNetwork(nodes, edges) {
+  const energizedNodes = nodes.filter((n) => n.powered);
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const activeEdges = edges.filter((e) => e.active);
+  const adjacency = new Map();
+  activeEdges.forEach((edge) => {
+    if (!adjacency.has(edge.a)) adjacency.set(edge.a, []);
+    if (!adjacency.has(edge.b)) adjacency.set(edge.b, []);
+    adjacency.get(edge.a).push(edge.b);
+    adjacency.get(edge.b).push(edge.a);
   });
 
-  return { reachableLit, activeSet, powerUsed, powerBudget, bandwidthUsed, bandwidthBudget, visited };
+  const order = energizedNodes.map((n) => n.id).sort();
+  let qiOutPrev = new Map(order.map((id) => [id, zeroQi()]));
+
+  for (let iter = 0; iter < QI_CFG.iterations; iter += 1) {
+    const qiOutNext = new Map();
+    order.forEach((id) => {
+      const node = nodeMap.get(id);
+      if (!node) return;
+      let qIn = zeroQi();
+      const neighbors = adjacency.get(id) || [];
+      if (neighbors.length) {
+        neighbors.forEach((nid) => {
+          qIn = addQi(qIn, qiOutPrev.get(nid) || zeroQi());
+        });
+        qIn = scaleQi(qIn, 1 / neighbors.length);
+      }
+      if (node.core_adjacent) {
+        const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
+        const src = boardState.core_sources?.[idx];
+        if (src?.element) {
+          const inject = zeroQi();
+          inject[src.element] = Math.max(0.5, src.capacity * 0.2);
+          qIn = addQi(qIn, inject);
+        }
+      }
+      const reaction = applyReactions(qIn, node.trigram, node.slot_type);
+      qiOutNext.set(id, reaction.qOut);
+      node.qi_out = reaction.qOut;
+      node.qi_ratio = normalizeQi(reaction.qOut);
+      node.turbulence = reaction.turbulence;
+      node.residue = reaction.residue;
+      node.dominant_element = dominantElement(reaction.qOut);
+      node.transmit = reaction.transmit;
+    });
+    qiOutPrev = qiOutNext;
+  }
+
+  edges.forEach((edge) => {
+    if (!edge.active) {
+      edge.qi_comp = zeroQi();
+      edge.turbulence = 0;
+      return;
+    }
+    const a = nodeMap.get(edge.a);
+    const b = nodeMap.get(edge.b);
+    const qa = a?.qi_out || zeroQi();
+    const qb = b?.qi_out || zeroQi();
+    edge.qi_comp = addQi(qa, qb);
+    edge.qi_ratio = normalizeQi(edge.qi_comp);
+    edge.dominant_element = dominantElement(edge.qi_comp);
+    edge.turbulence = ((a?.turbulence || 0) + (b?.turbulence || 0)) * 0.5;
+  });
+}
+
+function computeConnectivitySnapshot(nodes) {
+  const { edges, neighborMap } = buildAutoEdges(nodes);
+  const { energized, activeEdges, parentMap, sourceMap } = computeQiFlow(edges, nodes);
+  const powerUsed = nodes.filter((n) => n.stone_id).length;
+  const bandwidthUsed = activeEdges.size;
+  const powerOk = powerUsed <= boardState.qi_cap;
+  const bandwidthOk = bandwidthUsed <= boardState.bandwidth_cap;
+  const nodeReasons = new Map();
+  const nodePowered = new Map();
+
+  nodes.forEach((node) => {
+    const lit = !!node.stone_id;
+    const powered = powerOk && bandwidthOk && energized.has(node.id);
+    nodePowered.set(node.id, powered);
+    if (lit && !powered) {
+      if (!powerOk || !bandwidthOk) {
+        nodeReasons.set(node.id, '预算不足');
+      } else if (node.core_adjacent) {
+        const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
+        const src = boardState.core_sources?.[idx];
+        nodeReasons.set(node.id, src && (src.capacity ?? 0) <= 0 ? '供能不足' : '未接入核心');
+      } else {
+        nodeReasons.set(node.id, '未接入核心');
+      }
+    }
+  });
+
+  return {
+    edges,
+    neighborMap,
+    energized,
+    activeEdges,
+    parentMap,
+    sourceMap,
+    powerUsed,
+    bandwidthUsed,
+    powerOk,
+    bandwidthOk,
+    nodeReasons,
+    nodePowered,
+  };
 }
 
 function recomputeConnectivity(cause = '') {
   const enabled = new Set(enabledRings());
   nodeReason = new Map();
-  const neighborMap = buildNeighborMap();
-  const removed = validateWires(neighborMap);
-  if (removed.length) {
-    runtime.flash = {
-      broken: removed.map((edge) => wireKey(edge.a, edge.b)),
-      gained: [],
-      start: performance.now(),
-      duration: 180,
-    };
-    showFeedback(`断线：${removed.length}`);
-  }
-
-  const result = computePowerState(boardState.lit);
-  const unreachable = [...boardState.lit].filter((id) => !result.reachableLit.has(id));
-  if (unreachable.length) {
-    unreachable.forEach((id) => boardState.lit.delete(id));
-    showFeedback(`断线断电：${unreachable.length}`);
-  }
+  const snapshot = computeConnectivitySnapshot(boardState.nodes);
+  boardState.neighborMap = snapshot.neighborMap;
+  boardState.qi_used = snapshot.powerUsed;
+  boardState.bandwidth_used = snapshot.bandwidthUsed;
 
   boardState.nodes.forEach((node) => {
-    node.lit = node.id === 'core' || boardState.lit.has(node.id);
-    node.powered = node.id === 'core' || (node.lit && result.reachableLit.has(node.id));
-    if (node.lit && !node.powered) {
-      nodeReason.set(node.id, '未连通或开关关闭');
-    }
+    node.lit = !!node.stone_id;
+    node.powered = snapshot.powerOk && snapshot.bandwidthOk && snapshot.energized.has(node.id);
+    node.source_element = snapshot.sourceMap.get(node.id) || null;
+    node.parent = snapshot.parentMap.get(node.id) || null;
+    const reason = snapshot.nodeReasons.get(node.id);
+    if (reason) nodeReason.set(node.id, reason);
   });
 
-  const edges = [];
-  const connectionCount = new Map();
-  boardState.wires.forEach((edge, key) => {
-    const active = result.activeSet.has(key);
-    edges.push({
+  boardState.edges = snapshot.edges.map((edge) => {
+    let src = snapshot.sourceMap.get(edge.a) || snapshot.sourceMap.get(edge.b) || null;
+    if (snapshot.parentMap.get(edge.a) === edge.b) src = snapshot.sourceMap.get(edge.a) || src;
+    if (snapshot.parentMap.get(edge.b) === edge.a) src = snapshot.sourceMap.get(edge.b) || src;
+    return {
       ...edge,
-      active,
-      kind: 'wire',
-    });
-    connectionCount.set(edge.a, (connectionCount.get(edge.a) || 0) + 1);
-    connectionCount.set(edge.b, (connectionCount.get(edge.b) || 0) + 1);
+      active: snapshot.powerOk && snapshot.bandwidthOk && snapshot.activeEdges.has(wireKey(edge.a, edge.b)),
+      source_element: src,
+    };
   });
 
-  boardState.nodes.forEach((node) => {
-    if (!enabled.has(node.ring)) return;
-    node.connected = (connectionCount.get(node.id) || 0) > 0;
-    node.connectionCount = connectionCount.get(node.id) || 0;
+  boardState.parentMap = snapshot.parentMap;
+  boardState.sourceMap = snapshot.sourceMap;
+
+  runtime.lastActiveEdges = new Set(boardState.edges.filter((e) => e.active).map(edgeKey));
+
+  computeQiNetwork(boardState.nodes, boardState.edges);
+  boardState.edges.forEach((edge) => {
+    if (!edge.connected) {
+      edge.state = 'NONE';
+      return;
+    }
+    const reason = [];
+    if (!snapshot.powerOk || !snapshot.bandwidthOk) reason.push('预算不足');
+    if (!edge.active) reason.push('未接入核心');
+    if (edge.turbulence > QI_CFG.turbulence_dash) reason.push('乱流过高');
+    if (edge.active && edge.turbulence <= QI_CFG.turbulence_dash) {
+      edge.state = 'ENERGIZED';
+    } else {
+      edge.state = 'CONNECTED_NO_QI';
+      edge.reason = reason.join(' / ') || '无气';
+    }
+    edge.source_element = edge.dominant_element || edge.source_element;
   });
 
-  boardState.power_used = Math.round(result.powerUsed * 10) / 10;
-  boardState.bandwidth_used = Math.round(result.bandwidthUsed * 10) / 10;
-  boardState.edges = edges;
-
-  const activeSet = new Set(edges.filter((e) => e.active).map(edgeKey));
-  runtime.lastActiveEdges = activeSet;
-
-  runBoardEvaluation();
+  runSolver();
 }
 
 function nodePosition(node) {
-  const rot = boardState.ring_rot_deg[node.ring] || 0;
-  const theta = (node.base_theta + rot) * (Math.PI / 180);
+  const theta = node.base_theta * (Math.PI / 180);
   return {
     x: Math.cos(theta) * node.r,
     y: Math.sin(theta) * node.r,
@@ -937,6 +1232,48 @@ function hitTestNode(event) {
     if (dist <= r && dist < bestDist) {
       best = node;
       bestDist = dist;
+    }
+  });
+  return best;
+}
+
+function hitTestEdge(event) {
+  const svg = dom.container.querySelector('svg.board');
+  const group = svg?.querySelector('#board-root');
+  if (!svg || !group) return null;
+  const ctm = group.getScreenCTM();
+  if (!ctm) return null;
+  const point = svg.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const pt = point.matrixTransform(ctm.inverse());
+  const size = 760;
+  const cx = size / 2;
+  const cy = size / 2;
+  let best = null;
+  let bestDist = Infinity;
+  const edges = boardState.edges.filter((e) => e.connected && e.state !== 'NONE');
+  edges.forEach((edge) => {
+    const a = boardState.nodes.find((n) => n.id === edge.a);
+    const b = boardState.nodes.find((n) => n.id === edge.b);
+    if (!a || !b) return;
+    const pa = nodePosition(a);
+    const pb = nodePosition(b);
+    const x1 = cx + pa.x;
+    const y1 = cy + pa.y;
+    const x2 = cx + pb.x;
+    const y2 = cy + pb.y;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    let t = ((pt.x - x1) * dx + (pt.y - y1) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
+    const dist = Math.hypot(pt.x - projX, pt.y - projY);
+    if (dist < 6 && dist < bestDist) {
+      bestDist = dist;
+      best = edge;
     }
   });
   return best;
@@ -1008,7 +1345,12 @@ function renderBoard(now = performance.now()) {
   const glowStrength = ui.glowStrength ?? 0.18;
   const sectorOpacity = ui.sectorOpacity ?? 0.05;
   const scale = ui.scale ?? 1;
-  const selectedRing = ui.selectedRing;
+  const panX = ui.panX ?? 0;
+  const panY = ui.panY ?? 0;
+  const lineMode = ui.lineMode || 'all';
+  const lineElement = ui.lineElement || '水';
+  const pathEdges = runtime.pathEdges;
+  const selectedRing = null;
 
   const ringMap = ringIndex();
   const ringRadii = boardData.rings.map((r) => r.radius);
@@ -1026,42 +1368,91 @@ function renderBoard(now = performance.now()) {
       </feMerge>
     </filter>
   </defs>`;
-  svg += `<g id="board-root" transform="translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})">`;
+  svg += `<g id="board-root" transform="translate(${cx + panX} ${cy + panY}) scale(${scale}) translate(${-cx} ${-cy})">`;
 
   if (showSectors) {
-    const elements = boardData.meta.elements || Object.keys(colors);
-    const step = 360 / elements.length;
-    elements.forEach((elem, idx) => {
+    const step = 360 / TRIGRAMS.length;
+    TRIGRAMS.forEach((tri, idx) => {
       const start = idx * step;
       const end = start + step;
-      const path = sectorPath(cx, cy, innerR, maxR + 30, start, end);
-      const fill = rgba(colors[elem] || WUXING_COLORS[elem] || '#4fe6ff', Math.min(0.18, Math.max(0.08, sectorOpacity)));
-      const stroke = rgba(colors[elem] || WUXING_COLORS[elem] || '#4fe6ff', 0.16);
-      svg += `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="1" />`;
+      const path = sectorPath(cx, cy, innerR, maxR + 34, start, end);
+      const fill = TRIGRAM_COLORS[tri] || `rgba(120,160,200,${sectorOpacity})`;
+      const stroke = `rgba(120,170,200,${0.32})`;
+      svg += `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="1.2" />`;
     });
+    for (let i = 0; i < TRIGRAMS.length; i += 1) {
+      const angle = i * step;
+      const start = polarPoint(cx, cy, innerR, angle);
+      const end = polarPoint(cx, cy, maxR + 34, angle);
+      svg += `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="rgba(140,180,210,0.45)" stroke-width="1.4" />`;
+    }
+    const watermarkR = innerR + (maxR - innerR) * 0.55;
+    TRIGRAMS.forEach((tri, idx) => {
+      const mid = idx * step + step / 2;
+      const pos = polarPoint(cx, cy, watermarkR, mid);
+      const symbol = TRIGRAM_SYMBOLS[tri] || '';
+      svg += `<text x="${pos.x}" y="${pos.y + 12}" text-anchor="middle" font-size="${VISUAL_CFG.labels.watermark}" fill="rgba(160,190,210,0.08)" font-weight="700">${symbol}</text>`;
+    });
+  }
+
+  const labelInner = maxR + 16;
+  const labelOuter = maxR + 36;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${labelInner}" fill="none" stroke="rgba(120,160,190,0.35)" stroke-width="1.4" />`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${labelOuter}" fill="none" stroke="rgba(120,160,190,0.2)" stroke-width="1" />`;
+  const trigramLabelR = maxR + 28;
+  TRIGRAMS.forEach((tri, idx) => {
+    const step = 360 / TRIGRAMS.length;
+    const mid = idx * step + step / 2;
+    const pos = polarPoint(cx, cy, trigramLabelR, mid);
+    const symbol = TRIGRAM_SYMBOLS[tri] || '';
+    svg += `<text x="${pos.x}" y="${pos.y - 4}" text-anchor="middle" font-size="${VISUAL_CFG.labels.trigramSymbol}" fill="rgba(230,240,250,0.95)" font-weight="600" stroke="rgba(6,8,10,0.8)" stroke-width="3" paint-order="stroke">${symbol}</text>`;
+    svg += `<text x="${pos.x}" y="${pos.y + 14}" text-anchor="middle" font-size="${VISUAL_CFG.labels.trigramName}" fill="rgba(220,232,244,0.9)" font-weight="600" stroke="rgba(6,8,10,0.75)" stroke-width="3" paint-order="stroke">${tri}</text>`;
+  });
+
+  const coreSources = boardState.core_sources || [];
+  let coreVisual = null;
+  if (coreSources.length > 0) {
+    const coreStep = 360 / coreSources.length;
+    const coreR = Math.max(52, Math.min(innerR - 14, 92));
+    const coreInner = coreR * 0.25;
+    coreVisual = { coreStep, coreR, coreInner };
+    svg += `<text x="${cx}" y="${cy - coreR - 6}" text-anchor="middle" font-size="12" fill="rgba(210,224,238,0.8)">灵根</text>`;
+    coreSources.forEach((src, idx) => {
+      const start = idx * coreStep;
+      const end = start + coreStep;
+      const color = WUXING_COLORS[src.element] || '#9fd0ff';
+      const fill = rgba(color, 0.45);
+      const stroke = rgba(color, 0.8);
+      const path = sectorPath(cx, cy, coreInner, coreR, start, end);
+      svg += `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="1.4" />`;
+      const mid = start + coreStep / 2;
+      const pos = polarPoint(cx, cy, coreR * 0.62, mid);
+      const label = `${src.element}`;
+      const val = `${src.capacity ?? 0}/${src.regen ?? 0}`;
+      const warn = src.capacity !== undefined && src.capacity <= 2;
+      const textColor = warn ? 'rgba(255,190,150,0.95)' : 'rgba(240,245,250,0.95)';
+      svg += `<text x="${pos.x}" y="${pos.y - 4}" text-anchor="middle" font-size="12" fill="${textColor}" font-weight="600">${label}</text>`;
+      svg += `<text x="${pos.x}" y="${pos.y + 12}" text-anchor="middle" font-size="10" fill="rgba(210,220,230,0.85)">${val}</text>`;
+      if (warn) {
+        svg += `<text x="${pos.x}" y="${pos.y + 26}" text-anchor="middle" font-size="10" fill="rgba(255,160,120,0.9)">供能低</text>`;
+      }
+    });
+    svg += `<circle cx="${cx}" cy="${cy}" r="${coreInner}" fill="rgba(6,10,14,0.9)" stroke="rgba(120,160,190,0.35)" stroke-width="1" />`;
   }
 
   if (showRings) {
     boardData.rings.forEach((ring) => {
       const ringName = cfgData.ring_map[ring.id] || ring.id;
       if (!enabled.has(ringName)) return;
-      const isSelected = ringName === selectedRing;
-      const strokeAlpha = isSelected ? 0.8 : 0.25;
+      const strokeAlpha = 0.25;
       const stroke = `rgba(120,170,200,${strokeAlpha * ringStrength})`;
-      const width = isSelected ? 2.6 : 1.2;
-      if (isSelected) {
-        svg += `<circle cx="${cx}" cy="${cy}" r="${ring.radius}" fill="none" stroke="rgba(120,220,255,${0.12 * ringStrength})" stroke-width="${width + 6}" />`;
-      }
+      const width = 1.2;
       svg += `<circle cx="${cx}" cy="${cy}" r="${ring.radius}" fill="none" stroke="${stroke}" stroke-width="${width}" />`;
     });
     if (cfgData.inner_core && enabled.has('inner_core')) {
-      const isSelected = selectedRing === 'inner_core';
-      const strokeAlpha = isSelected ? 0.8 : 0.25;
+      const strokeAlpha = 0.25;
       const stroke = `rgba(120,170,200,${strokeAlpha * ringStrength})`;
-      const width = isSelected ? 2.6 : 1.2;
-      if (isSelected) {
-        svg += `<circle cx="${cx}" cy="${cy}" r="${cfgData.inner_core.radius}" fill="none" stroke="rgba(120,220,255,${0.12 * ringStrength})" stroke-width="${width + 6}" />`;
-      }
+      const width = 1.2;
       svg += `<circle cx="${cx}" cy="${cy}" r="${cfgData.inner_core.radius}" fill="none" stroke="${stroke}" stroke-width="${width}" />`;
     }
 
@@ -1069,70 +1460,67 @@ function renderBoard(now = performance.now()) {
       if (!enabled.has(ringName)) return;
       const ringRadius = nodes[0]?.r;
       if (!ringRadius) return;
-      const rot = boardState.ring_rot_deg[ringName] || 0;
       const tickStep = 10;
-      const isSelected = ringName === selectedRing;
       for (let angle = 0; angle < 360; angle += tickStep) {
         const major = angle % 30 === 0;
         const length = major ? 10 : 6;
-        const tickAngle = angle + rot;
+        const tickAngle = angle;
         const start = polarPoint(cx, cy, ringRadius - 6, tickAngle);
         const end = polarPoint(cx, cy, ringRadius - 6 - length, tickAngle);
-        const alpha = isSelected ? 0.75 : 0.32;
+        const alpha = 0.32;
         svg += `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="rgba(180,220,255,${alpha})" stroke-width="${major ? 1.6 : 1}" />`;
       }
     });
   }
 
+  if (coreVisual) {
+    const { coreR } = coreVisual;
+    boardState.nodes.forEach((node) => {
+      if (!node.core_adjacent || !node.stone_id || !node.powered) return;
+      const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
+      const src = coreSources[idx];
+      if (!src) return;
+      const endPos = nodePosition(node);
+      const len = Math.hypot(endPos.x, endPos.y) || 1;
+      const dirX = endPos.x / len;
+      const dirY = endPos.y / len;
+      const start = { x: cx + dirX * coreR * 0.92, y: cy + dirY * coreR * 0.92 };
+      const end = { x: cx + endPos.x - dirX * VISUAL_CFG.inject.inset, y: cy + endPos.y - dirY * VISUAL_CFG.inject.inset };
+      const color = WUXING_COLORS[src.element] || '#9fd0ff';
+      svg += `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="${rgba(color, 0.65)}" stroke-width="${VISUAL_CFG.inject.width}" stroke-linecap="round" />`;
+      svg += `<line x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" stroke="${rgba(color, 0.22)}" stroke-width="${VISUAL_CFG.inject.glowWidth}" stroke-linecap="round" />`;
+    });
+  }
+
   if (showEdges) {
     const dashOffset = -((now * 0.05) % 24);
-    if (boardState.ui?.allowAutoEdges && boardState.neighborMap?.size) {
-      boardState.neighborMap.forEach((neighbors, id) => {
-        const a = boardState.nodes.find((n) => n.id === id);
-        if (!a) return;
-        neighbors.forEach((nid) => {
-          if (id > nid) return;
-          const b = boardState.nodes.find((n) => n.id === nid);
-          if (!b) return;
-          const pa = nodePosition(a);
-          const pb = nodePosition(b);
-          svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="rgba(120,140,160,0.15)" stroke-width="1" stroke-dasharray="2 6" />`;
-        });
-      });
+    let edgesToDraw = boardState.edges.filter((edge) => edge.connected);
+    if (lineMode === 'element') {
+      edgesToDraw = edgesToDraw.filter((edge) => edge.dominant_element === lineElement || edge.source_element === lineElement);
+    } else if (lineMode === 'path') {
+      edgesToDraw = pathEdges ? edgesToDraw.filter((edge) => pathEdges.has(wireKey(edge.a, edge.b))) : [];
     }
-
-    if (runtime.showNeighborHints && runtime.hoveredNodeId && boardState.neighborMap?.size) {
-      const neighbors = boardState.neighborMap.get(runtime.hoveredNodeId);
-      const a = boardState.nodes.find((n) => n.id === runtime.hoveredNodeId);
-      if (a && neighbors) {
-        neighbors.forEach((nid) => {
-          const key = wireKey(a.id, nid);
-          if (boardState.wires.has(key)) return;
-          const b = boardState.nodes.find((n) => n.id === nid);
-          if (!b) return;
-          const pa = nodePosition(a);
-          const pb = nodePosition(b);
-          svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="rgba(180,200,220,0.45)" stroke-width="1.4" stroke-dasharray="3 6" />`;
-        });
-      }
-    }
-
-    boardState.edges.forEach((edge) => {
+    edgesToDraw.forEach((edge) => {
       const a = boardState.nodes.find((n) => n.id === edge.a);
       const b = boardState.nodes.find((n) => n.id === edge.b);
       if (!a || !b) return;
       if (!enabled.has(a.ring) || !enabled.has(b.ring)) return;
       const pa = nodePosition(a);
       const pb = nodePosition(b);
-      const powered = edge.active && a.powered && b.powered;
+      const dominant = edge.dominant_element || edge.source_element;
+      const edgeColor = WUXING_COLORS[dominant] || 'rgba(120,220,255,0.9)';
+      const pathBoost = pathEdges && pathEdges.has(wireKey(edge.a, edge.b));
+      const baseAlpha = lineMode === 'all' && pathEdges ? (pathBoost ? 0.22 : 0.06) : VISUAL_CFG.line.baseAlpha;
+      const lineAlpha = lineMode === 'all' && pathEdges ? (pathBoost ? 0.95 : 0.2) : VISUAL_CFG.line.glowAlpha;
+      const width = pathBoost ? VISUAL_CFG.line.pathWidth : VISUAL_CFG.line.baseWidth;
+      const solidAlpha = edge.active ? baseAlpha : baseAlpha * 0.45;
+      svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${rgba(edgeColor, solidAlpha * edgeStrength)}" stroke-width="${width}" />`;
       if (edge.active) {
-        const base = powered ? 0.14 : 0.06;
-        const lineAlpha = powered ? 0.95 : 0.35;
-        const width = powered ? 8 : 2.4;
-        svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="rgba(120,220,255,${base * edgeStrength})" stroke-width="${width}" />`;
-        svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="rgba(120,220,255,${lineAlpha * edgeStrength})" stroke-width="${powered ? 3.2 : 1.6}" stroke-linecap="round" stroke-dasharray="${powered ? '8 10' : '0'}" stroke-dashoffset="${dashOffset}" />`;
-      } else {
-        svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="rgba(160,170,180,${0.35 * edgeStrength})" stroke-width="1.2" />`;
+        svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${rgba(edgeColor, lineAlpha * edgeStrength)}" stroke-width="${pathBoost ? 3.3 : 2.2}" stroke-linecap="round" stroke-dasharray="8 10" stroke-dashoffset="${dashOffset}" />`;
+      }
+      if ((edge.turbulence || 0) > QI_CFG.turbulence_dash) {
+        const ratioColor = mixColorFromRatio(edge.qi_ratio || normalizeQi(edge.qi_comp || zeroQi()));
+        svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${rgba(ratioColor, 0.8)}" stroke-width="${VISUAL_CFG.line.dashedWidth}" stroke-dasharray="4 6" />`;
       }
     });
   }
@@ -1159,7 +1547,9 @@ function renderBoard(now = performance.now()) {
   boardState.nodes.forEach((node) => {
     const isEnabled = enabled.has(node.ring);
     const pos = nodePosition(node);
-    const elemColor = colors[node.elem] || WUXING_COLORS[node.elem] || '#4fe6ff';
+    const stone = STONES.find((s) => s.id === node.stone_id);
+    const displayElem = stone ? stone.element : node.elem;
+    const elemColor = colors[displayElem] || WUXING_COLORS[displayElem] || '#4fe6ff';
     const strokeColor = rgba(elemColor, 0.9);
     const neutralFill = highContrast ? 'rgba(230,240,250,0.55)' : 'rgba(210,220,235,0.38)';
     const baseRadius = nodeRadius(node);
@@ -1185,19 +1575,30 @@ function renderBoard(now = performance.now()) {
       svg += `<circle class="node-dot powered" data-node-id="${node.id}" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + hoverBoost + 1}" fill="${neutralFill}" stroke="${strokeColor}" stroke-width="2.8" />`;
     }
 
-    if (node.connected && !node.powered) {
-      svg += `<circle class="node-connected" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 6}" fill="none" stroke="rgba(120,200,255,0.35)" stroke-width="1.4" />`;
-    }
-
     if (selected) {
       svg += `<circle class="node-selected" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 7}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" />`;
       svg += `<circle class="node-selected" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 10}" fill="none" stroke="rgba(120,220,255,0.7)" stroke-width="1.2" />`;
     }
-    if (runtime.wireStartId === node.id) {
-      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 12}" fill="none" stroke="rgba(255,230,140,0.85)" stroke-width="2" stroke-dasharray="4 6" />`;
+    if (node.core_adjacent) {
+      const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
+      const src = coreSources[idx];
+      const haloColor = src ? WUXING_COLORS[src.element] : '#9fd0ff';
+      const haloAlpha = node.stone_id ? 0.55 : 0.22;
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 8}" fill="none" stroke="${rgba(haloColor, haloAlpha)}" stroke-width="1.6" />`;
     }
-    if (runtime.rejectedNodeId === node.id && now < runtime.rejectUntil) {
-      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 10}" fill="none" stroke="rgba(255,90,90,0.9)" stroke-width="2.2" />`;
+    if (node.slot_type === SLOT_TYPES.skill) {
+      const side = (baseRadius + VISUAL_CFG.slot.outline) * 2;
+      svg += `<rect x="${cx + pos.x - side / 2}" y="${cy + pos.y - side / 2}" width="${side}" height="${side}" fill="none" stroke="rgba(200,220,240,0.45)" stroke-width="1.6" />`;
+      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(220,235,250,0.85)" font-weight="600">技</text>`;
+    } else if (node.slot_type === SLOT_TYPES.mod) {
+      const r = baseRadius + VISUAL_CFG.slot.outline;
+      const x = cx + pos.x;
+      const y = cy + pos.y;
+      svg += `<polygon points="${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}" fill="none" stroke="rgba(190,220,250,0.45)" stroke-width="1.6" />`;
+      svg += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(220,235,250,0.8)" font-weight="600">改</text>`;
+    } else if (node.slot_type === SLOT_TYPES.stat) {
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + VISUAL_CFG.slot.outline}" fill="none" stroke="rgba(180,210,235,0.35)" stroke-width="1.2" stroke-dasharray="3 5" />`;
+      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(210,230,245,0.75)" font-weight="600">属</text>`;
     }
 
     if (node.type === 'core') {
@@ -1256,75 +1657,45 @@ function updateHud() {
     dom.realmSelect.innerHTML = realms.map((r) => `<option value="${r}">${r}</option>`).join('');
   }
   dom.realmSelect.value = boardState.realm;
-  const ringOptions = [
-    { value: 'inner', label: '内环' },
-    { value: 'mid', label: '中环' },
-    { value: 'outer', label: '外环' },
-    { value: 'inner_core', label: '内核' },
-  ];
-  const enabled = new Set(enabledRings());
-  const optionsKey = ringOptions
-    .filter((r) => enabled.has(r.value))
-    .map((r) => r.value)
-    .join('|');
-  if (optionsKey && optionsKey !== runtime.lastRingOptionsKey) {
-    const optionsHtml = ringOptions
-      .filter((r) => enabled.has(r.value))
-      .map((r) => `<option value="${r.value}">${r.label}</option>`)
-      .join('');
-    dom.ringSelect.innerHTML = optionsHtml;
-    runtime.lastRingOptionsKey = optionsKey;
+  if (dom.linggenSelect && dom.linggenSelect.options.length === 0) {
+    dom.linggenSelect.innerHTML = LINGGEN_PROFILES.map((p) => `<option value="${p.id}">${p.name}</option>`).join('');
   }
-  if (!enabled.has(boardState.ui?.selectedRing)) {
-    boardState.ui.selectedRing = dom.ringSelect.value;
+  if (dom.linggenSelect) dom.linggenSelect.value = boardState.linggen_id;
+  if (dom.stoneSelect && dom.stoneSelect.options.length === 0) {
+    dom.stoneSelect.innerHTML = STONES.map((s) => `<option value="${s.id}">[${stoneCategoryLabel(s.category)}] ${s.name}</option>`).join('');
+    runtime.selectedStoneId = STONES[0]?.id || null;
   }
-  if (boardState.ui?.selectedRing) {
-    dom.ringSelect.value = boardState.ui.selectedRing;
-  }
-  dom.hudPower.textContent = `${boardState.power_used || 0} / ${boardState.qi_cap}`;
+  dom.hudPower.textContent = `${boardState.qi_used || 0} / ${boardState.qi_cap}`;
   dom.hudBandwidth.textContent = `${boardState.bandwidth_used || 0} / ${boardState.bandwidth_cap}`;
-  const lit = boardState.nodes.filter((n) => n.lit).length - 1;
-  const powered = boardState.nodes.filter((n) => n.powered).length - 1;
-  dom.hudCounts.textContent = `${Math.max(lit, 0)} / ${Math.max(powered, 0)}`;
-  if (runtime.evalResult?.derived?.mainElement) {
-    dom.hudBonus.textContent = `主元素: ${runtime.evalResult.derived.mainElement}`;
-  } else {
-    dom.hudBonus.textContent = boardState.ui?.mode === 'wire' ? '连线模式' : '通电模式';
-  }
-  if (dom.modeToggle) {
-    dom.modeToggle.textContent = boardState.ui?.mode === 'wire' ? '连线模式' : '通电模式';
-  }
-  dom.rotateKnob.textContent = `旋转${dom.ringSelect.selectedOptions[0]?.textContent || '中环'}`;
-  if (dom.hudRot) {
-    const ring = boardState.ui?.selectedRing || dom.ringSelect.value;
-    const angle = boardState.ring_rot_deg[ring] || 0;
-    dom.hudRot.textContent = `${angle.toFixed(1)}°`;
-  }
+  const lit = boardState.nodes.filter((n) => n.lit).length;
+  const powered = boardState.nodes.filter((n) => n.powered).length;
+  dom.hudCounts.textContent = `${lit} / ${powered}`;
+  dom.hudBonus.textContent = boardState.main_element || '无';
   dom.cfgHash.textContent = cfgHash;
   dom.cfgVersion.textContent = cfgData.ruleset_version || '-';
-  dom.cfgRot.textContent = JSON.stringify(boardState.ring_rot_deg);
   dom.cfgMtime.textContent = cfgMtime;
+  if (dom.lineMode) dom.lineMode.value = boardState.ui?.lineMode || 'all';
+  if (dom.lineElement) dom.lineElement.value = boardState.ui?.lineElement || '水';
+  if (dom.lineElement) dom.lineElement.disabled = (boardState.ui?.lineMode || 'all') !== 'element';
 }
 
 function updateDetail(nodeId) {
   const node = boardState.nodes.find((n) => n.id === nodeId) || boardState.nodes.find((n) => n.id === 'core');
   if (!node) return;
-  dom.detail.name.textContent = node.id;
-  dom.detail.element.textContent = node.elem;
-  dom.detail.type.textContent = node.size;
-  dom.detail.trigram.textContent = node.trigram;
-  dom.detail.component.textContent = node.componentType || '-';
-  const effectId = assignEffectId(node);
-  if (effectId && window.BD_CATALOG?.nodeEffects?.[effectId]) {
-    const effect = window.BD_CATALOG.nodeEffects[effectId];
-    dom.detail.effect.textContent = `${effect.category}: ${effect.id}`;
-  } else {
-    dom.detail.effect.textContent = COMPONENT_DESC[node.componentType] || '-';
-  }
-  dom.detail.power.textContent = node.powered ? '通电' : node.lit ? '已点亮' : '未点亮';
-  dom.detail.reason.textContent = nodeReason.get(node.id) || (node.componentType === 'SWITCH' && !node.switchOn ? '开关关闭' : '-');
+  const stone = STONES.find((s) => s.id === node.stone_id);
+  const slotText = slotTypeLabel(node);
+  const trigramSymbol = TRIGRAM_SYMBOLS[node.trigram] || '';
+  dom.detail.name.textContent = node.name || node.id;
+  dom.detail.element.textContent = stone ? stone.element : (node.core_source_element || node.elem);
+  dom.detail.type.textContent = slotText;
+  dom.detail.trigram.textContent = `${trigramSymbol} ${node.trigram}`;
+  dom.detail.component.textContent = '-';
+  const effectText = stone ? `${stone.name} · ${stoneCategoryLabel(stone.category)}` : slotText;
+  dom.detail.effect.textContent = effectText;
+  dom.detail.power.textContent = node.powered ? '通气' : node.lit ? '已插石' : '未插石';
+  dom.detail.reason.textContent = nodeReason.get(node.id) || '-';
   if (dom.toggleSwitch) {
-    dom.toggleSwitch.classList.toggle('hidden', node.componentType !== 'SWITCH');
+    dom.toggleSwitch.classList.add('hidden');
   }
 
   dom.stats.atk.textContent = Math.round(10 + poweredStat('atk'));
@@ -1335,10 +1706,6 @@ function updateDetail(nodeId) {
   dom.stats.regen.textContent = Math.round(3 + poweredStat('regen'));
 }
 
-function currentTrigramDeg() {
-  return boardState.ring_rot_deg?.mid ?? 0;
-}
-
 function mapRing(ring) {
   if (ring === 'inner_core') return 'CORE';
   if (ring === 'inner') return 'INNER';
@@ -1347,165 +1714,83 @@ function mapRing(ring) {
   return 'INNER';
 }
 
-function assignEffectId(node) {
-  if (node.type === 'core') return null;
-  const isMajor = node.size === 'major' || node.type === 'major' || node.type === 'keystone';
-  if (isMajor) {
-    if (node.elem === '火') return 'TRG_ONHIT_BURN_15';
-    if (node.elem === '金') return 'SKM_CONVERT_MAIN_TO_METAL';
-    if (node.elem === '水') return 'SKM_ADD_TAG_WATER';
-  }
-  switch (node.elem) {
-    case '火':
-      return 'STAT_FIRE_DMG_3';
-    case '土':
-      return 'STAT_EARTH_HP_5';
-    case '金':
-      return 'STAT_METAL_CRIT_2';
-    case '水':
-      return 'STAT_WATER_MANA_3';
-    case '木':
-      return 'STAT_WOOD_REGEN_2';
-    default:
-      return null;
-  }
+function slotTypeLabel(node) {
+  let base = '普通槽';
+  if (node.slot_type === SLOT_TYPES.skill) base = '技能槽';
+  if (node.slot_type === SLOT_TYPES.mod) base = '改造槽';
+  if (node.slot_type === SLOT_TYPES.stat) base = '属性槽';
+  if (node.core_adjacent) return `核心入口·${base}`;
+  return base;
 }
 
-function buildBoardEvalState() {
-  const sectors = [
-    { element: 'FIRE', startDeg: 0, endDeg: 72 },
-    { element: 'EARTH', startDeg: 72, endDeg: 144 },
-    { element: 'METAL', startDeg: 144, endDeg: 216 },
-    { element: 'WATER', startDeg: 216, endDeg: 288 },
-    { element: 'WOOD', startDeg: 288, endDeg: 360 },
-  ];
+function stoneCategoryLabel(category) {
+  if (category === STONE_CATEGORIES.SKILL) return '技能';
+  if (category === STONE_CATEGORIES.MOD) return '改造';
+  if (category === STONE_CATEGORIES.STAT) return '属性';
+  return '通用';
+}
 
-  const nodes = boardState.nodes.map((node) => ({
-    id: node.id,
-    ring: mapRing(node.ring),
-    element: (ELEMENT_MAP[node.elem] || 'earth').toUpperCase(),
-    visualType: node.type === 'core' ? 'CORE' : node.size === 'major' ? 'MAJOR' : 'NORMAL',
-    isLit: node.lit,
-    effectId: assignEffectId(node),
-    componentSlot: {
-      type: node.type === 'core' ? 'SOURCE' : (node.componentType || 'NONE'),
-      params: { isOn: node.switchOn !== false },
-    },
-    tags: [],
-  }));
+const SLOT_ACCEPTS = {
+  [SLOT_TYPES.skill]: [STONE_CATEGORIES.SKILL],
+  [SLOT_TYPES.stat]: [STONE_CATEGORIES.STAT],
+  [SLOT_TYPES.mod]: [STONE_CATEGORIES.MOD],
+  [SLOT_TYPES.normal]: [STONE_CATEGORIES.STAT],
+};
 
-  const edges = [];
-  boardState.wires.forEach((edge, key) => {
-    edges.push({
-      id: key,
-      from: edge.a,
-      to: edge.b,
-      baseCost: edge.bandwidthCost ?? 1,
-      state: edge.enabled === false ? 'DISABLED' : 'ENABLED',
-      componentSlot: {
-        type: edge.component ? edge.component.toUpperCase() : 'NONE',
-        params: { isOn: edge.enabled !== false },
-      },
-    });
+function canPlaceStone(node, stone) {
+  if (!stone) return true;
+  const allowed = SLOT_ACCEPTS[node.slot_type] || [];
+  return allowed.includes(stone.category);
+}
+
+function computePathEdges(nodeId) {
+  const edges = new Set();
+  if (!nodeId || !boardState.parentMap) return edges;
+  let current = nodeId;
+  while (boardState.parentMap.has(current)) {
+    const parent = boardState.parentMap.get(current);
+    edges.add(wireKey(current, parent));
+    current = parent;
+  }
+  return edges;
+}
+
+function runSolver() {
+  if (!window.BaguaSolver) return;
+  const result = window.BaguaSolver.solveBoard(boardState, {
+    stones: STONES,
+    trigramMods: TRIGRAM_MODS,
   });
-
-  return {
-    boardId: 'wuxing_board',
-    rotationDeg: currentTrigramDeg(),
-    budgets: {
-      powerCap: boardState.qi_cap,
-      bandwidthCap: boardState.bandwidth_cap,
-    },
-    nodes,
-    edges,
-    pointerRule: { sectors },
-  };
+  runtime.evalResult = result;
+  boardState.main_element = result.dominantElement;
+  updateSolverUI(result);
 }
 
-function updateBdOutput(evalResult) {
-  if (!evalResult || !dom.bd?.atk) return;
-  const stats = evalResult.combatOutput.stats;
-  const add = stats.add;
-  const mul = stats.mul;
-  dom.bd.atk.textContent = `${Math.round((mul.ATK_PCT || 0) * 100)}%`;
-  dom.bd.crit.textContent = `${Math.round(((add.CRIT_RATE || 0) + (mul.CRIT_RATE || 0)) * 100)}%`;
-  dom.bd.hp.textContent = `${Math.round((mul.HP_PCT || 0) * 100)}%`;
-  dom.bd.fire.textContent = `${Math.round((mul.FIRE_DMG_PCT || 0) * 100)}%`;
-  dom.bd.mana.textContent = Math.round(add.MANA_REGEN || 0);
-  dom.bd.energy.textContent = Math.round(add.ENERGY_REGEN || 0);
-  dom.bd.active.textContent = evalResult.combatOutput.active ? '激活' : '未生效';
-  dom.bd.main.textContent = evalResult.derived.mainElement || '-';
-
-  dom.bd.skillMods.innerHTML = evalResult.combatOutput.skillMods.length
-    ? evalResult.combatOutput.skillMods.map((mod) => {
-      if (mod.modType === 'CONVERT_ELEMENT') {
-        return `<div>转元素 → ${mod.params?.element || ''}</div>`;
-      }
-      if (mod.modType === 'ADD_TAG') {
-        return `<div>附加标签 → ${mod.params?.tag || ''}</div>`;
-      }
-      return `<div>${mod.modType}</div>`;
-    }).join('')
-    : '<div>—</div>';
-  dom.bd.triggers.innerHTML = evalResult.combatOutput.triggers.length
-    ? evalResult.combatOutput.triggers.map((trg) => {
-      const status = trg.effect?.applyStatus?.status || '';
-      const chance = trg.effect?.chance ? ` ${(trg.effect.chance * 100).toFixed(0)}%` : '';
-      return `<div>${trg.event} ${status}${chance}</div>`;
-    }).join('')
-    : '<div>—</div>';
-  dom.bd.summary.innerHTML = evalResult.preview.summaryLines.map((line) => `<div>${line}</div>`).join('');
-  if (!evalResult.combatOutput.active) {
-    dom.bd.summary.innerHTML += '<div class="neg">⚠ 预算超限，输出未生效</div>';
-  }
-  dom.bd.violations.innerHTML = evalResult.violations.length
-    ? evalResult.violations.map((v) => `<div>${v.type}: ${v.message}</div>`).join('')
-    : '<div>—</div>';
-}
-
-function runBoardEvaluation() {
-  if (!window.BDEvaluator?.EvaluateBoard || !window.BD_CATALOG) return;
-  const evalState = buildBoardEvalState();
-  const evalResult = window.BDEvaluator.EvaluateBoard(evalState, window.BD_CATALOG, {
-    enforceBudgets: true,
-    computeStructureMetrics: false,
-  });
-  const prev = runtime.evalResult;
-  runtime.evalResult = evalResult;
-  updateBdOutput(evalResult);
-  if (dom.bd?.changes) {
-    const changes = [];
-    if (prev) {
-      const prevStats = prev.combatOutput.stats;
-      const nextStats = evalResult.combatOutput.stats;
-      const diff = (key) => ((nextStats.mul[key] || 0) - (prevStats.mul[key] || 0)) * 100;
-      const diffAdd = (key) => (nextStats.add[key] || 0) - (prevStats.add[key] || 0);
-      const fireDiff = diff('FIRE_DMG_PCT');
-      if (fireDiff) changes.push(`<div class="${fireDiff > 0 ? 'pos' : 'neg'}">火伤 ${fireDiff > 0 ? '+' : ''}${fireDiff.toFixed(0)}%</div>`);
-      const hpDiff = diff('HP_PCT');
-      if (hpDiff) changes.push(`<div class="${hpDiff > 0 ? 'pos' : 'neg'}">生命 ${hpDiff > 0 ? '+' : ''}${hpDiff.toFixed(0)}%</div>`);
-      const critDiff = diffAdd('CRIT_RATE');
-      if (critDiff) changes.push(`<div class="${critDiff > 0 ? 'pos' : 'neg'}">暴击 ${critDiff > 0 ? '+' : ''}${(critDiff * 100).toFixed(0)}%</div>`);
-      const manaDiff = diffAdd('MANA_REGEN');
-      if (manaDiff) changes.push(`<div class="${manaDiff > 0 ? 'pos' : 'neg'}">回蓝 ${manaDiff > 0 ? '+' : ''}${manaDiff.toFixed(0)}</div>`);
-    }
-    if (!changes.length) changes.push('<div>—</div>');
-    dom.bd.changes.innerHTML = changes.join('');
-    if (!prev) {
-      dom.bd.changes.innerHTML = '<div>—</div>';
-    }
-  }
+function updateSolverUI(result) {
+  if (!dom.sim?.dps) return;
+  dom.sim.dps.textContent = Math.round(result.totals.dps);
+  dom.sim.ehp.textContent = Math.round(result.totals.ehp);
+  dom.sim.sustain.textContent = Math.round(result.totals.sustain);
+  dom.sim.stability.textContent = Math.round(result.totals.stability);
+  dom.stats.atk.textContent = Math.round(result.totals.dps);
+  dom.stats.crit.textContent = Math.round(result.totals.stability);
+  dom.stats.hp.textContent = Math.round(result.totals.ehp);
+  dom.stats.shield.textContent = Math.round(result.totals.stability);
+  dom.stats.mana.textContent = Math.round(result.totals.sustain);
+  dom.stats.regen.textContent = Math.round(result.totals.sustain);
 }
 
 function poweredStat(key) {
   let total = 0;
   boardState.nodes.forEach((node) => {
     if (!node.powered) return;
-    if (node.elem === '火' && key === 'atk') total += 2;
-    if (node.elem === '金' && key === 'crit') total += 1.5;
-    if (node.elem === '土' && key === 'hp') total += 2;
-    if (node.elem === '水' && key === 'mana') total += 1.5;
-    if (node.elem === '木' && key === 'regen') total += 1.2;
+    const stone = STONES.find((s) => s.id === node.stone_id);
+    const elem = stone ? stone.element : node.elem;
+    if (elem === '火' && key === 'atk') total += 2;
+    if (elem === '金' && key === 'crit') total += 1.5;
+    if (elem === '土' && key === 'hp') total += 2;
+    if (elem === '水' && key === 'mana') total += 1.5;
+    if (elem === '木' && key === 'regen') total += 1.2;
   });
   return total;
 }
@@ -1526,9 +1811,6 @@ function updateDebugOverlay(now) {
   if (!boardState.ui?.debug || !dom.debugOverlay) return;
   if (now - runtime.debugLastUpdate < 120) return;
   runtime.debugLastUpdate = now;
-  const ringInfo = Object.entries(boardState.ring_rot_deg)
-    .map(([ring, deg]) => `${ring}:${deg.toFixed(1)}°`)
-    .join('  ');
   const activeEdges = boardState.edges.filter((e) => e.active).length;
   const nodeLines = boardState.nodes
     .map((node) => {
@@ -1536,7 +1818,7 @@ function updateDebugOverlay(now) {
       return `${node.id} (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}) c:${node.connectionCount || 0}`;
     })
     .join('\n');
-  dom.debugOverlay.textContent = `FPS: ${runtime.fps.toFixed(1)}\nEdges: ${activeEdges}/${boardState.edges.length}\nRings: ${ringInfo}\nNodes:\n${nodeLines}`;
+  dom.debugOverlay.textContent = `FPS: ${runtime.fps.toFixed(1)}\nEdges: ${activeEdges}/${boardState.edges.length}\nNodes:\n${nodeLines}`;
 }
 
 function refreshReconfig() {
@@ -1564,132 +1846,42 @@ function rerender(selectedId, opts = {}) {
   runtime.needsRender = false;
 }
 
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function startRotationAnim(ring, deltaDeg, opts = {}) {
-  const now = performance.now();
-  const startDeg = boardState.ring_rot_deg[ring] || 0;
-  const continuous = opts.continuous || false;
-  const step = continuous ? (deltaDeg > 0 ? 1 : -1) : 0;
-  runtime.anim = {
-    ring,
-    startDeg,
-    endDeg: startDeg + (continuous ? step : deltaDeg),
-    startTime: now,
-    duration: opts.duration ?? (continuous ? 50 : 350),
-    repeat: opts.repeat ?? (continuous ? 29 : 0),
-    stepDeg: opts.stepDeg ?? step,
-    ease: opts.ease ?? !continuous,
-    cause: opts.cause || 'rotation',
-  };
-}
-
-function rotateRing(deltaDeg) {
-  const ring = boardState.ui?.selectedRing || dom.ringSelect.value;
-  if (!boardState.ring_rot_deg.hasOwnProperty(ring)) return;
-  runtime.inertia = null;
-  startRotationAnim(ring, deltaDeg, { continuous: dom.rotateContinuous.checked, cause: 'rotation' });
-  runtime.needsRender = true;
-}
-
-function applyRotationDelta(ring, deltaDeg, cause = 'rotation') {
-  if (!boardState.ring_rot_deg.hasOwnProperty(ring)) return;
-  boardState.ring_rot_deg[ring] = normDeg((boardState.ring_rot_deg[ring] || 0) + deltaDeg);
-  scheduleUpdate({ recompute: true, cause });
-}
-
-function getRingStep(ring) {
-  const nodes = ringIndex()[ring] || [];
-  if (!nodes.length) return null;
-  return 360 / nodes.length;
-}
-
-function snapRing(ring) {
-  if (!boardState.ui?.snap) return;
-  const step = getRingStep(ring);
-  if (!step) return;
-  const current = boardState.ring_rot_deg[ring] || 0;
-  const target = Math.round(current / step) * step;
-  const delta = target - current;
-  if (Math.abs(delta) < 0.05) return;
-  startRotationAnim(ring, delta, { duration: 220, ease: true, cause: 'rotation' });
-}
-
-function setMode(mode) {
-  boardState.ui.mode = mode;
-  dom.modeToggle.textContent = mode === 'wire' ? '连线模式' : '通电模式';
-  scheduleUpdate({ recompute: true, cause: 'mode' });
-}
-
-function toggleWire(aId, bId) {
-  const neighborSet = boardState.neighborMap.get(aId);
-  console.log('[toggleWire]', { aId, bId, neighbors: neighborSet ? [...neighborSet] : [] });
-  if (!neighborSet || !neighborSet.has(bId)) {
-    showFeedback('仅允许相邻连接');
-    return;
-  }
-  const key = wireKey(aId, bId);
-  if (boardState.wires.has(key)) {
-    boardState.wires.delete(key);
-    runtime.flash = { broken: [key], gained: [], start: performance.now(), duration: 160 };
-  } else {
-    boardState.wires.set(key, {
-      a: aId,
-      b: bId,
-      enabled: true,
-      component: 'wire',
-      directed: false,
-      bandwidthCost: edgeBandwidthCost('wire'),
-    });
-  }
-  recomputeConnectivity('wire');
-  runtime.needsRender = true;
-}
-
-function tryToggleLit(node) {
-  if (node.id === 'core') {
-    runtime.selectedNodeId = node.id;
-    rerender(node.id);
-    return;
-  }
+function applyStone(node, stoneId) {
+  if (!node) return;
   if (!enabledRings().includes(node.ring)) {
     showFeedback('当前境界未解锁该环');
     return;
   }
-  if (node.componentType === 'SWITCH' && !node.switchOn) {
-    showFeedback('开关关闭');
-    runtime.rejectedNodeId = node.id;
-    runtime.rejectUntil = performance.now() + 300;
+  const stone = STONES.find((s) => s.id === stoneId);
+  if (stoneId && !canPlaceStone(node, stone)) {
+    showFeedback('槽位类型不匹配');
     return;
   }
-  const litSet = new Set(boardState.lit);
-  if (litSet.has(node.id)) {
-    litSet.delete(node.id);
-    boardState.lit = litSet;
-    recomputeConnectivity('power');
-    runtime.needsRender = true;
+
+  const nodesCopy = boardState.nodes.map((n) => ({ ...n }));
+  const target = nodesCopy.find((n) => n.id === node.id);
+  if (target) {
+    target.stone_id = stoneId;
+    target.lit = !!stoneId;
+  }
+  const preview = computeConnectivitySnapshot(nodesCopy);
+  if (!preview.powerOk || !preview.bandwidthOk) {
+    const parts = [];
+    if (!preview.powerOk) {
+      const need = preview.powerUsed - boardState.qi_cap;
+      parts.push(`灵力不足(${need})`);
+    }
+    if (!preview.bandwidthOk) {
+      const need = preview.bandwidthUsed - boardState.bandwidth_cap;
+      parts.push(`通气不足(${need})`);
+    }
+    showFeedback(`资源不足，无法放置：${parts.join(' / ')}`);
     return;
   }
-  litSet.add(node.id);
-  const result = computePowerState(litSet);
-  if (!result.reachableLit.has(node.id)) {
-    showFeedback('未连通：请先布线');
-    runtime.rejectedNodeId = node.id;
-    runtime.rejectUntil = performance.now() + 300;
-    return;
-  }
-  if (result.powerUsed > result.powerBudget || result.bandwidthUsed > result.bandwidthBudget) {
-    const powerGap = Math.max(0, result.powerUsed - result.powerBudget);
-    const bandGap = Math.max(0, result.bandwidthUsed - result.bandwidthBudget);
-    showFeedback(`资源不足：电力-${powerGap} / 带宽-${bandGap}`);
-    runtime.rejectedNodeId = node.id;
-    runtime.rejectUntil = performance.now() + 300;
-    return;
-  }
-  boardState.lit = litSet;
-  recomputeConnectivity('power');
+
+  node.stone_id = stoneId;
+  node.lit = !!stoneId;
+  recomputeConnectivity('stone');
   runtime.needsRender = true;
 }
 
@@ -1707,117 +1899,151 @@ function attachEvents() {
   dom.toggleBroken.addEventListener('change', () => {
     setUIState({ showBroken: dom.toggleBroken.checked }, { log: true });
   });
-  dom.toggleSnap.addEventListener('change', () => {
-    setUIState({ snap: dom.toggleSnap.checked }, { log: true });
-  });
-  dom.ringSelect.addEventListener('change', () => {
-    setUIState({ selectedRing: dom.ringSelect.value }, { log: true });
-    updateHud();
-  });
-  dom.modeToggle.addEventListener('click', () => {
-    setMode(boardState.ui.mode === 'wire' ? 'power' : 'wire');
-  });
-  dom.clearLit.addEventListener('click', () => {
-    boardState.lit.clear();
-    recomputeConnectivity('power');
+  dom.resetZoom?.addEventListener('click', () => {
+    setUIState({ scale: 1, panX: 0, panY: 0 }, { log: true });
     runtime.needsRender = true;
   });
-  dom.rotateLeft.addEventListener('click', () => rotateRing(-15));
-  dom.rotateRight.addEventListener('click', () => rotateRing(15));
-  dom.rotateKnob.addEventListener('click', () => rotateRing(15));
-
-  dom.container.addEventListener('click', (event) => {
-    if (performance.now() - runtime.lastDragTime < 180) return;
-    if (performance.now() < runtime.suppressClickUntil) return;
-    console.log('[click]', {
-      x: event.clientX,
-      y: event.clientY,
-      mode: boardState.ui.mode,
-      wireStart: runtime.wireStartId,
-      shift: event.shiftKey,
+  if (dom.lineMode) {
+    dom.lineMode.addEventListener('change', () => {
+      const mode = dom.lineMode.value;
+      setUIState({ lineMode: mode }, { log: true });
+      if (dom.lineElement) {
+        dom.lineElement.disabled = mode !== 'element';
+      }
     });
-    const node = hitTestNode(event);
-    console.log('[hitTest]', node ? { id: node.id, ring: node.ring, slot: node.slot_idx } : null);
-    if (!node) return;
-    console.log('hit', node.id, node.name, node.type);
-    if (!enabledRings().includes(node.ring)) return;
-    runtime.selectedNodeId = node.id;
-
-    if (boardState.ui.mode === 'wire' || event.shiftKey) {
-      if (!runtime.wireStartId) {
-        runtime.wireStartId = node.id;
-        runtime.needsRender = true;
-        return;
+  }
+  if (dom.lineElement) {
+    dom.lineElement.addEventListener('change', () => {
+      setUIState({ lineElement: dom.lineElement.value }, { log: true });
+    });
+  }
+  dom.resetZoom?.addEventListener('click', () => {
+    setUIState({ scale: 1 }, { log: true });
+    runtime.needsRender = true;
+  });
+  if (dom.lineMode) {
+    dom.lineMode.addEventListener('change', () => {
+      const mode = dom.lineMode.value;
+      setUIState({ lineMode: mode }, { log: true });
+      if (dom.lineElement) {
+        dom.lineElement.disabled = mode !== 'element';
       }
-      if (runtime.wireStartId === node.id) {
-        runtime.wireStartId = null;
-        runtime.needsRender = true;
-        return;
-      }
-      toggleWire(runtime.wireStartId, node.id);
-      runtime.wireStartId = null;
+    });
+  }
+  if (dom.lineElement) {
+    dom.lineElement.addEventListener('change', () => {
+      setUIState({ lineElement: dom.lineElement.value }, { log: true });
+    });
+  }
+  dom.clearLit.addEventListener('click', () => {
+    boardState.nodes.forEach((n) => { n.stone_id = null; n.lit = false; });
+    recomputeConnectivity('stone');
+    runtime.needsRender = true;
+  });
+  dom.linggenSelect?.addEventListener('change', () => {
+    const next = LINGGEN_PROFILES.find((p) => p.id === dom.linggenSelect.value);
+    if (next) {
+      boardState.linggen_id = next.id;
+      boardState.linggen_profile = next;
+      boardState.core_sources = next.sources;
+      boardState.qi_cap = next.sources.reduce((sum, s) => sum + s.capacity, 0);
+      boardState.bandwidth_cap = Math.round(boardState.qi_cap * 0.8);
+      recomputeConnectivity('linggen');
       runtime.needsRender = true;
-      return;
     }
-
-    tryToggleLit(node);
+  });
+  dom.stoneSelect?.addEventListener('change', () => {
+    runtime.selectedStoneId = dom.stoneSelect.value;
+  });
+  dom.clearSlot?.addEventListener('click', () => {
+    dom.clearSlot.dataset.active = dom.clearSlot.dataset.active === '1' ? '0' : '1';
+    dom.clearSlot.textContent = dom.clearSlot.dataset.active === '1' ? '清空槽位(已激活)' : '清空槽位';
   });
 
-  document.body.addEventListener('click', (event) => {
-    console.log('[body click]', { x: event.clientX, y: event.clientY, target: event.target?.id || event.target?.tagName });
-  }, { capture: true });
-
   dom.container.addEventListener('pointermove', (event) => {
-    if (runtime.drag && runtime.drag.pointerId === event.pointerId) {
-      const dx = event.clientX - runtime.drag.startX;
-      const dy = event.clientY - runtime.drag.startY;
-      const dist = Math.hypot(dx, dy);
-      if (dist > 4 && !runtime.drag.dragging) {
-        runtime.drag.dragging = true;
-        runtime.drag.hitNodeId = null;
-      }
-      const rect = dom.container.getBoundingClientRect();
-      const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      const angle = Math.atan2(event.clientY - center.y, event.clientX - center.x) * (180 / Math.PI);
-      const delta = deltaAngleDeg(runtime.drag.lastAngle, angle);
-      const now = performance.now();
-      const dt = Math.max(8, now - runtime.drag.lastTime);
-      if (runtime.drag.dragging && Math.abs(delta) > 0.02) {
-        applyRotationDelta(runtime.drag.ring, delta, 'rotation');
-        const velocity = delta / dt;
-        runtime.drag.velocity = runtime.drag.velocity * 0.6 + velocity * 0.4;
-        runtime.drag.moved = runtime.drag.moved || Math.abs(delta) > 0.4;
-      }
-      runtime.drag.lastAngle = angle;
-      runtime.drag.lastTime = now;
+    if (runtime.panning && runtime.panStart) {
+      const dx = event.clientX - runtime.panStart.x;
+      const dy = event.clientY - runtime.panStart.y;
+      const scale = boardState.ui.scale ?? 1;
+      boardState.ui.panX = (boardState.ui.panX || 0) + dx / scale;
+      boardState.ui.panY = (boardState.ui.panY || 0) + dy / scale;
+      runtime.panStart = { x: event.clientX, y: event.clientY };
       runtime.needsRender = true;
+      return;
     }
     const node = hitTestNode(event);
     if (!node) {
       runtime.hoveredNodeId = null;
+      runtime.pathEdges = null;
       dom.tooltip.style.opacity = 0;
+      const edge = hitTestEdge(event);
+      if (edge) {
+        const ratio = edge.qi_ratio || normalizeQi(edge.qi_comp || zeroQi());
+        const ratioText = `金${(ratio['金'] * 100).toFixed(0)} 木${(ratio['木'] * 100).toFixed(0)} 水${(ratio['水'] * 100).toFixed(0)} 火${(ratio['火'] * 100).toFixed(0)} 土${(ratio['土'] * 100).toFixed(0)}`;
+        const reason = edge.state === 'CONNECTED_NO_QI' ? edge.reason || '无气' : '通气中';
+        dom.tooltip.style.opacity = 1;
+        dom.tooltip.style.left = `${event.clientX}px`;
+        dom.tooltip.style.top = `${event.clientY}px`;
+        dom.tooltip.textContent = `气脉 ${edge.dominant_element || edge.source_element || '-'} | ${ratioText} | 乱流${(edge.turbulence || 0).toFixed(2)} | ${reason}`;
+      }
     } else {
       runtime.hoveredNodeId = node.id;
+      runtime.pathEdges = computePathEdges(node.id);
       dom.tooltip.style.opacity = 1;
       dom.tooltip.style.left = `${event.clientX}px`;
       dom.tooltip.style.top = `${event.clientY}px`;
-      const switchState = node.componentType === 'SWITCH' ? (node.switchOn ? '开' : '关') : '';
-      const effectId = assignEffectId(node);
-      const effect = effectId ? window.BD_CATALOG?.nodeEffects?.[effectId] : null;
-      const effectText = effect ? `${effect.category}:${effect.id}` : '无效果';
-      const powerState = node.powered ? '通电' : node.lit ? '已点亮' : '未点亮';
-      dom.tooltip.textContent = `${node.name || node.id} | ${powerState} | ${node.componentType || node.type}${switchState ? `(${switchState})` : ''} | ${effectText}`;
+      const stone = STONES.find((s) => s.id === node.stone_id);
+      const effectText = stone ? `${stone.name}/${stoneCategoryLabel(stone.category)}` : '空槽';
+      const powerState = node.powered ? '通气' : node.lit ? '已插石' : '未插石';
+      const trigramText = `${TRIGRAM_SYMBOLS[node.trigram] || ''}${node.trigram}`;
+      const slotText = slotTypeLabel(node);
+      const sourceText = node.source_element ? `${node.source_element}脉` : '无源';
+      const ratio = node.qi_ratio || normalizeQi(node.qi_out || zeroQi());
+      const ratioText = `金${(ratio['金'] * 100).toFixed(0)} 木${(ratio['木'] * 100).toFixed(0)} 水${(ratio['水'] * 100).toFixed(0)} 火${(ratio['火'] * 100).toFixed(0)} 土${(ratio['土'] * 100).toFixed(0)}`;
+      dom.tooltip.textContent = `${node.name || node.id} | ${powerState} | ${trigramText} | ${slotText} | ${sourceText} | ${ratioText} | 乱流${(node.turbulence || 0).toFixed(2)} | ${effectText}`;
     }
-    runtime.showNeighborHints = event.shiftKey || boardState.ui.mode === 'wire' || boardState.ui.showNeighborHints;
     runtime.needsRender = true;
   });
+
+  dom.container.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const delta = Math.sign(event.deltaY);
+    const current = boardState.ui.scale ?? 1;
+    const next = Math.min(2.0, Math.max(0.6, current - delta * 0.06));
+    setUIState({ scale: next }, { log: true });
+  }, { passive: false });
 
   dom.container.addEventListener('pointerleave', () => {
     dom.tooltip.style.opacity = 0;
     runtime.hoveredNodeId = null;
+    runtime.pathEdges = null;
     runtime.showNeighborHints = false;
+    runtime.panning = false;
+    runtime.panStart = null;
     runtime.needsRender = true;
   });
+
+  dom.container.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    const node = hitTestNode(event);
+    if (node) return;
+    runtime.panning = true;
+    runtime.panStart = { x: event.clientX, y: event.clientY };
+    dom.container.setPointerCapture(event.pointerId);
+  });
+
+  dom.container.addEventListener('pointercancel', () => {
+    runtime.panning = false;
+    runtime.panStart = null;
+  });
+
+  dom.container.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const delta = Math.sign(event.deltaY);
+    const current = boardState.ui.scale ?? 1;
+    const next = Math.min(2.0, Math.max(0.6, current - delta * 0.06));
+    setUIState({ scale: next }, { log: true });
+  }, { passive: false });
 
   dom.devToggle.addEventListener('click', () => {
     dom.devDrawer.classList.toggle('hidden');
@@ -1834,12 +2060,16 @@ function attachEvents() {
   dom.panel.labels.addEventListener('change', () => {
     setUIState({ showLabels: dom.panel.labels.checked }, { log: true });
   });
-  dom.toggleAutoEdges.addEventListener('change', () => {
-    setUIState({ allowAutoEdges: dom.toggleAutoEdges.checked }, { log: true, recompute: true, cause: 'ui' });
-  });
-  dom.toggleNeighborHints.addEventListener('change', () => {
-    setUIState({ showNeighborHints: dom.toggleNeighborHints.checked }, { log: true });
-  });
+  if (dom.toggleAutoEdges) {
+    dom.toggleAutoEdges.addEventListener('change', () => {
+      setUIState({ allowAutoEdges: dom.toggleAutoEdges.checked }, { log: true, recompute: true, cause: 'ui' });
+    });
+  }
+  if (dom.toggleNeighborHints) {
+    dom.toggleNeighborHints.addEventListener('change', () => {
+      setUIState({ showNeighborHints: dom.toggleNeighborHints.checked }, { log: true });
+    });
+  }
   dom.toggleDebug.addEventListener('change', () => {
     setUIState({ debug: dom.toggleDebug.checked }, { log: true });
     updateDebugOverlay(performance.now());
@@ -1881,8 +2111,8 @@ function attachEvents() {
     await loadBoard();
     const keep = {
       realm: boardState.realm,
-      rot_deg: { ...boardState.ring_rot_deg },
-      invested: [...boardState.lit],
+      slots: boardState.slots,
+      linggen_id: boardState.linggen_id,
     };
     buildBoardState(keep);
     initUIState();
@@ -1932,126 +2162,35 @@ function attachEvents() {
     rerender(node.id);
   });
 
-  dom.container.addEventListener('wheel', (event) => {
-    if (event.ctrlKey) return;
-    event.preventDefault();
-    const ring = boardState.ui?.selectedRing || dom.ringSelect.value;
-    const delta = event.deltaY > 0 ? 2 : -2;
-    runtime.anim = null;
-    runtime.inertia = null;
-    applyRotationDelta(ring, delta, 'rotation');
-  }, { passive: false });
-
   window.addEventListener('keydown', (event) => {
     const tag = document.activeElement?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
     if (event.key === 'Escape') {
-      boardState.lit.clear();
-      runtime.wireStartId = null;
-      runtime.selectedNodeId = 'core';
-      rerender('core');
-      return;
+      boardState.nodes.forEach((n) => { n.stone_id = null; n.lit = false; });
+      runtime.selectedNodeId = null;
+      rerender();
     }
-    if (event.key === 'l' || event.key === 'L') {
-      setMode(boardState.ui.mode === 'wire' ? 'power' : 'wire');
-      return;
-    }
-    if (event.key === 'q' || event.key === 'Q' || event.key === 'a' || event.key === 'A') {
-      rotateRing(-15);
-    }
-    if (event.key === 'e' || event.key === 'E' || event.key === 'd' || event.key === 'D') {
-      rotateRing(15);
-    }
-  });
-
-  dom.container.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return;
-    console.log('[pointerdown]', { x: event.clientX, y: event.clientY, shift: event.shiftKey });
-    if (event.shiftKey) {
-      const node = hitTestNode(event);
-      if (node) {
-        runtime.wireDragActive = true;
-        runtime.wireStartId = node.id;
-        return;
-      }
-    }
-    const rect = dom.container.getBoundingClientRect();
-    const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    const angle = Math.atan2(event.clientY - center.y, event.clientX - center.x) * (180 / Math.PI);
-    const hitNode = hitTestNode(event);
-    runtime.drag = {
-      ring: boardState.ui?.selectedRing || dom.ringSelect.value,
-      lastAngle: angle,
-      lastTime: performance.now(),
-      velocity: 0,
-      moved: false,
-      dragging: false,
-      startX: event.clientX,
-      startY: event.clientY,
-      hitNodeId: hitNode?.id || null,
-      pointerId: event.pointerId,
-    };
-    runtime.anim = null;
-    runtime.inertia = null;
-    dom.container.setPointerCapture(event.pointerId);
   });
 
   dom.container.addEventListener('pointerup', (event) => {
-    console.log('[pointerup]', { x: event.clientX, y: event.clientY, shift: event.shiftKey });
-    if (runtime.wireDragActive) {
-      const node = hitTestNode(event);
-      if (node && runtime.wireStartId && node.id !== runtime.wireStartId) {
-        toggleWire(runtime.wireStartId, node.id);
-      } else if (!node) {
-        showFeedback('仅允许相邻连接');
-      }
-      runtime.wireDragActive = false;
-      runtime.wireStartId = null;
+    if (event.button !== 0) return;
+    if (runtime.panning) {
+      runtime.panning = false;
+      runtime.panStart = null;
+      dom.container.releasePointerCapture(event.pointerId);
       return;
     }
-    if (!runtime.drag || runtime.drag.pointerId !== event.pointerId) return;
-    dom.container.releasePointerCapture(event.pointerId);
-    const { ring, velocity, moved, hitNodeId } = runtime.drag;
-    runtime.drag = null;
-    if (moved && Math.abs(velocity) > 0.01) {
-      const clamped = Math.max(-0.35, Math.min(0.35, velocity));
-      runtime.inertia = {
-        ring,
-        velocity: clamped,
-        lastTime: performance.now(),
-      };
+    const node = hitTestNode(event);
+    if (!node) return;
+    runtime.selectedNodeId = node.id;
+    if (dom.clearSlot?.dataset?.active === '1') {
+      applyStone(node, null);
+    } else if (node.stone_id) {
+      applyStone(node, null);
     } else {
-      snapRing(ring);
+      applyStone(node, runtime.selectedStoneId);
     }
-    if (moved) runtime.suppressClickUntil = performance.now() + 200;
-    if (moved) runtime.lastDragTime = performance.now();
-    if (!moved && performance.now() >= runtime.suppressClickUntil) {
-      const node = hitNodeId ? boardState.nodes.find((n) => n.id === hitNodeId) : hitTestNode(event);
-      console.log('[pointerup hit]', node ? node.id : null);
-      if (!node) return;
-      runtime.selectedNodeId = node.id;
-      if (boardState.ui.mode === 'wire' || event.shiftKey) {
-        if (!runtime.wireStartId) {
-          runtime.wireStartId = node.id;
-          runtime.needsRender = true;
-          return;
-        }
-        if (runtime.wireStartId === node.id) {
-          runtime.wireStartId = null;
-          runtime.needsRender = true;
-          return;
-        }
-        toggleWire(runtime.wireStartId, node.id);
-        runtime.wireStartId = null;
-        runtime.needsRender = true;
-        return;
-      }
-      tryToggleLit(node);
-    }
-  });
-
-  dom.container.addEventListener('pointercancel', () => {
-    runtime.drag = null;
+    updateDetail(node.id);
   });
 }
 
@@ -2063,52 +2202,14 @@ function tick(now) {
     runtime.lastFpsTime = now;
   }
 
-  let rotating = false;
-  if (runtime.anim) {
-    const anim = runtime.anim;
-    const progress = Math.min((now - anim.startTime) / anim.duration, 1);
-    const eased = anim.ease ? easeInOutCubic(progress) : progress;
-    const current = anim.startDeg + (anim.endDeg - anim.startDeg) * eased;
-    boardState.ring_rot_deg[anim.ring] = normDeg(current);
-    runtime.needsConnectivityUpdate = true;
-    runtime.updateCause = anim.cause || 'rotation';
-    rotating = true;
-    if (progress >= 1) {
-      if (anim.repeat > 0) {
-        anim.repeat -= 1;
-        anim.startDeg = anim.endDeg;
-        anim.endDeg = anim.endDeg + anim.stepDeg;
-        anim.startTime = now;
-      } else {
-        boardState.ring_rot_deg[anim.ring] = normDeg(anim.endDeg);
-        runtime.anim = null;
-      }
-    }
-  }
-
-  if (runtime.inertia) {
-    const inertia = runtime.inertia;
-    const dt = Math.max(8, now - inertia.lastTime);
-    const delta = inertia.velocity * dt;
-    applyRotationDelta(inertia.ring, delta, 'rotation');
-    const damping = Math.pow(0.96, dt / 16);
-    inertia.velocity *= damping;
-    inertia.lastTime = now;
-    rotating = true;
-    if (Math.abs(inertia.velocity) < 0.002) {
-      runtime.inertia = null;
-      snapRing(inertia.ring);
-    }
-  }
-
   if (runtime.needsConnectivityUpdate && now - runtime.lastConnectivityUpdate > 30) {
-    recomputeConnectivity(runtime.updateCause || 'rotation');
+    recomputeConnectivity(runtime.updateCause || 'ui');
     runtime.needsConnectivityUpdate = false;
     runtime.lastConnectivityUpdate = now;
   }
 
-  if (rotating || runtime.needsRender || runtime.flash || runtime.sparks) {
-    if (rotating || now - runtime.lastRender > 33) {
+  if (runtime.needsRender || runtime.flash || runtime.sparks) {
+    if (now - runtime.lastRender > 33) {
       renderBoard(now);
       updateHud();
       runtime.lastRender = now;
@@ -2133,7 +2234,6 @@ async function init() {
   await loadPresets();
   buildBoardState();
   initUIState();
-  setMode('power');
   attachEvents();
   rerender();
   requestAnimationFrame(tick);

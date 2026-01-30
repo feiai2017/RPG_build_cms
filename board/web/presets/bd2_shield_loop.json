@@ -1,17 +1,15 @@
 {
-  "name": "shield_loop",
-  "realm": "元婴",
-  "rot_deg": {"inner": 0, "mid": 15, "outer": 0},
-  "resources": {"power": 22, "bandwidth": 18, "stability": 15},
-  "invested": ["core", "inner_0", "inner_1", "inner_2", "mid_1", "mid_2", "mid_3", "inner_core_0", "inner_core_2"],
-  "wires": [
-    {"a": "core", "b": "inner_0", "component": "wire"},
-    {"a": "inner_0", "b": "inner_1", "component": "wire"},
-    {"a": "inner_1", "b": "inner_2", "component": "resistor"},
-    {"a": "inner_1", "b": "mid_2", "component": "wire"},
-    {"a": "mid_1", "b": "mid_2", "component": "wire"},
-    {"a": "mid_2", "b": "mid_3", "component": "capacitor"},
-    {"a": "inner_core_0", "b": "inner_0", "component": "wire"},
-    {"a": "inner_core_2", "b": "inner_1", "component": "wire"}
-  ]
+  "name": "bd_fire_burst",
+  "realm": "金丹",
+  "linggen": "four_color",
+  "slots": {
+    "inner_0": "skill_fire",
+    "inner_1": "stat_fire",
+    "inner_2": "stat_fire",
+    "inner_4": "mod_amp",
+    "mid_0": "stat_fire",
+    "mid_2": "mod_amp",
+    "outer_1": "stat_metal",
+    "outer_3": "stat_fire"
+  }
 }
