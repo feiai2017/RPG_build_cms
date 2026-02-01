@@ -1,7 +1,14 @@
 {
-  "name": "bd_fire_burst",
+  "id": "bd2_shield_loop",
+  "name": "火爆发流",
+  "concept": "蓄能爆发，短窗口输出极高。",
   "realm": "金丹",
+  "realm_requirement": "金丹+",
   "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_0", "inner_4", "mid_0", "outer_3"], "note": "火爆发主回路" },
+  "support_loop": { "nodes": ["inner_1", "inner_2", "outer_1"], "note": "稳定补偿与穿透" },
+  "counters": ["高护盾Boss", "持续消耗Boss"],
+  "trigram_synergy": ["离", "乾"],
   "slots": {
     "inner_0": "skill_fire",
     "inner_1": "stat_fire",

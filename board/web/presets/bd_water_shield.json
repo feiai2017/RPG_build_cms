@@ -1,0 +1,27 @@
+{
+  "id": "bd_water_shield",
+  "name": "水坎护持流",
+  "concept": "水系续航护盾，稳定抗压。",
+  "realm": "金丹",
+  "realm_requirement": "金丹+",
+  "linggen": "pure_water",
+  "main_loop": { "nodes": ["inner_5", "inner_7", "mid_1", "outer_0"], "note": "水护持主回路" },
+  "support_loop": { "nodes": ["inner_6", "mid_0", "outer_1"], "note": "土系护甲副回路" },
+  "counters": ["强爆发Boss"],
+  "trigram_synergy": ["坎", "坤"],
+  "slots": {
+    "inner_5": "skill_water",
+    "inner_6": "mod_guard",
+    "inner_7": "skill_water",
+    "inner_9": "mod_guard",
+    "mid_0": "mod_guard",
+    "mid_1": "stat_water",
+    "mid_2": "stat_water",
+    "mid_4": "stat_water",
+    "outer_0": "stat_water",
+    "outer_1": "stat_earth",
+    "outer_2": "stat_water",
+    "outer_3": "stat_earth",
+    "outer_4": "stat_water"
+  }
+}

@@ -40,6 +40,28 @@
       "ring": "core",
       "element": "土",
       "type": "core",
+      "node_type": "mechanic",
+      "template_id": "SOURCE_CORE",
+      "ports": {
+        "in": [],
+        "out": [
+          {
+            "id": "qi_out",
+            "kind": "resource",
+            "accepts": [
+              "qi"
+            ]
+          }
+        ]
+      },
+      "params": {
+        "qi_out": 1
+      },
+      "ui": {
+        "shape": "core",
+        "ring": "core",
+        "color": "#FFD166"
+      },
       "angle": 0.0,
       "radius": 0.0,
       "x": 0.0,
@@ -55,6 +77,18 @@
       "ring": "r1",
       "element": "木",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r1",
+        "color": "#39D98A"
+      },
       "angle": 0.15708,
       "radius": 140,
       "x": 138.276,
@@ -71,6 +105,18 @@
       "ring": "r1",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#39D98A"
+      },
       "angle": 0.471239,
       "radius": 140,
       "x": 124.741,
@@ -87,6 +133,18 @@
       "ring": "r1",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#39D98A"
+      },
       "angle": 0.785398,
       "radius": 140,
       "x": 98.995,
@@ -103,6 +161,18 @@
       "ring": "r1",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#39D98A"
+      },
       "angle": 1.099557,
       "radius": 140,
       "x": 63.559,
@@ -119,6 +189,18 @@
       "ring": "r1",
       "element": "金",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r1",
+        "color": "#E6E6E6"
+      },
       "angle": 1.466077,
       "radius": 140,
       "x": 14.634,
@@ -135,6 +217,18 @@
       "ring": "r1",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#E6E6E6"
+      },
       "angle": 1.884956,
       "radius": 140,
       "x": -43.262,
@@ -151,6 +245,18 @@
       "ring": "r1",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#E6E6E6"
+      },
       "angle": 2.303835,
       "radius": 140,
       "x": -93.678,
@@ -167,6 +273,18 @@
       "ring": "r1",
       "element": "土",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r1",
+        "color": "#FFD166"
+      },
       "angle": 2.722714,
       "radius": 140,
       "x": -127.896,
@@ -183,6 +301,18 @@
       "ring": "r1",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#FFD166"
+      },
       "angle": 3.141593,
       "radius": 140,
       "x": -140.0,
@@ -199,6 +329,18 @@
       "ring": "r1",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#FFD166"
+      },
       "angle": 3.560472,
       "radius": 140,
       "x": -127.896,
@@ -215,6 +357,18 @@
       "ring": "r1",
       "element": "火",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r1",
+        "color": "#FF4D4D"
+      },
       "angle": 3.979351,
       "radius": 140,
       "x": -93.678,
@@ -231,6 +385,18 @@
       "ring": "r1",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#FF4D4D"
+      },
       "angle": 4.39823,
       "radius": 140,
       "x": -43.262,
@@ -247,6 +413,18 @@
       "ring": "r1",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#FF4D4D"
+      },
       "angle": 4.817109,
       "radius": 140,
       "x": 14.634,
@@ -263,6 +441,18 @@
       "ring": "r1",
       "element": "水",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r1",
+        "color": "#3AA0FF"
+      },
       "angle": 5.235988,
       "radius": 140,
       "x": 70.0,
@@ -279,6 +469,18 @@
       "ring": "r1",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#3AA0FF"
+      },
       "angle": 5.654867,
       "radius": 140,
       "x": 113.262,
@@ -295,6 +497,18 @@
       "ring": "r1",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r1",
+        "color": "#3AA0FF"
+      },
       "angle": 6.073746,
       "radius": 140,
       "x": 136.941,
@@ -311,6 +525,18 @@
       "ring": "r2",
       "element": "木",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r2",
+        "color": "#39D98A"
+      },
       "angle": 0.125664,
       "radius": 220,
       "x": 218.265,
@@ -327,6 +553,18 @@
       "ring": "r2",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#39D98A"
+      },
       "angle": 0.376991,
       "radius": 220,
       "x": 204.551,
@@ -343,6 +581,18 @@
       "ring": "r2",
       "element": "木",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#39D98A"
+      },
       "angle": 0.628319,
       "radius": 220,
       "x": 177.984,
@@ -359,6 +609,18 @@
       "ring": "r2",
       "element": "木",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#39D98A"
+      },
       "angle": 0.879646,
       "radius": 220,
       "x": 140.233,
@@ -375,6 +637,18 @@
       "ring": "r2",
       "element": "木",
       "type": "medium",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r2",
+        "color": "#39D98A"
+      },
       "angle": 1.130973,
       "radius": 220,
       "x": 93.671,
@@ -391,6 +665,18 @@
       "ring": "r2",
       "element": "金",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r2",
+        "color": "#E6E6E6"
+      },
       "angle": 1.382301,
       "radius": 220,
       "x": 41.224,
@@ -407,6 +693,18 @@
       "ring": "r2",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#E6E6E6"
+      },
       "angle": 1.633628,
       "radius": 220,
       "x": -13.814,
@@ -423,6 +721,18 @@
       "ring": "r2",
       "element": "金",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#E6E6E6"
+      },
       "angle": 1.884956,
       "radius": 220,
       "x": -67.984,
@@ -439,6 +749,18 @@
       "ring": "r2",
       "element": "金",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#E6E6E6"
+      },
       "angle": 2.136283,
       "radius": 220,
       "x": -117.882,
@@ -455,6 +777,18 @@
       "ring": "r2",
       "element": "金",
       "type": "medium",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r2",
+        "color": "#E6E6E6"
+      },
       "angle": 2.38761,
       "radius": 220,
       "x": -160.373,
@@ -471,6 +805,18 @@
       "ring": "r2",
       "element": "土",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r2",
+        "color": "#FFD166"
+      },
       "angle": 2.638938,
       "radius": 220,
       "x": -192.787,
@@ -487,6 +833,18 @@
       "ring": "r2",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FFD166"
+      },
       "angle": 2.890265,
       "radius": 220,
       "x": -213.088,
@@ -503,6 +861,18 @@
       "ring": "r2",
       "element": "土",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FFD166"
+      },
       "angle": 3.141593,
       "radius": 220,
       "x": -220.0,
@@ -519,6 +889,18 @@
       "ring": "r2",
       "element": "土",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FFD166"
+      },
       "angle": 3.39292,
       "radius": 220,
       "x": -213.088,
@@ -535,6 +917,18 @@
       "ring": "r2",
       "element": "土",
       "type": "medium",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r2",
+        "color": "#FFD166"
+      },
       "angle": 3.644247,
       "radius": 220,
       "x": -192.787,
@@ -551,6 +945,18 @@
       "ring": "r2",
       "element": "火",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r2",
+        "color": "#FF4D4D"
+      },
       "angle": 3.895575,
       "radius": 220,
       "x": -160.373,
@@ -567,6 +973,18 @@
       "ring": "r2",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FF4D4D"
+      },
       "angle": 4.146902,
       "radius": 220,
       "x": -117.882,
@@ -583,6 +1001,18 @@
       "ring": "r2",
       "element": "火",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FF4D4D"
+      },
       "angle": 4.39823,
       "radius": 220,
       "x": -67.984,
@@ -599,6 +1029,18 @@
       "ring": "r2",
       "element": "火",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#FF4D4D"
+      },
       "angle": 4.649557,
       "radius": 220,
       "x": -13.814,
@@ -615,6 +1057,18 @@
       "ring": "r2",
       "element": "火",
       "type": "medium",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r2",
+        "color": "#FF4D4D"
+      },
       "angle": 4.900885,
       "radius": 220,
       "x": 41.224,
@@ -631,6 +1085,18 @@
       "ring": "r2",
       "element": "水",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r2",
+        "color": "#3AA0FF"
+      },
       "angle": 5.183628,
       "radius": 220,
       "x": 99.878,
@@ -647,6 +1113,18 @@
       "ring": "r2",
       "element": "水",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#3AA0FF"
+      },
       "angle": 5.497787,
       "radius": 220,
       "x": 155.563,
@@ -663,6 +1141,18 @@
       "ring": "r2",
       "element": "水",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#3AA0FF"
+      },
       "angle": 5.811946,
       "radius": 220,
       "x": 196.021,
@@ -679,6 +1169,18 @@
       "ring": "r2",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r2",
+        "color": "#3AA0FF"
+      },
       "angle": 6.126106,
       "radius": 220,
       "x": 217.291,
@@ -695,6 +1197,18 @@
       "ring": "r3",
       "element": "木",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.08976,
       "radius": 305,
       "x": 303.772,
@@ -711,6 +1225,18 @@
       "ring": "r3",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.269279,
       "radius": 305,
       "x": 294.009,
@@ -727,6 +1253,18 @@
       "ring": "r3",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.448799,
       "radius": 305,
       "x": 274.796,
@@ -743,6 +1281,18 @@
       "ring": "r3",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.628319,
       "radius": 305,
       "x": 246.75,
@@ -759,6 +1309,18 @@
       "ring": "r3",
       "element": "木",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.807838,
       "radius": 305,
       "x": 210.774,
@@ -775,6 +1337,18 @@
       "ring": "r3",
       "element": "木",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 0.987358,
       "radius": 305,
       "x": 168.024,
@@ -791,6 +1365,18 @@
       "ring": "r3",
       "element": "木",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#39D98A"
+      },
       "angle": 1.166877,
       "radius": 305,
       "x": 119.873,
@@ -807,6 +1393,18 @@
       "ring": "r3",
       "element": "金",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 1.361357,
       "radius": 305,
       "x": 63.413,
@@ -823,6 +1421,18 @@
       "ring": "r3",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 1.570796,
       "radius": 305,
       "x": 0.0,
@@ -839,6 +1449,18 @@
       "ring": "r3",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 1.780236,
       "radius": 305,
       "x": -63.413,
@@ -855,6 +1477,18 @@
       "ring": "r3",
       "element": "金",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 1.989675,
       "radius": 305,
       "x": -124.055,
@@ -871,6 +1505,18 @@
       "ring": "r3",
       "element": "金",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 2.199115,
       "radius": 305,
       "x": -179.275,
@@ -887,6 +1533,18 @@
       "ring": "r3",
       "element": "金",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#E6E6E6"
+      },
       "angle": 2.408554,
       "radius": 305,
       "x": -226.659,
@@ -903,6 +1561,18 @@
       "ring": "r3",
       "element": "土",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 2.603034,
       "radius": 305,
       "x": -261.827,
@@ -919,6 +1589,18 @@
       "ring": "r3",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 2.782553,
       "radius": 305,
       "x": -285.552,
@@ -935,6 +1617,18 @@
       "ring": "r3",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 2.962073,
       "radius": 305,
       "x": -300.099,
@@ -951,6 +1645,18 @@
       "ring": "r3",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 3.141593,
       "radius": 305,
       "x": -305.0,
@@ -967,6 +1673,18 @@
       "ring": "r3",
       "element": "土",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 3.321112,
       "radius": 305,
       "x": -300.099,
@@ -983,6 +1701,18 @@
       "ring": "r3",
       "element": "土",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 3.500632,
       "radius": 305,
       "x": -285.552,
@@ -999,6 +1729,18 @@
       "ring": "r3",
       "element": "土",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FFD166"
+      },
       "angle": 3.680151,
       "radius": 305,
       "x": -261.827,
@@ -1015,6 +1757,18 @@
       "ring": "r3",
       "element": "火",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 3.874631,
       "radius": 305,
       "x": -226.659,
@@ -1031,6 +1785,18 @@
       "ring": "r3",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 4.08407,
       "radius": 305,
       "x": -179.275,
@@ -1047,6 +1813,18 @@
       "ring": "r3",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 4.29351,
       "radius": 305,
       "x": -124.055,
@@ -1063,6 +1841,18 @@
       "ring": "r3",
       "element": "火",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 4.502949,
       "radius": 305,
       "x": -63.413,
@@ -1079,6 +1869,18 @@
       "ring": "r3",
       "element": "火",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 4.712389,
       "radius": 305,
       "x": -0.0,
@@ -1095,6 +1897,18 @@
       "ring": "r3",
       "element": "火",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#FF4D4D"
+      },
       "angle": 4.921828,
       "radius": 305,
       "x": 63.413,
@@ -1111,6 +1925,18 @@
       "ring": "r3",
       "element": "水",
       "type": "keystone",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "keystone",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 5.131268,
       "radius": 305,
       "x": 124.055,
@@ -1127,6 +1953,18 @@
       "ring": "r3",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 5.340708,
       "radius": 305,
       "x": 179.275,
@@ -1143,6 +1981,18 @@
       "ring": "r3",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 5.550147,
       "radius": 305,
       "x": 226.659,
@@ -1159,6 +2009,18 @@
       "ring": "r3",
       "element": "水",
       "type": "convert",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 5.759587,
       "radius": 305,
       "x": 264.138,
@@ -1175,6 +2037,18 @@
       "ring": "r3",
       "element": "水",
       "type": "bridge",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "medium",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 5.969026,
       "radius": 305,
       "x": 290.072,
@@ -1191,6 +2065,18 @@
       "ring": "r3",
       "element": "水",
       "type": "small",
+      "node_type": "stat",
+      "template_id": "SLOT_STAT",
+      "ports": {
+        "in": [],
+        "out": []
+      },
+      "params": {},
+      "ui": {
+        "shape": "small",
+        "ring": "r3",
+        "color": "#3AA0FF"
+      },
       "angle": 6.178466,
       "radius": 305,
       "x": 303.329,

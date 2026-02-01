@@ -1,0 +1,27 @@
+{
+  "id": "bd_wood_regen",
+  "name": "木生息续航流",
+  "concept": "木系持续回流，叠层续航。",
+  "realm": "金丹",
+  "realm_requirement": "金丹+",
+  "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_0", "inner_3", "mid_1", "outer_0"], "note": "木生息主回路" },
+  "support_loop": { "nodes": ["inner_4", "mid_0", "outer_1"], "note": "护持副回路" },
+  "counters": ["爆发型Boss"],
+  "trigram_synergy": ["坤", "巽"],
+  "slots": {
+    "inner_0": "skill_water",
+    "inner_1": "mod_guard",
+    "inner_3": "skill_water",
+    "inner_4": "mod_amp",
+    "mid_0": "mod_guard",
+    "mid_1": "stat_wood",
+    "mid_2": "stat_wood",
+    "mid_4": "stat_wood",
+    "outer_0": "stat_wood",
+    "outer_1": "stat_earth",
+    "outer_2": "stat_wood",
+    "outer_3": "stat_earth",
+    "outer_4": "stat_wood"
+  }
+}

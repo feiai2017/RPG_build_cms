@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Combat & Summary</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="combat-page">
+    <header class="combat-header">
+      <div class="combat-title">战斗与总结</div>
+      <div class="combat-actions">
+        <button id="reload-snapshot" class="hud-action">Reload Snapshot</button>
+        <a class="hud-action link" href="index.html">Back to Board</a>
+      </div>
+    </header>
+
+    <main class="combat-layout">
+      <section class="combat-left">
+        <div class="card">
+          <div class="panel-header">角色面板</div>
+          <div id="snapshot-meta" class="stat-sub">未加载</div>
+          <div class="stat-grid" id="char-main"></div>
+          <div class="panel-header small">属性来源</div>
+          <div class="detail-grid" id="char-breakdown"></div>
+          <details class="sim-explain" id="slot-detail">
+            <summary>槽位贡献详情</summary>
+            <pre id="slot-detail-list"></pre>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="panel-header">BD 说明与功法</div>
+          <div id="bd-guide" class="bd-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="panel-header">境界区别</div>
+          <div id="realm-guide" class="bd-list"></div>
+        </div>
+        <div class="card">
+          <div class="panel-header">当前境界效果</div>
+          <div id="realm-effects" class="bd-list"></div>
+        </div>
+      </section>
+
+      <section class="combat-right">
+        <div class="card">
+          <div class="panel-header">Boss 验证</div>
+          <label>Boss
+            <select id="boss-select"></select>
+          </label>
+          <div id="boss-desc" class="stat-sub">-</div>
+          <div class="line-mode">
+            <label>日志粒度
+              <select id="log-level">
+                <option value="summary">Summary</option>
+                <option value="events" selected>Events</option>
+                <option value="full">Full</option>
+              </select>
+            </label>
+            <label>事件上限
+              <input id="log-limit" type="number" min="200" max="5000" step="100" value="2000" />
+            </label>
+          </div>
+          <div class="sim-actions">
+            <button id="simulate-btn" class="hud-action">Simulate</button>
+            <button id="boss-suite-btn" class="hud-action">Run Boss Suite</button>
+          </div>
+          <div class="sim-grid">
+            <div>胜负 <span id="sim-win">-</span></div>
+            <div>击杀 <span id="sim-ttk">-</span></div>
+            <div>存活 <span id="sim-survive">-</span></div>
+          </div>
+          <details id="boss-suite" class="sim-explain">
+            <summary>Boss Suite Report</summary>
+            <pre id="boss-suite-report"></pre>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="panel-header">战斗日志</div>
+          <details class="sim-explain" open>
+            <summary>Timeline</summary>
+            <pre id="log-timeline"></pre>
+          </details>
+          <details class="sim-explain" open>
+            <summary>Events</summary>
+            <pre id="log-events"></pre>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="core/solver.js?v=20260130"></script>
+  <script src="core/combat_sim.js?v=20260130"></script>
+  <script src="core/boss_profiles.js?v=20260130"></script>
+  <script src="combat.js?v=20260130"></script>
+</body>
+</html>

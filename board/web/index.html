@@ -56,6 +56,11 @@
         <span id="hud-bonus">无</span>
       </div>
       <div class="hud-item">
+        <span class="hud-icon">◎</span>
+        回路
+        <span id="hud-loops">未检测</span>
+      </div>
+      <div class="hud-item">
         <span class="hud-icon">⬤</span>
         高对比
         <input type="checkbox" id="toggle-contrast" />
@@ -86,6 +91,12 @@
         <div>通气状态 <span id="detail-power">未通气</span></div>
         <div>断气原因 <span id="detail-reason">—</span></div>
       </div>
+      <div class="panel-divider"></div>
+      <div class="panel-header small">模板与参数</div>
+      <label>模板
+        <select id="detail-template"></select>
+      </label>
+      <div id="detail-params" class="detail-params"></div>
       <button id="toggle-switch" class="hud-action hidden">切换开关</button>
 
       <div class="panel-divider"></div>
@@ -102,10 +113,15 @@
       <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
 
       <div class="panel-divider"></div>
+      <div class="panel-header small">预设讲解</div>
+      <div id="preset-card" class="bd-list">未加载预设</div>
+
+      <div class="panel-divider"></div>
       <div class="panel-header small">气脉显示</div>
       <div class="line-mode">
         <label>模式
           <select id="line-mode">
+            <option value="near">邻接</option>
             <option value="all">全部</option>
             <option value="path">路径高亮</option>
             <option value="element">元素过滤</option>
@@ -126,26 +142,11 @@
       <button id="reset-zoom" class="hud-action">重置缩放</button>
 
       <div class="panel-divider"></div>
-      <div class="panel-header">求解结果</div>
+      <div class="panel-header">战斗与总结</div>
+      <div class="stat-sub">在独立页面查看角色面板、BD说明与战斗日志。</div>
       <div class="sim-actions">
-        <button id="simulate-btn" class="hud-action">Simulate</button>
+        <button id="open-combat" class="hud-action">Open Combat Panel</button>
       </div>
-      <div class="sim-grid">
-        <div>DPS <span id="sim-dps">0</span></div>
-        <div>EHP <span id="sim-ehp">0</span></div>
-        <div>续航 <span id="sim-sustain">0</span></div>
-        <div>稳定 <span id="sim-stability">0</span></div>
-      </div>
-      <div class="panel-header small">Boss验证</div>
-      <div class="sim-grid">
-        <div>胜负 <span id="sim-win">-</span></div>
-        <div>击杀 <span id="sim-ttk">-</span></div>
-        <div>存活 <span id="sim-survive">-</span></div>
-      </div>
-      <details id="sim-explain" class="sim-explain">
-        <summary>Explain</summary>
-        <pre id="sim-logs"></pre>
-      </details>
 
       <div class="legend">
         <div class="legend-title">节点图例</div>
@@ -219,6 +220,10 @@
       <label>缩放 <input type="range" id="scale" min="0.7" max="1.6" step="0.01" value="0.7" /></label>
       <label>搜索节点 <input type="text" id="search" placeholder="node_id" /></label>
       <div id="search-result"></div>
+      <label>模板库
+        <select id="template-select"></select>
+      </label>
+      <button id="apply-template" class="hud-action">应用到当前节点</button>
       <div class="dev-row">
         <button id="reload-config">Reload Config</button>
         <button id="export-current">Export Current</button>
@@ -251,6 +256,8 @@
   </div>
 
   <script src="core/solver.js?v=20260130"></script>
+  <script src="core/combat_sim.js?v=20260130"></script>
+  <script src="core/boss_profiles.js?v=20260130"></script>
   <script src="board.js?v=20260130"></script>
 </body>
 </html>

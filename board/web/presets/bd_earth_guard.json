@@ -1,0 +1,27 @@
+{
+  "id": "bd_earth_guard",
+  "name": "土艮守御流",
+  "concept": "土系护甲与护持回路，偏生存。",
+  "realm": "金丹",
+  "realm_requirement": "金丹+",
+  "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_12", "inner_14", "mid_1", "outer_0"], "note": "土守御主回路" },
+  "support_loop": { "nodes": ["inner_11", "mid_0", "outer_1"], "note": "水护持副回路" },
+  "counters": ["穿透型Boss"],
+  "trigram_synergy": ["艮", "坤"],
+  "slots": {
+    "inner_12": "skill_water",
+    "inner_15": "mod_guard",
+    "inner_14": "skill_water",
+    "inner_11": "mod_guard",
+    "mid_0": "mod_guard",
+    "mid_1": "stat_earth",
+    "mid_2": "stat_earth",
+    "mid_4": "stat_earth",
+    "outer_0": "stat_earth",
+    "outer_1": "stat_water",
+    "outer_2": "stat_earth",
+    "outer_3": "stat_water",
+    "outer_4": "stat_earth"
+  }
+}

@@ -1,7 +1,14 @@
 {
-  "name": "bd_earth_guard",
+  "id": "bd3_crit_chain",
+  "name": "土守御流",
+  "concept": "高EHP与稳定，适合耐久战。",
   "realm": "金丹",
+  "realm_requirement": "金丹+",
   "linggen": "pure_water",
+  "main_loop": { "nodes": ["inner_3", "inner_1", "mid_0", "outer_0"], "note": "土系守御主回路" },
+  "support_loop": { "nodes": ["inner_0", "mid_2", "outer_2"], "note": "护持回路" },
+  "counters": ["穿透型Boss"],
+  "trigram_synergy": ["艮", "坤"],
   "slots": {
     "inner_0": "mod_guard",
     "inner_1": "stat_earth",

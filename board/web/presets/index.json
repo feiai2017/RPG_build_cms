@@ -1,0 +1,12 @@
+{
+  "presets": [
+    { "id": "bd1_dot_core", "label": "BD: 水流(dot)" },
+    { "id": "bd2_shield_loop", "label": "BD: 护盾回路" },
+    { "id": "bd3_crit_chain", "label": "BD: 暴击连锁" },
+    { "id": "bd_fire_burst", "label": "BD: 火爆发" },
+    { "id": "bd_water_shield", "label": "BD: 水护持" },
+    { "id": "bd_metal_crit", "label": "BD: 金穿暴" },
+    { "id": "bd_earth_guard", "label": "BD: 土守护" },
+    { "id": "bd_wood_regen", "label": "BD: 木续航" }
+  ]
+}

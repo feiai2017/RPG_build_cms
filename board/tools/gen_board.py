@@ -31,6 +31,11 @@ class Node:
     ring: str
     element: str
     ntype: str
+    node_type: str
+    template_id: str
+    ports: Dict[str, List[Dict[str, str]]]
+    params: Dict[str, object]
+    ui: Dict[str, object]
     angle: float
     radius: float
     x: float
@@ -64,6 +69,30 @@ def assign_type(k: int, count: int) -> str:
     return "small"
 
 
+def node_type_for(ntype: str) -> str:
+    if ntype in ("core", "bridge", "convert"):
+        return "mechanic"
+    return "stat"
+
+
+def template_for(ntype: str) -> str:
+    if ntype == "core":
+        return "SOURCE_CORE"
+    if ntype == "bridge":
+        return "NODE_BRIDGE"
+    if ntype == "convert":
+        return "NODE_CONVERT"
+    return "SLOT_STAT"
+
+
+def ui_for(ntype: str, ring: str, element: str) -> Dict[str, object]:
+    return {
+        "shape": ntype,
+        "ring": ring,
+        "color": COLORS.get(element, "#7f8c99"),
+    }
+
+
 def generate_nodes() -> tuple[List[Node], Dict[str, List[Node]]]:
     nodes: List[Node] = []
     sector_span = 2 * math.pi / 5
@@ -74,6 +103,11 @@ def generate_nodes() -> tuple[List[Node], Dict[str, List[Node]]]:
             ring="core",
             element="土",
             ntype="core",
+            node_type="mechanic",
+            template_id="SOURCE_CORE",
+            ports={"in": [], "out": [{"id": "qi_out", "kind": "resource", "accepts": ["qi"]}]},
+            params={"qi_out": 1},
+            ui=ui_for("core", "core", "土"),
             angle=0.0,
             radius=0.0,
             x=0.0,
@@ -108,6 +142,11 @@ def generate_nodes() -> tuple[List[Node], Dict[str, List[Node]]]:
                     ring=ring_id,
                     element=element,
                     ntype=ntype,
+                    node_type=node_type_for(ntype),
+                    template_id=template_for(ntype),
+                    ports={"in": [], "out": []},
+                    params={},
+                    ui=ui_for(ntype, ring_id, element),
                     angle=angle,
                     radius=radius,
                     x=x,
@@ -208,6 +247,11 @@ def write_board(nodes: List[Node], edges: List[Edge]) -> None:
                 "ring": n.ring,
                 "element": n.element,
                 "type": n.ntype,
+                "node_type": n.node_type,
+                "template_id": n.template_id,
+                "ports": n.ports,
+                "params": n.params,
+                "ui": n.ui,
                 "angle": round(n.angle, 6),
                 "radius": n.radius,
                 "x": round(n.x, 3),

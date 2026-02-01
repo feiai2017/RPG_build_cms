@@ -1,0 +1,27 @@
+{
+  "id": "bd_fire_burst",
+  "name": "火离爆发流",
+  "concept": "火行爆发主回路 + 金系穿透副回路。",
+  "realm": "金丹",
+  "realm_requirement": "金丹+",
+  "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_0", "inner_3", "mid_0", "outer_2"], "note": "火爆发主回路" },
+  "support_loop": { "nodes": ["inner_1", "mid_1", "outer_1"], "note": "穿透/稳定副回路" },
+  "counters": ["高护盾Boss"],
+  "trigram_synergy": ["离", "乾"],
+  "slots": {
+    "inner_0": "skill_fire",
+    "inner_1": "mod_amp",
+    "inner_3": "skill_fire",
+    "inner_4": "mod_amp",
+    "mid_0": "mod_amp",
+    "mid_1": "stat_fire",
+    "mid_2": "stat_fire",
+    "mid_4": "stat_fire",
+    "outer_0": "stat_fire",
+    "outer_1": "stat_metal",
+    "outer_2": "stat_fire",
+    "outer_3": "stat_metal",
+    "outer_4": "stat_fire"
+  }
+}

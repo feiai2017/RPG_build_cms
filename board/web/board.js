@@ -9,6 +9,7 @@
   hudBandwidth: document.getElementById('hud-bandwidth'),
   hudCounts: document.getElementById('hud-counts'),
   hudBonus: document.getElementById('hud-bonus'),
+  hudLoops: document.getElementById('hud-loops'),
   toggleContrast: document.getElementById('toggle-contrast'),
   toggleBroken: document.getElementById('toggle-broken'),
   clearLit: document.getElementById('clear-lit'),
@@ -25,6 +26,8 @@
     effect: document.getElementById('detail-effect'),
     power: document.getElementById('detail-power'),
     reason: document.getElementById('detail-reason'),
+    template: document.getElementById('detail-template'),
+    params: document.getElementById('detail-params'),
   },
   sim: {
     dps: document.getElementById('sim-dps'),
@@ -36,6 +39,10 @@
     survive: document.getElementById('sim-survive'),
     logs: document.getElementById('sim-logs'),
   },
+  bossSelect: document.getElementById('boss-select'),
+  bossDesc: document.getElementById('boss-desc'),
+  bossSuiteBtn: document.getElementById('boss-suite-btn'),
+  bossSuiteReport: document.getElementById('boss-suite-report'),
   toggleSwitch: document.getElementById('toggle-switch'),
   stats: {
     atk: document.getElementById('stat-atk'),
@@ -56,6 +63,8 @@
   },
   devToggle: document.getElementById('dev-toggle'),
   devDrawer: document.getElementById('dev-drawer'),
+  templateSelect: document.getElementById('template-select'),
+  applyTemplate: document.getElementById('apply-template'),
   toggleSectors: document.getElementById('toggle-sectors'),
   toggleRings: document.getElementById('toggle-rings'),
   toggleDebug: document.getElementById('toggle-debug'),
@@ -75,6 +84,8 @@
     presetSelect: document.getElementById('preset-select'),
     presetLoad: document.getElementById('load-preset'),
   },
+  presetCard: document.getElementById('preset-card'),
+  openCombat: document.getElementById('open-combat'),
   tooltip: document.getElementById('tooltip'),
   debugOverlay: document.getElementById('debug-overlay'),
 };
@@ -83,9 +94,11 @@ let boardData = null;
 let cfgData = null;
 let cfgHash = '-';
 let cfgMtime = '-';
+let templateCatalog = null;
 let boardState = null;
 let nodeReason = new Map();
 let presetFiles = [];
+let bossProfiles = [];
 const runtime = {
   flash: null,
   lastActiveEdges: new Set(),
@@ -114,6 +127,16 @@ const runtime = {
 const TRIGRAM_SECTORS = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
 const TRIGRAMS = TRIGRAM_SECTORS;
 const DEFAULT_REALM = '金丹';
+const TRIGRAM_RULES = {
+  乾: { allowCrossRing: true },
+  兑: { allowCrossRing: true },
+  离: { allowCrossRing: true, turbulence_add: 0.08 },
+  震: { allowCrossRing: true, requireMechanic: true },
+  巽: { allowCrossRing: true },
+  坎: { allowCrossRing: false, forbidSkillLink: true, turbulence_add: -0.05 },
+  艮: { allowCrossRing: false },
+  坤: { allowCrossRing: true, turbulence_add: -0.08 },
+};
 const WUXING_COLORS = {
   金: '#E6E6E6',
   木: '#39D98A',
@@ -358,6 +381,16 @@ function bits3ToTrigramName(bits3) {
   return BITS_TRIGRAM[key] || '坤';
 }
 
+function trigramRuleDesc(trigram) {
+  const rule = TRIGRAM_RULES[trigram] || {};
+  const parts = [];
+  if (rule.allowCrossRing === false) parts.push('禁跨环');
+  if (rule.requireMechanic) parts.push('需机制节点');
+  if (rule.forbidSkillLink) parts.push('禁技能直连');
+  if (rule.turbulence_add) parts.push(`乱流${rule.turbulence_add > 0 ? '+' : ''}${rule.turbulence_add}`);
+  return parts.length ? parts.join(' / ') : '无特殊规则';
+}
+
 function trigramNameToBits3(name) {
   return TRIGRAM_BITS[name] ? [...TRIGRAM_BITS[name]] : [0, 0, 0];
 }
@@ -522,6 +555,66 @@ async function loadBoard() {
   boardData = data;
 }
 
+async function loadNodeTemplates() {
+  try {
+    const { data } = await fetchJson('./node_templates.json');
+    templateCatalog = data;
+    if (dom.templateSelect && Array.isArray(templateCatalog?.templates)) {
+      dom.templateSelect.innerHTML = templateCatalog.templates
+        .map((t) => `<option value="${t.template_id}">${t.template_id}</option>`)
+        .join('');
+    }
+  } catch (err) {
+    console.warn('[templates] load failed', err);
+    templateCatalog = { templates: [] };
+  }
+}
+
+function templateById(templateId) {
+  if (!templateCatalog?.templates?.length) return null;
+  return templateCatalog.templates.find((t) => t.template_id === templateId) || null;
+}
+
+function deriveNodeType(rawType, slotType) {
+  if (slotType === SLOT_TYPES.skill) return 'skill';
+  if (slotType === SLOT_TYPES.mod) return 'mechanic';
+  if (slotType === SLOT_TYPES.stat || slotType === SLOT_TYPES.normal) return 'stat';
+  if (rawType === 'core' || rawType === 'bridge' || rawType === 'convert') return 'mechanic';
+  if (rawType === 'keystone' || rawType === 'socket' || rawType === 'medium' || rawType === 'small') return 'stat';
+  return 'unknown';
+}
+
+function deriveTemplateId(rawType, nodeType) {
+  if (nodeType === 'skill') return 'SLOT_SKILL';
+  if (nodeType === 'mechanic' && rawType === 'core') return 'SOURCE_CORE';
+  if (nodeType === 'mechanic' && rawType === 'bridge') return 'NODE_BRIDGE';
+  if (nodeType === 'mechanic' && rawType === 'convert') return 'NODE_CONVERT';
+  if (nodeType === 'mechanic') return 'SLOT_MOD';
+  if (nodeType === 'stat') return 'SLOT_STAT';
+  return 'UNKNOWN';
+}
+
+function portKinds(portList) {
+  return (portList || []).map((p) => p.kind).filter(Boolean);
+}
+
+function validatePortKinds(a, b) {
+  const aOutKinds = portKinds(a.ports?.out);
+  const aInKinds = portKinds(a.ports?.in);
+  const bOutKinds = portKinds(b.ports?.out);
+  const bInKinds = portKinds(b.ports?.in);
+  const edgeKinds = [];
+  if (aOutKinds.some((k) => bInKinds.includes(k))) edgeKinds.push('a->b');
+  if (bOutKinds.some((k) => aInKinds.includes(k))) edgeKinds.push('b->a');
+
+  if (a.node_type === 'skill' && aInKinds.length === 0) return { ok: false, reason: '技能缺少输入端口' };
+  if (b.node_type === 'skill' && bInKinds.length === 0) return { ok: false, reason: '技能缺少输入端口' };
+  if (a.node_type === 'stat' && aOutKinds.length === 0) return { ok: false, reason: '属性节点缺少输出端口' };
+  if (b.node_type === 'stat' && bOutKinds.length === 0) return { ok: false, reason: '属性节点缺少输出端口' };
+  if (edgeKinds.length === 0) return { ok: false, reason: '端口方向不兼容' };
+  return { ok: true };
+}
+
 function buildBoardState(preset) {
   const nodes = [];
   const ringMap = cfgData.ring_map;
@@ -565,6 +658,13 @@ function buildBoardState(preset) {
       base_theta: baseTheta,
       r: radius,
       size: raw.type === 'keystone' ? 'major' : 'small',
+      raw_type: raw.type,
+      node_type: raw.node_type || null,
+      template_id: raw.template_id || null,
+      ports: raw.ports || { in: [], out: [] },
+      params: raw.params || {},
+      ui: raw.ui || {},
+      tags: raw.tags || [],
       trigram: trigramByAngle(baseTheta),
       slot_type: SLOT_TYPES.normal,
       stone_id: null,
@@ -588,6 +688,21 @@ function buildBoardState(preset) {
       nodes.push(node);
     });
     assignSlotTypes(ring, ringBuckets[ring]);
+    ringBuckets[ring].forEach((node) => {
+      const rawType = node.raw_type || 'unknown';
+      node.node_type = deriveNodeType(rawType, node.slot_type);
+      node.template_id = node.template_id || deriveTemplateId(rawType, node.node_type);
+      const template = templateById(node.template_id);
+      if (template) {
+        node.ports = template.ports || node.ports;
+        node.params = { ...template.default_params, ...node.params };
+        node.ui = { ...template.ui, ...node.ui };
+      }
+      if (node.node_type === 'unknown') {
+        node.tags = Array.isArray(node.tags) ? node.tags : [];
+        node.tags.push('needs_fix');
+      }
+    });
   });
 
   if (cfgData.inner_core) {
@@ -606,6 +721,12 @@ function buildBoardState(preset) {
         size: 'major',
         trigram: trigramByAngle(theta),
         slot_type: SLOT_TYPES.skill,
+        raw_type: 'core',
+        node_type: 'skill',
+        template_id: 'SLOT_SKILL',
+        ports: templateById('SLOT_SKILL')?.ports || { in: [], out: [] },
+        params: templateById('SLOT_SKILL')?.default_params || {},
+        ui: {},
         core_adjacent: false,
         core_source_idx: null,
         stone_id: slotStones[`inner_core_${i}`] || null,
@@ -618,13 +739,15 @@ function buildBoardState(preset) {
   const realm = preset?.realm || DEFAULT_REALM;
   const linggenId = preset?.linggen || LINGGEN_PROFILES[0].id;
   const linggenProfile = LINGGEN_PROFILES.find((p) => p.id === linggenId) || LINGGEN_PROFILES[0];
-  const qiCap = linggenProfile.sources.reduce((sum, s) => sum + s.capacity, 0);
-  const bandwidthCap = Math.round(qiCap * 0.8);
+  const charDefaults = cfgData.character_defaults || {};
+  const qiCap = linggenProfile.sources.reduce((sum, s) => sum + s.capacity, 0) + (charDefaults.qi_bonus || 0);
+  const bandwidthCap = Math.round(qiCap * 0.8) + (charDefaults.bandwidth_bonus || 0);
 
   boardState = {
     realm,
     linggen_id: linggenProfile.id,
     linggen_profile: linggenProfile,
+    char: { ...charDefaults },
     core_sources: linggenProfile.sources,
     qi_cap: qiCap,
     qi_used: 0,
@@ -636,8 +759,22 @@ function buildBoardState(preset) {
     ruleset_version: cfgData.ruleset_version || 'v2',
     cfg_hash: cfgHash,
     ui: {},
+    preset_meta: preset || null,
+    highlight: { main: new Set(), support: new Set() },
   };
   window.boardState = boardState;
+  applyPresetMeta(preset);
+}
+
+function applyPresetMeta(preset) {
+  boardState.preset_meta = preset || null;
+  boardState.highlight = { main: new Set(), support: new Set() };
+  if (!preset) return;
+  const mainNodes = preset?.main_loop?.nodes || [];
+  const supportNodes = preset?.support_loop?.nodes || [];
+  mainNodes.forEach((id) => boardState.highlight.main.add(id));
+  supportNodes.forEach((id) => boardState.highlight.support.add(id));
+  renderPresetCard();
 }
 
 function initUIState() {
@@ -657,7 +794,7 @@ function initUIState() {
     contactThreshold: parseFloat(dom.contactThreshold?.value ?? cfgData.bridge_threshold_deg ?? 12),
     channelCount: parseInt(dom.channelCount?.value ?? 3, 10),
     allowAutoEdges: false,
-    lineMode: dom.lineMode?.value || 'all',
+    lineMode: dom.lineMode?.value || 'near',
     lineElement: dom.lineElement?.value || '水',
     panX: 0,
     panY: 0,
@@ -693,6 +830,10 @@ function setUIState(patch, opts = {}) {
     dom.debugOverlay?.classList.add('hidden');
   }
   scheduleUpdate({ recompute: opts.recompute, cause: opts.cause });
+}
+
+function realmFeatures() {
+  return cfgData?.realm_rules?.[boardState?.realm]?.features || {};
 }
 
 function enabledRings() {
@@ -776,6 +917,9 @@ function ringLevel(ring) {
 function buildNeighborMap(nodes = boardState.nodes) {
   const ringMap = ringIndex(nodes);
   const map = new Map();
+  const features = realmFeatures();
+  const crossCount = features.cross_count ?? NEIGHBOR_RULES.crossCount;
+  const allowCrossRing = features.allow_cross_ring ?? true;
   const addNeighbor = (a, b) => {
     if (!a || !b || a.id === b.id) return;
     if (!map.has(a.id)) map.set(a.id, new Set());
@@ -794,25 +938,59 @@ function buildNeighborMap(nodes = boardState.nodes) {
     }
   });
 
-  const order = ringOrder(nodes);
-  order.forEach((ring) => {
-    const nodes = (ringMap[ring] || []).filter((n) => n.id !== 'core');
-    const ringIdx = order.indexOf(ring);
-    [ringIdx - 1, ringIdx + 1].forEach((idx) => {
-      const targetRing = order[idx];
-      if (!targetRing) return;
-      const targetNodes = (ringMap[targetRing] || []).filter((n) => n.id !== 'core');
-      nodes.forEach((node) => {
-        const candidates = targetNodes
-          .map((t) => ({ node: t, diff: angleDiff(nodeAngleDeg(node), nodeAngleDeg(t)) }))
-          .sort((a, b) => a.diff - b.diff)
-          .slice(0, NEIGHBOR_RULES.crossCount);
-        candidates.forEach((entry) => addNeighbor(node, entry.node));
+  if (allowCrossRing) {
+    const order = ringOrder(nodes);
+    order.forEach((ring) => {
+      const nodes = (ringMap[ring] || []).filter((n) => n.id !== 'core');
+      const ringIdx = order.indexOf(ring);
+      [ringIdx - 1, ringIdx + 1].forEach((idx) => {
+        const targetRing = order[idx];
+        if (!targetRing) return;
+        const targetNodes = (ringMap[targetRing] || []).filter((n) => n.id !== 'core');
+        nodes.forEach((node) => {
+          const candidates = targetNodes
+            .map((t) => ({ node: t, diff: angleDiff(nodeAngleDeg(node), nodeAngleDeg(t)) }))
+            .sort((a, b) => a.diff - b.diff)
+            .slice(0, crossCount);
+          candidates.forEach((entry) => addNeighbor(node, entry.node));
+        });
       });
     });
-  });
+  }
 
   return map;
+}
+
+function portsCompatible(a, b) {
+  const ruleA = TRIGRAM_RULES[a.trigram] || {};
+  const ruleB = TRIGRAM_RULES[b.trigram] || {};
+  const ringDiff = a.ring !== b.ring;
+  if (ringDiff && (ruleA.allowCrossRing === false || ruleB.allowCrossRing === false)) {
+    return { ok: false, reason: '卦象限制：不允许跨环' };
+  }
+  if ((ruleA.requireMechanic || ruleB.requireMechanic) && a.node_type !== 'mechanic' && b.node_type !== 'mechanic') {
+    return { ok: false, reason: '卦象限制：需要机制节点' };
+  }
+  if ((ruleA.forbidSkillLink || ruleB.forbidSkillLink) && a.node_type === 'skill' && b.node_type === 'skill') {
+    return { ok: false, reason: '卦象限制：技能直连禁止' };
+  }
+  const typeCheck = validatePortKinds(a, b);
+  if (!typeCheck.ok) return typeCheck;
+  if (!a?.ports || !b?.ports) return { ok: true };
+  const aOut = a.ports.out || [];
+  const aIn = a.ports.in || [];
+  const bOut = b.ports.out || [];
+  const bIn = b.ports.in || [];
+  if ((aOut.length === 0 && aIn.length === 0) || (bOut.length === 0 && bIn.length === 0)) {
+    return { ok: true, direction: 'both' };
+  }
+
+  const match = (outs, ins) => outs.some((o) => (o.accepts || []).some((acc) => (ins || []).some((i) => (i.accepts || []).includes(acc))));
+  const aToB = match(aOut, bIn);
+  const bToA = match(bOut, aIn);
+  if (!aToB && !bToA) return { ok: false, reason: '端口不兼容' };
+  if (aToB && bToA) return { ok: true, direction: 'both' };
+  return { ok: true, direction: aToB ? 'a->b' : 'b->a' };
 }
 
 function validateWires(neighborMap) {
@@ -839,12 +1017,16 @@ function buildAutoEdges(nodes = boardState.nodes) {
       const a = nodes.find((n) => n.id === id);
       const b = nodes.find((n) => n.id === nid);
       if (!a || !b) return;
-      const connected = !!a.stone_id && !!b.stone_id;
+      const legal = portsCompatible(a, b);
+      const connected = legal.ok && !!a.stone_id && !!b.stone_id;
       edges.push({
         a: id,
         b: nid,
         active: false,
         connected,
+        legal: legal.ok,
+        illegal_reason: legal.ok ? null : legal.reason,
+        direction: legal.direction || 'both',
         kind: 'auto',
       });
     });
@@ -875,8 +1057,9 @@ function computeQiFlow(edges, nodes = boardState.nodes) {
     if (!edge.connected) return;
     if (!adjacency.has(edge.a)) adjacency.set(edge.a, []);
     if (!adjacency.has(edge.b)) adjacency.set(edge.b, []);
-    adjacency.get(edge.a).push(edge.b);
-    adjacency.get(edge.b).push(edge.a);
+    const dir = edge.direction || 'both';
+    if (dir === 'both' || dir === 'a->b') adjacency.get(edge.a).push(edge.b);
+    if (dir === 'both' || dir === 'b->a') adjacency.get(edge.b).push(edge.a);
   });
 
   const coreSources = boardState.core_sources || [];
@@ -977,6 +1160,7 @@ function normalizeQi(q) {
 
 function trigramModifiers(trigram) {
   const mods = { k_gen: 1, k_ke: 1, k_turb: 1, sustain: 0 };
+  const rule = TRIGRAM_RULES[trigram] || {};
   if (trigram === '坎') {
     mods.k_turb *= 0.7;
     mods.sustain += 0.1;
@@ -990,6 +1174,9 @@ function trigramModifiers(trigram) {
   }
   if (trigram === '巽') {
     mods.k_gen *= 1.1;
+  }
+  if (rule.turbulence_add) {
+    mods.k_turb *= 1 + rule.turbulence_add;
   }
   return mods;
 }
@@ -1035,8 +1222,9 @@ function computeQiNetwork(nodes, edges) {
   activeEdges.forEach((edge) => {
     if (!adjacency.has(edge.a)) adjacency.set(edge.a, []);
     if (!adjacency.has(edge.b)) adjacency.set(edge.b, []);
-    adjacency.get(edge.a).push(edge.b);
-    adjacency.get(edge.b).push(edge.a);
+    const dir = edge.direction || 'both';
+    if (dir === 'both' || dir === 'a->b') adjacency.get(edge.a).push(edge.b);
+    if (dir === 'both' || dir === 'b->a') adjacency.get(edge.b).push(edge.a);
   });
 
   const order = energizedNodes.map((n) => n.id).sort();
@@ -1091,6 +1279,90 @@ function computeQiNetwork(nodes, edges) {
     edge.dominant_element = dominantElement(edge.qi_comp);
     edge.turbulence = ((a?.turbulence || 0) + (b?.turbulence || 0)) * 0.5;
   });
+}
+
+function detectLoops(nodes, edges) {
+  const adjacency = new Map();
+  edges.forEach((edge) => {
+    if (!edge.connected || !edge.active) return;
+    if (!adjacency.has(edge.a)) adjacency.set(edge.a, []);
+    if (!adjacency.has(edge.b)) adjacency.set(edge.b, []);
+    adjacency.get(edge.a).push(edge.b);
+    adjacency.get(edge.b).push(edge.a);
+  });
+
+  const visited = new Set();
+  const inStack = new Set();
+  const parent = new Map();
+  const loops = [];
+  const loopKeys = new Set();
+
+  function recordLoop(from, to) {
+    const cycle = [to];
+    let cur = from;
+    while (cur && cur !== to && parent.has(cur)) {
+      cycle.push(cur);
+      cur = parent.get(cur);
+    }
+    cycle.push(to);
+    const unique = Array.from(new Set(cycle));
+    const key = unique.slice().sort().join('|');
+    if (loopKeys.has(key)) return;
+    loopKeys.add(key);
+    loops.push(unique);
+  }
+
+  function dfs(nodeId) {
+    visited.add(nodeId);
+    inStack.add(nodeId);
+    const neighbors = adjacency.get(nodeId) || [];
+    neighbors.forEach((next) => {
+      if (!visited.has(next)) {
+        parent.set(next, nodeId);
+        dfs(next);
+      } else if (inStack.has(next) && parent.get(nodeId) !== next) {
+        recordLoop(nodeId, next);
+      }
+    });
+    inStack.delete(nodeId);
+  }
+
+  nodes.forEach((node) => {
+    if (!visited.has(node.id)) dfs(node.id);
+  });
+  return loops.slice(0, 8);
+}
+
+function analyzeBDStructure() {
+  const loops = detectLoops(boardState.nodes, boardState.edges);
+  const loopInfo = loops.map((loop) => {
+    const nodes = loop.map((id) => boardState.nodes.find((n) => n.id === id)).filter(Boolean);
+    const hasSkill = nodes.some((n) => n.node_type === 'skill');
+    const hasMechanic = nodes.some((n) => n.node_type === 'mechanic');
+    const hasStat = nodes.some((n) => n.node_type === 'stat');
+    return { nodes: loop, hasSkill, hasMechanic, hasStat };
+  });
+
+  const mainLoops = loopInfo.filter((l) => l.hasSkill);
+  const supportLoops = loopInfo.filter((l) => !l.hasSkill && (l.hasMechanic || l.hasStat));
+
+  let hint = '无回路';
+  if (mainLoops.length > 0 && supportLoops.length > 0) hint = '主回路+副回路';
+  else if (mainLoops.length > 0) hint = '仅主回路';
+  else if (supportLoops.length > 0) hint = '仅维持回路';
+  else if (boardState.nodes.filter((n) => n.lit).length > 0) hint = '只有技能堆叠，无回路';
+
+  const features = realmFeatures();
+  const maxParallel = Math.min(
+    features.max_parallel_loops ?? 99,
+    boardState.char?.max_parallel_loops ?? 99,
+  );
+  if (mainLoops.length + supportLoops.length > maxParallel) {
+    hint = `回路超限(${mainLoops.length + supportLoops.length}/${maxParallel})`;
+  }
+
+  boardState.circuits = { loops: loopInfo, mainLoops: mainLoops.length, supportLoops: supportLoops.length };
+  boardState.bd_hint = hint;
 }
 
 function computeConnectivitySnapshot(nodes) {
@@ -1172,7 +1444,8 @@ function recomputeConnectivity(cause = '') {
   computeQiNetwork(boardState.nodes, boardState.edges);
   boardState.edges.forEach((edge) => {
     if (!edge.connected) {
-      edge.state = 'NONE';
+      edge.state = edge.legal === false ? 'ILLEGAL' : 'NONE';
+      if (edge.legal === false) edge.reason = edge.illegal_reason || '端口不兼容';
       return;
     }
     const reason = [];
@@ -1188,6 +1461,7 @@ function recomputeConnectivity(cause = '') {
     edge.source_element = edge.dominant_element || edge.source_element;
   });
 
+  analyzeBDStructure();
   runSolver();
 }
 
@@ -1252,7 +1526,7 @@ function hitTestEdge(event) {
   const cy = size / 2;
   let best = null;
   let bestDist = Infinity;
-  const edges = boardState.edges.filter((e) => e.connected && e.state !== 'NONE');
+  const edges = boardState.edges.filter((e) => (e.connected && e.state !== 'NONE') || (boardState.ui?.showBroken && e.legal === false));
   edges.forEach((edge) => {
     const a = boardState.nodes.find((n) => n.id === edge.a);
     const b = boardState.nodes.find((n) => n.id === edge.b);
@@ -1495,10 +1769,17 @@ function renderBoard(now = performance.now()) {
   if (showEdges) {
     const dashOffset = -((now * 0.05) % 24);
     let edgesToDraw = boardState.edges.filter((edge) => edge.connected);
+    if (showBroken) {
+      const illegal = boardState.edges.filter((edge) => !edge.connected && edge.legal === false);
+      edgesToDraw = edgesToDraw.concat(illegal);
+    }
     if (lineMode === 'element') {
       edgesToDraw = edgesToDraw.filter((edge) => edge.dominant_element === lineElement || edge.source_element === lineElement);
     } else if (lineMode === 'path') {
       edgesToDraw = pathEdges ? edgesToDraw.filter((edge) => pathEdges.has(wireKey(edge.a, edge.b))) : [];
+    } else if (lineMode === 'near') {
+      const focus = runtime.selectedNodeId || runtime.hoveredNodeId;
+      edgesToDraw = focus ? edgesToDraw.filter((edge) => edge.a === focus || edge.b === focus) : [];
     }
     edgesToDraw.forEach((edge) => {
       const a = boardState.nodes.find((n) => n.id === edge.a);
@@ -1513,10 +1794,29 @@ function renderBoard(now = performance.now()) {
       const baseAlpha = lineMode === 'all' && pathEdges ? (pathBoost ? 0.22 : 0.06) : VISUAL_CFG.line.baseAlpha;
       const lineAlpha = lineMode === 'all' && pathEdges ? (pathBoost ? 0.95 : 0.2) : VISUAL_CFG.line.glowAlpha;
       const width = pathBoost ? VISUAL_CFG.line.pathWidth : VISUAL_CFG.line.baseWidth;
+      const isIllegal = edge.legal === false;
       const solidAlpha = edge.active ? baseAlpha : baseAlpha * 0.45;
-      svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${rgba(edgeColor, solidAlpha * edgeStrength)}" stroke-width="${width}" />`;
-      if (edge.active) {
+      const strokeColor = isIllegal ? 'rgba(255,90,90,0.7)' : rgba(edgeColor, solidAlpha * edgeStrength);
+      svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${strokeColor}" stroke-width="${width}" />`;
+      if (edge.active && !isIllegal) {
         svg += `<line x1="${cx + pa.x}" y1="${cy + pa.y}" x2="${cx + pb.x}" y2="${cy + pb.y}" stroke="${rgba(edgeColor, lineAlpha * edgeStrength)}" stroke-width="${pathBoost ? 3.3 : 2.2}" stroke-linecap="round" stroke-dasharray="8 10" stroke-dashoffset="${dashOffset}" />`;
+      }
+      if (!isIllegal && edge.direction && edge.direction !== 'both') {
+        const midX = (cx + pa.x + cx + pb.x) / 2;
+        const midY = (cy + pa.y + cy + pb.y) / 2;
+        const dir = edge.direction === 'a->b' ? 1 : -1;
+        const dx = (pb.x - pa.x) * dir;
+        const dy = (pb.y - pa.y) * dir;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const ax = midX + ux * 6;
+        const ay = midY + uy * 6;
+        const bx = midX - uy * 4;
+        const by = midY + ux * 4;
+        const cxp = midX + uy * 4;
+        const cyp = midY - ux * 4;
+        svg += `<polygon points="${ax},${ay} ${bx},${by} ${cxp},${cyp}" fill="rgba(240,240,255,0.75)" />`;
       }
       if ((edge.turbulence || 0) > QI_CFG.turbulence_dash) {
         const ratioColor = mixColorFromRatio(edge.qi_ratio || normalizeQi(edge.qi_comp || zeroQi()));
@@ -1579,6 +1879,11 @@ function renderBoard(now = performance.now()) {
       svg += `<circle class="node-selected" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 7}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" />`;
       svg += `<circle class="node-selected" cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 10}" fill="none" stroke="rgba(120,220,255,0.7)" stroke-width="1.2" />`;
     }
+    if (boardState.highlight?.main?.has(node.id)) {
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 12}" fill="none" stroke="rgba(255,180,90,0.9)" stroke-width="2" />`;
+    } else if (boardState.highlight?.support?.has(node.id)) {
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 12}" fill="none" stroke="rgba(120,220,180,0.85)" stroke-width="2" />`;
+    }
     if (node.core_adjacent) {
       const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
       const src = coreSources[idx];
@@ -1599,6 +1904,29 @@ function renderBoard(now = performance.now()) {
     } else if (node.slot_type === SLOT_TYPES.stat) {
       svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + VISUAL_CFG.slot.outline}" fill="none" stroke="rgba(180,210,235,0.35)" stroke-width="1.2" stroke-dasharray="3 5" />`;
       svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(210,230,245,0.75)" font-weight="600">属</text>`;
+    }
+
+    const typeBadge = node.node_type || 'unknown';
+    const badgeText = typeBadge === 'skill' ? 'S' : typeBadge === 'mechanic' ? 'M' : typeBadge === 'stat' ? 'T' : '?';
+    const badgeX = cx + pos.x + baseRadius * 0.7;
+    const badgeY = cy + pos.y - baseRadius * 0.7;
+    svg += `<circle cx="${badgeX}" cy="${badgeY}" r="5" fill="rgba(12,16,22,0.8)" stroke="rgba(200,220,240,0.4)" stroke-width="1" />`;
+    svg += `<text x="${badgeX}" y="${badgeY + 3.5}" text-anchor="middle" font-size="8" fill="rgba(230,240,250,0.9)" font-weight="700">${badgeText}</text>`;
+
+    const inPorts = node.ports?.in?.length || 0;
+    const outPorts = node.ports?.out?.length || 0;
+    const portSpacing = 5;
+    const inStart = cy + pos.y - ((inPorts - 1) * portSpacing) / 2;
+    const outStart = cy + pos.y - ((outPorts - 1) * portSpacing) / 2;
+    for (let i = 0; i < inPorts; i += 1) {
+      const px = cx + pos.x - baseRadius - 6;
+      const py = inStart + i * portSpacing;
+      svg += `<circle cx="${px}" cy="${py}" r="2.2" fill="rgba(120,200,255,0.9)" stroke="rgba(30,40,50,0.6)" stroke-width="0.8" />`;
+    }
+    for (let i = 0; i < outPorts; i += 1) {
+      const px = cx + pos.x + baseRadius + 6;
+      const py = outStart + i * portSpacing;
+      svg += `<circle cx="${px}" cy="${py}" r="2.2" fill="rgba(255,170,120,0.9)" stroke="rgba(30,40,50,0.6)" stroke-width="0.8" />`;
     }
 
     if (node.type === 'core') {
@@ -1671,12 +1999,36 @@ function updateHud() {
   const powered = boardState.nodes.filter((n) => n.powered).length;
   dom.hudCounts.textContent = `${lit} / ${powered}`;
   dom.hudBonus.textContent = boardState.main_element || '无';
+  if (dom.hudLoops) {
+    dom.hudLoops.textContent = boardState.bd_hint || '未检测';
+  }
   dom.cfgHash.textContent = cfgHash;
   dom.cfgVersion.textContent = cfgData.ruleset_version || '-';
   dom.cfgMtime.textContent = cfgMtime;
-  if (dom.lineMode) dom.lineMode.value = boardState.ui?.lineMode || 'all';
+  if (dom.lineMode) dom.lineMode.value = boardState.ui?.lineMode || 'near';
   if (dom.lineElement) dom.lineElement.value = boardState.ui?.lineElement || '水';
   if (dom.lineElement) dom.lineElement.disabled = (boardState.ui?.lineMode || 'all') !== 'element';
+}
+
+function renderPresetCard() {
+  if (!dom.presetCard) return;
+  const meta = boardState.preset_meta;
+  if (!meta || !meta.concept) {
+    dom.presetCard.textContent = '未加载预设';
+    return;
+  }
+  const mainNote = meta.main_loop?.note || '-';
+  const supportNote = meta.support_loop?.note || '-';
+  const counters = (meta.counters || []).join(' / ') || '-';
+  const trigram = (meta.trigram_synergy || []).join(' / ') || '-';
+  dom.presetCard.innerHTML = [
+    `<div><strong>${meta.name || meta.id}</strong></div>`,
+    `<div>核心：${meta.concept}</div>`,
+    `<div>主回路：${mainNote}</div>`,
+    `<div>副回路：${supportNote}</div>`,
+    `<div>克制/惧怕：${counters}</div>`,
+    `<div>卦象适配：${trigram}</div>`,
+  ].join('');
 }
 
 function updateDetail(nodeId) {
@@ -1688,8 +2040,10 @@ function updateDetail(nodeId) {
   dom.detail.name.textContent = node.name || node.id;
   dom.detail.element.textContent = stone ? stone.element : (node.core_source_element || node.elem);
   dom.detail.type.textContent = slotText;
-  dom.detail.trigram.textContent = `${trigramSymbol} ${node.trigram}`;
-  dom.detail.component.textContent = '-';
+  dom.detail.trigram.textContent = `${trigramSymbol} ${node.trigram} · ${trigramRuleDesc(node.trigram)}`;
+  const typeLabel = node.node_type || 'unknown';
+  const tmpl = node.template_id || '-';
+  dom.detail.component.textContent = typeLabel === 'unknown' ? `UNKNOWN · ${tmpl} · 需要人工修复` : `${typeLabel} · ${tmpl}`;
   const effectText = stone ? `${stone.name} · ${stoneCategoryLabel(stone.category)}` : slotText;
   dom.detail.effect.textContent = effectText;
   dom.detail.power.textContent = node.powered ? '通气' : node.lit ? '已插石' : '未插石';
@@ -1704,6 +2058,62 @@ function updateDetail(nodeId) {
   dom.stats.shield.textContent = Math.round(6 + poweredStat('shield'));
   dom.stats.mana.textContent = Math.round(6 + poweredStat('mana'));
   dom.stats.regen.textContent = Math.round(3 + poweredStat('regen'));
+
+  renderTemplateForm(node);
+}
+
+function renderTemplateForm(node) {
+  if (!dom.detail.template || !dom.detail.params) return;
+  const templates = templateCatalog?.templates || [];
+  if (!templates.length) {
+    dom.detail.template.innerHTML = '<option value="">无模板</option>';
+    dom.detail.params.innerHTML = '';
+    return;
+  }
+  dom.detail.template.innerHTML = templates
+    .map((t) => `<option value="${t.template_id}">${t.template_id}</option>`)
+    .join('');
+  if (node.template_id) {
+    dom.detail.template.value = node.template_id;
+  }
+  dom.detail.template.onchange = () => {
+    const selected = dom.detail.template.value;
+    const tmpl = templateById(selected);
+    if (!tmpl) return;
+    node.template_id = tmpl.template_id;
+    node.node_type = tmpl.type;
+    node.ports = tmpl.ports || node.ports;
+    node.params = { ...(tmpl.default_params || {}) };
+    scheduleUpdate({ recompute: true, cause: 'template' });
+    updateDetail(node.id);
+  };
+
+  const tmpl = templateById(node.template_id);
+  const schema = tmpl?.param_schema || [];
+  if (!schema.length) {
+    dom.detail.params.innerHTML = '<div>无参数</div>';
+    return;
+  }
+  dom.detail.params.innerHTML = schema.map((field) => {
+    const value = node.params?.[field.field] ?? (tmpl.default_params?.[field.field] ?? '');
+    if (field.type === 'enum') {
+      const options = (field.options || []).map((opt) => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
+      return `<label>${field.field}<select data-param="${field.field}">${options}</select></label>`;
+    }
+    const min = field.range ? field.range[0] : '';
+    const max = field.range ? field.range[1] : '';
+    return `<label>${field.field}<input data-param="${field.field}" type="number" min="${min}" max="${max}" step="0.05" value="${value}"/></label>`;
+  }).join('');
+  dom.detail.params.querySelectorAll('input,select').forEach((el) => {
+    el.addEventListener('change', () => {
+      const key = el.dataset.param;
+      if (!key) return;
+      const val = el.tagName === 'SELECT' ? el.value : parseFloat(el.value);
+      node.params = node.params || {};
+      node.params[key] = Number.isNaN(val) ? el.value : val;
+      scheduleUpdate({ recompute: true, cause: 'param' });
+    });
+  });
 }
 
 function mapRing(ring) {
@@ -1980,7 +2390,9 @@ function attachEvents() {
       if (edge) {
         const ratio = edge.qi_ratio || normalizeQi(edge.qi_comp || zeroQi());
         const ratioText = `金${(ratio['金'] * 100).toFixed(0)} 木${(ratio['木'] * 100).toFixed(0)} 水${(ratio['水'] * 100).toFixed(0)} 火${(ratio['火'] * 100).toFixed(0)} 土${(ratio['土'] * 100).toFixed(0)}`;
-        const reason = edge.state === 'CONNECTED_NO_QI' ? edge.reason || '无气' : '通气中';
+        let reason = '通气中';
+        if (edge.state === 'CONNECTED_NO_QI') reason = edge.reason || '无气';
+        if (edge.legal === false) reason = edge.illegal_reason || '端口不兼容';
         dom.tooltip.style.opacity = 1;
         dom.tooltip.style.left = `${event.clientX}px`;
         dom.tooltip.style.top = `${event.clientY}px`;
@@ -1998,9 +2410,10 @@ function attachEvents() {
       const trigramText = `${TRIGRAM_SYMBOLS[node.trigram] || ''}${node.trigram}`;
       const slotText = slotTypeLabel(node);
       const sourceText = node.source_element ? `${node.source_element}脉` : '无源';
+      const trigramRule = trigramRuleDesc(node.trigram);
       const ratio = node.qi_ratio || normalizeQi(node.qi_out || zeroQi());
       const ratioText = `金${(ratio['金'] * 100).toFixed(0)} 木${(ratio['木'] * 100).toFixed(0)} 水${(ratio['水'] * 100).toFixed(0)} 火${(ratio['火'] * 100).toFixed(0)} 土${(ratio['土'] * 100).toFixed(0)}`;
-      dom.tooltip.textContent = `${node.name || node.id} | ${powerState} | ${trigramText} | ${slotText} | ${sourceText} | ${ratioText} | 乱流${(node.turbulence || 0).toFixed(2)} | ${effectText}`;
+      dom.tooltip.textContent = `${node.name || node.id} | ${powerState} | ${trigramText}(${trigramRule}) | ${slotText} | ${sourceText} | ${ratioText} | 乱流${(node.turbulence || 0).toFixed(2)} | ${effectText}`;
     }
     runtime.needsRender = true;
   });
@@ -2103,8 +2516,54 @@ function attachEvents() {
     runtime.needsRender = true;
     updateDetail(node.id);
   });
+  dom.applyTemplate?.addEventListener('click', () => {
+    const node = boardState.nodes.find((n) => n.id === runtime.selectedNodeId);
+    if (!node) return;
+    const tmplId = dom.templateSelect?.value;
+    const tmpl = templateById(tmplId);
+    if (!tmpl) return;
+    node.template_id = tmpl.template_id;
+    node.node_type = tmpl.type;
+    node.ports = tmpl.ports || node.ports;
+    node.params = { ...(tmpl.default_params || {}) };
+    scheduleUpdate({ recompute: true, cause: 'template' });
+    updateDetail(node.id);
+  });
 
   // BD 输出采用自动评估，无需手动触发
+  dom.simulateBtn?.addEventListener('click', () => {
+    if (!window.CircuitCore?.simulateCombat) return;
+    if (!runtime.evalResult) runSolver();
+    const boss = selectedBossProfile();
+    const result = window.CircuitCore.simulateCombat(runtime.evalResult, boss, { loopInfo: boardState.circuits });
+    dom.sim.win.textContent = result.win ? '胜' : '败';
+    dom.sim.ttk.textContent = result.time_to_kill;
+    dom.sim.survive.textContent = result.time_survived;
+    const timeline = (result.timeline_logs || []).join('\n');
+    const events = (result.event_logs || []);
+    if (!result.win && result.failure_reason) {
+      events.unshift(`0.0s | 失败归因 | ${result.failure_reason}`);
+    }
+    dom.sim.logs.textContent = `【Timeline】\n${timeline}\n\n【Events】\n${events.join('\n')}`;
+  });
+  dom.bossSuiteBtn?.addEventListener('click', () => {
+    runBossSuite();
+  });
+  dom.bossSelect?.addEventListener('change', () => {
+    updateBossDesc();
+  });
+  dom.openCombat?.addEventListener('click', () => {
+    if (!runtime.evalResult) runSolver();
+    const snapshot = buildSnapshot();
+    const evalResult = serializeEvalResult(runtime.evalResult);
+    try {
+      localStorage.setItem('bd_snapshot', JSON.stringify(snapshot));
+      localStorage.setItem('bd_eval', JSON.stringify(evalResult));
+    } catch (err) {
+      console.warn('[combat] failed to store snapshot', err);
+    }
+    window.open('combat.html', '_blank');
+  });
 
   dom.panel.reload.addEventListener('click', async () => {
     await loadConfig();
@@ -2222,16 +2681,104 @@ function tick(now) {
 }
 
 async function loadPresets() {
-  const presets = ['bd1_dot_core', 'bd2_shield_loop', 'bd3_crit_chain'];
+  let presets = [];
+  try {
+    const { data } = await fetchJson('./presets/index.json');
+    if (Array.isArray(data)) presets = data;
+    else if (Array.isArray(data?.presets)) presets = data.presets;
+  } catch (err) {
+    presets = ['bd1_dot_core', 'bd2_shield_loop', 'bd3_crit_chain'];
+  }
   presetFiles = presets;
-  dom.panel.presetSelect.innerHTML = presets.map((p) => `<option value="${p}">${p}</option>`).join('');
+  dom.panel.presetSelect.innerHTML = presets
+    .map((p) => {
+      if (typeof p === 'string') return `<option value="${p}">${p}</option>`;
+      return `<option value="${p.id}">${p.label || p.id}</option>`;
+    })
+    .join('');
+}
+
+function loadBossProfiles() {
+  bossProfiles = window.BossProfiles || [];
+  if (!dom.bossSelect) return;
+  dom.bossSelect.innerHTML = bossProfiles
+    .map((b) => `<option value="${b.id}">${b.name}</option>`)
+    .join('');
+  updateBossDesc();
+}
+
+function selectedBossProfile() {
+  if (!dom.bossSelect) return bossProfiles[0];
+  const id = dom.bossSelect.value;
+  return bossProfiles.find((b) => b.id === id) || bossProfiles[0];
+}
+
+function updateBossDesc() {
+  if (!dom.bossDesc) return;
+  const boss = selectedBossProfile();
+  if (!boss) {
+    dom.bossDesc.textContent = '-';
+    return;
+  }
+  dom.bossDesc.textContent = `${boss.realm} · ${boss.element} · HP ${boss.hp} · DPS ${boss.dps} · 爆发 ${boss.spike}`;
+}
+
+function buildSnapshot() {
+  const slots = {};
+  boardState.nodes.forEach((node) => {
+    if (node.stone_id) slots[node.id] = node.stone_id;
+  });
+  return {
+    realm: boardState.realm,
+    linggen: boardState.linggen_id,
+    slots,
+    char: boardState.char || null,
+    saved_at: new Date().toISOString(),
+  };
+}
+
+function serializeEvalResult(result) {
+  if (!result) return null;
+  return {
+    totals: result.totals,
+    dominantElement: result.dominantElement,
+    energizedSlots: Array.isArray(result.energizedSlots)
+      ? result.energizedSlots
+      : Array.from(result.energizedSlots || []),
+    slotEffects: result.slotEffects,
+    logs: result.logs,
+    circuits: boardState.circuits || null,
+    bd_hint: boardState.bd_hint || null,
+  };
+}
+
+function runBossSuite() {
+  if (!window.CircuitCore?.simulateCombat) return;
+  if (!runtime.evalResult) runSolver();
+  const lines = [];
+  bossProfiles.forEach((boss) => {
+    const result = window.CircuitCore.simulateCombat(runtime.evalResult, boss);
+    const winLabel = result.win ? '胜' : '败';
+    lines.push(
+      `${boss.name}(${boss.realm}) | ${winLabel} | 击杀 ${result.time_to_kill}s | 存活 ${result.time_survived}s`,
+    );
+  });
+  if (dom.bossSuiteReport) {
+    dom.bossSuiteReport.textContent = lines.join('\n');
+    const details = dom.bossSuiteReport.closest('details');
+    if (details) details.open = true;
+  } else {
+    dom.sim.logs.textContent = lines.join('\n');
+  }
 }
 
 async function init() {
   console.log('[init] start');
   await loadConfig();
   await loadBoard();
+  await loadNodeTemplates();
   await loadPresets();
+  loadBossProfiles();
   buildBoardState();
   initUIState();
   attachEvents();

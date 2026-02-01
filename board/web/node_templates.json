@@ -1,0 +1,64 @@
+{
+  "templates": [
+    {
+      "template_id": "SOURCE_CORE",
+      "type": "mechanic",
+      "default_params": { "qi_out": 1 },
+      "param_schema": [
+        { "field": "qi_out", "type": "number", "range": [1, 10] }
+      ],
+      "ports": { "in": [], "out": [{ "id": "qi_out", "kind": "resource", "accepts": ["qi"] }] },
+      "tooltip": "核心源：提供气与带宽。"
+    },
+    {
+      "template_id": "SLOT_SKILL",
+      "type": "skill",
+      "default_params": { "power": 1.0 },
+      "param_schema": [
+        { "field": "power", "type": "number", "range": [0.5, 2.0] }
+      ],
+      "ports": { "in": [{ "id": "trigger", "kind": "signal", "accepts": ["qi", "event"] }], "out": [{ "id": "effect", "kind": "effect", "accepts": ["damage", "heal", "control"] }] },
+      "tooltip": "技能槽：作为效果触发源。"
+    },
+    {
+      "template_id": "SLOT_MOD",
+      "type": "mechanic",
+      "default_params": { "scale": 1.0 },
+      "param_schema": [
+        { "field": "scale", "type": "number", "range": [0.5, 2.0] }
+      ],
+      "ports": { "in": [{ "id": "in", "kind": "signal", "accepts": ["qi", "event"] }], "out": [{ "id": "out", "kind": "signal", "accepts": ["qi", "event"] }] },
+      "tooltip": "机制槽：改变规则/放大/门控。"
+    },
+    {
+      "template_id": "SLOT_STAT",
+      "type": "stat",
+      "default_params": { "bonus": 1.0 },
+      "param_schema": [
+        { "field": "bonus", "type": "number", "range": [0.5, 2.0] }
+      ],
+      "ports": { "in": [{ "id": "in", "kind": "signal", "accepts": ["qi"] }], "out": [{ "id": "out", "kind": "signal", "accepts": ["qi"] }] },
+      "tooltip": "属性槽：提供属性/资源/阈值。"
+    },
+    {
+      "template_id": "NODE_BRIDGE",
+      "type": "mechanic",
+      "default_params": { "range": 1 },
+      "param_schema": [
+        { "field": "range", "type": "number", "range": [1, 3] }
+      ],
+      "ports": { "in": [{ "id": "in", "kind": "signal", "accepts": ["qi"] }], "out": [{ "id": "out", "kind": "signal", "accepts": ["qi"] }] },
+      "tooltip": "桥接节点：连接跨区。"
+    },
+    {
+      "template_id": "NODE_CONVERT",
+      "type": "mechanic",
+      "default_params": { "convert": "qi" },
+      "param_schema": [
+        { "field": "convert", "type": "enum", "options": ["qi", "bandwidth", "heat"] }
+      ],
+      "ports": { "in": [{ "id": "in", "kind": "signal", "accepts": ["qi", "bandwidth"] }], "out": [{ "id": "out", "kind": "signal", "accepts": ["qi", "bandwidth"] }] },
+      "tooltip": "转换节点：规则转换/重映射。"
+    }
+  ]
+}

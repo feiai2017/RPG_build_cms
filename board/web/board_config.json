@@ -7,17 +7,67 @@
     "r3": "outer"
   },
   "realm_rules": {
-    "炼气": {"qi_cap": 10, "rings": ["inner", "mid"]},
-    "筑基": {"qi_cap": 14, "rings": ["inner", "mid"]},
-    "金丹": {"qi_cap": 18, "rings": ["inner", "mid", "outer"]},
-    "元婴": {"qi_cap": 22, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["inner_core"]},
-    "化神": {"qi_cap": 26, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "合体": {"qi_cap": 30, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "大乘": {"qi_cap": 34, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "陆地神仙": {"qi_cap": 40, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["reconfig"]}
+    "炼气": {
+      "qi_cap": 10,
+      "rings": ["inner", "mid"],
+      "features": {"cross_count": 1, "max_parallel_loops": 1, "allow_cross_ring": false}
+    },
+    "筑基": {
+      "qi_cap": 14,
+      "rings": ["inner", "mid"],
+      "features": {"cross_count": 2, "max_parallel_loops": 1, "allow_cross_ring": true}
+    },
+    "金丹": {
+      "qi_cap": 18,
+      "rings": ["inner", "mid", "outer"],
+      "features": {"cross_count": 2, "max_parallel_loops": 2, "allow_cross_ring": true}
+    },
+    "元婴": {
+      "qi_cap": 22,
+      "rings": ["inner", "mid", "outer", "inner_core"],
+      "unlock": ["inner_core"],
+      "features": {"cross_count": 3, "max_parallel_loops": 2, "allow_cross_ring": true}
+    },
+    "化神": {
+      "qi_cap": 26,
+      "rings": ["inner", "mid", "outer", "inner_core"],
+      "features": {"cross_count": 3, "max_parallel_loops": 3, "allow_cross_ring": true, "backlash_risk": 0.1}
+    },
+    "合体": {
+      "qi_cap": 30,
+      "rings": ["inner", "mid", "outer", "inner_core"],
+      "features": {"cross_count": 3, "max_parallel_loops": 3, "allow_cross_ring": true, "backlash_risk": 0.15}
+    },
+    "大乘": {
+      "qi_cap": 34,
+      "rings": ["inner", "mid", "outer", "inner_core"],
+      "features": {"cross_count": 4, "max_parallel_loops": 4, "allow_cross_ring": true, "backlash_risk": 0.2}
+    },
+    "陆地神仙": {
+      "qi_cap": 40,
+      "rings": ["inner", "mid", "outer", "inner_core"],
+      "unlock": ["reconfig"],
+      "features": {"cross_count": 4, "max_parallel_loops": 4, "allow_cross_ring": true, "backlash_risk": 0.25}
+    }
   },
   "inner_core": {"slots": 8, "radius": 90},
   "bridge_threshold_deg": 12,
+  "character_defaults": {
+    "atk": 10,
+    "def": 8,
+    "hp": 60,
+    "regen": 3,
+    "crit": 0.05,
+    "speed": 1.0,
+    "will": 5,
+    "stability": 6,
+    "qi_bonus": 2,
+    "bandwidth_bonus": 2,
+    "max_parallel_loops": 1,
+    "max_edge_load": 3,
+    "backlash_resist": 0.1,
+    "trigger_rate_cap": 1.0
+  },
   "bridge_slots": {
     "inner": [0, 3, 6, 9],
     "mid": [1, 5, 9, 13],

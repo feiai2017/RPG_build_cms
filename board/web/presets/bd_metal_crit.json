@@ -1,0 +1,27 @@
+{
+  "id": "bd_metal_crit",
+  "name": "金巽穿透流",
+  "concept": "金系暴击穿透 + 火爆发。",
+  "realm": "金丹",
+  "realm_requirement": "金丹+",
+  "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_8", "inner_10", "mid_1", "outer_0"], "note": "金暴击主回路" },
+  "support_loop": { "nodes": ["inner_11", "mid_0", "outer_1"], "note": "火爆发副回路" },
+  "counters": ["高护甲Boss"],
+  "trigram_synergy": ["巽", "兑"],
+  "slots": {
+    "inner_8": "skill_fire",
+    "inner_11": "mod_amp",
+    "inner_10": "skill_fire",
+    "inner_13": "mod_amp",
+    "mid_0": "mod_amp",
+    "mid_1": "stat_metal",
+    "mid_2": "stat_metal",
+    "mid_4": "stat_metal",
+    "outer_0": "stat_metal",
+    "outer_1": "stat_fire",
+    "outer_2": "stat_metal",
+    "outer_3": "stat_fire",
+    "outer_4": "stat_metal"
+  }
+}

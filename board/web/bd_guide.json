@@ -1,0 +1,76 @@
+{
+  "bds": [
+    {
+      "id": "bd1_dot_core",
+      "name": "水流续航流",
+      "realm": "金丹",
+      "idea": "以水为主导，稳定通气与续航，适合长战与容错测试。",
+      "gongfa": ["水诀石", "护持石", "水属性石"],
+      "keys": ["sustain", "stability"],
+      "notes": "优先保留内环水诀石与改造槽，外环补金属稳定。"
+    },
+    {
+      "id": "bd2_shield_loop",
+      "name": "火爆发流",
+      "realm": "金丹",
+      "idea": "短窗口高输出，依赖火诀石与增幅石叠加爆发。",
+      "gongfa": ["火诀石", "增幅石", "火属性石"],
+      "keys": ["dps", "crit"],
+      "notes": "注意稳定下降，适合打爆发型Boss。"
+    },
+    {
+      "id": "bd3_crit_chain",
+      "name": "土守御流",
+      "realm": "金丹",
+      "idea": "土系护甲与护持回路，追求高EHP与抗压。",
+      "gongfa": ["护持石", "土属性石", "水诀石"],
+      "keys": ["ehp", "stability"],
+      "notes": "用于耐久型Boss验证。"
+    },
+    {
+      "id": "bd_fire_burst",
+      "name": "火离爆发流",
+      "realm": "金丹+",
+      "idea": "火行主导，配金系穿透，输出极端化。",
+      "gongfa": ["火诀石", "增幅石", "金属性石"],
+      "keys": ["dps", "crit"],
+      "notes": "爆发强但易过载，建议控制改造石数量。"
+    },
+    {
+      "id": "bd_water_shield",
+      "name": "水坎护持流",
+      "realm": "金丹+",
+      "idea": "水系续航+护盾倾向，稳定性优秀。",
+      "gongfa": ["水诀石", "护持石", "水属性石"],
+      "keys": ["sustain", "ehp"],
+      "notes": "适合多段伤害Boss与长战。"
+    },
+    {
+      "id": "bd_metal_crit",
+      "name": "金巽穿透流",
+      "realm": "金丹+",
+      "idea": "以金系暴击与穿透为核心，搭配火系爆发。",
+      "gongfa": ["火诀石", "增幅石", "金属性石"],
+      "keys": ["dps", "crit"],
+      "notes": "对高护甲Boss收益明显。"
+    },
+    {
+      "id": "bd_earth_guard",
+      "name": "土艮守御流",
+      "realm": "金丹+",
+      "idea": "土系护甲与稳定提升，生存向BD。",
+      "gongfa": ["护持石", "土属性石"],
+      "keys": ["ehp", "stability"],
+      "notes": "用作Boss耐力校验模板。"
+    },
+    {
+      "id": "bd_wood_regen",
+      "name": "木生息续航流",
+      "realm": "金丹+",
+      "idea": "木系生息叠层，重续航与小额EHP。",
+      "gongfa": ["水诀石", "木属性石", "护持石"],
+      "keys": ["sustain", "ehp"],
+      "notes": "适合慢速磨Boss。"
+    }
+  ]
+}

@@ -1,7 +1,14 @@
 {
-  "name": "bd_water_flow",
+  "id": "bd1_dot_core",
+  "name": "水流续航流",
+  "concept": "水系持续回流，稳定通气与续航。",
   "realm": "金丹",
+  "realm_requirement": "金丹+",
   "linggen": "four_color",
+  "main_loop": { "nodes": ["inner_0", "inner_1", "mid_0", "outer_2"], "note": "水系持续回路" },
+  "support_loop": { "nodes": ["inner_2", "mid_1", "outer_4"], "note": "护持与稳定补偿" },
+  "counters": ["爆发型Boss", "火系灼烧"],
+  "trigram_synergy": ["坎", "坤"],
   "slots": {
     "inner_0": "skill_water",
     "inner_1": "stat_water",
