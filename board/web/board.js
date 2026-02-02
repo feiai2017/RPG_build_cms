@@ -9,6 +9,7 @@
   hudBandwidth: document.getElementById('hud-bandwidth'),
   hudCounts: document.getElementById('hud-counts'),
   hudBonus: document.getElementById('hud-bonus'),
+  hudRealmBonus: document.getElementById('hud-realm-bonus'),
   toggleContrast: document.getElementById('toggle-contrast'),
   toggleBroken: document.getElementById('toggle-broken'),
   clearLit: document.getElementById('clear-lit'),
@@ -16,6 +17,7 @@
   cfgVersion: document.getElementById('cfg-version'),
   cfgMtime: document.getElementById('cfg-mtime'),
   simulateBtn: document.getElementById('simulate-btn'),
+  openLog: document.getElementById('open-log'),
   detail: {
     name: document.getElementById('detail-name'),
     element: document.getElementById('detail-element'),
@@ -179,11 +181,13 @@ const SLOT_TYPES = {
   stat: 'stat',
   mod: 'mod',
   core_adjacent: 'core_adjacent',
+  core: 'core',
 };
 const STONE_CATEGORIES = {
   SKILL: 'SKILL',
   STAT: 'STAT',
   MOD: 'MOD',
+  CORE: 'CORE',
 };
 const STONES = [
   { id: 'stat_metal', name: '金属性石', element: '金', category: STONE_CATEGORIES.STAT, effects: { dps: 4, crit: 2 } },
@@ -193,8 +197,17 @@ const STONES = [
   { id: 'stat_earth', name: '土属性石', element: '土', category: STONE_CATEGORIES.STAT, effects: { ehp: 6, stability: 2 } },
   { id: 'skill_fire', name: '火诀石', element: '火', category: STONE_CATEGORIES.SKILL, effects: { dps: 5, crit: 1 } },
   { id: 'skill_water', name: '水诀石', element: '水', category: STONE_CATEGORIES.SKILL, effects: { sustain: 5, mana: 2 } },
+  { id: 'skill_metal', name: '金诀石', element: '金', category: STONE_CATEGORIES.SKILL, effects: { dps: 4, crit: 2 } },
+  { id: 'skill_wood', name: '木诀石', element: '木', category: STONE_CATEGORIES.SKILL, effects: { sustain: 4, ehp: 2 } },
+  { id: 'skill_earth', name: '土诀石', element: '土', category: STONE_CATEGORIES.SKILL, effects: { ehp: 5, stability: 2 } },
   { id: 'mod_amp', name: '增幅石', element: '金', category: STONE_CATEGORIES.MOD, effects: { dps: 3, stability: -1 } },
   { id: 'mod_guard', name: '护持石', element: '土', category: STONE_CATEGORIES.MOD, effects: { ehp: 3, stability: 2 } },
+  { id: 'mod_flow', name: '回流石', element: '水', category: STONE_CATEGORIES.MOD, effects: { sustain: 4, mana: 1 } },
+  { id: 'mod_burst', name: '爆燃石', element: '火', category: STONE_CATEGORIES.MOD, effects: { dps: 4, stability: -2 } },
+  { id: 'mod_spread', name: '蔓延石', element: '木', category: STONE_CATEGORIES.MOD, effects: { sustain: 2, ehp: 2 } },
+  { id: 'core_lonely', name: '独自升级', element: '土', category: STONE_CATEGORIES.CORE, effects: {} },
+  { id: 'core_five_color', name: '五色俱全', element: '金', category: STONE_CATEGORIES.CORE, effects: {} },
+  { id: 'core_resonance', name: '灵脉共鸣', element: '水', category: STONE_CATEGORIES.CORE, effects: {} },
 ];
 const LINGGEN_PROFILES = [
   {
@@ -605,7 +618,7 @@ function buildBoardState(preset) {
         r: radius,
         size: 'major',
         trigram: trigramByAngle(theta),
-        slot_type: SLOT_TYPES.skill,
+        slot_type: SLOT_TYPES.core,
         core_adjacent: false,
         core_source_idx: null,
         stone_id: slotStones[`inner_core_${i}`] || null,
@@ -618,11 +631,16 @@ function buildBoardState(preset) {
   const realm = preset?.realm || DEFAULT_REALM;
   const linggenId = preset?.linggen || LINGGEN_PROFILES[0].id;
   const linggenProfile = LINGGEN_PROFILES.find((p) => p.id === linggenId) || LINGGEN_PROFILES[0];
-  const qiCap = linggenProfile.sources.reduce((sum, s) => sum + s.capacity, 0);
-  const bandwidthCap = Math.round(qiCap * 0.8);
+  const realmRule = cfgData.realm_rules?.[realm] || {};
+  const baseQi = linggenProfile.sources.reduce((sum, s) => sum + s.capacity, 0);
+  const qiCap = Math.min(baseQi, realmRule.qi_cap || baseQi);
+  const bandwidthCap = Math.round(qiCap * (realmRule.bandwidth_mul ?? 0.8));
 
   boardState = {
+    bd_name: preset?.name || null,
     realm,
+    realm_rule: realmRule,
+    enabled_rings: realmRule.rings || ['inner', 'mid', 'outer'],
     linggen_id: linggenProfile.id,
     linggen_profile: linggenProfile,
     core_sources: linggenProfile.sources,
@@ -696,7 +714,7 @@ function setUIState(patch, opts = {}) {
 }
 
 function enabledRings() {
-  return cfgData.realm_rules[boardState.realm]?.rings || ['inner', 'mid', 'outer'];
+  return boardState.enabled_rings || cfgData.realm_rules[boardState.realm]?.rings || ['inner', 'mid', 'outer'];
 }
 
 function ringIndex(nodes = boardState.nodes) {
@@ -827,7 +845,7 @@ function validateWires(neighborMap) {
   return removed;
 }
 
-function buildAutoEdges(nodes = boardState.nodes) {
+function buildAutoEdges(nodes = boardState.nodes, enabledSet = null) {
   const neighborMap = buildNeighborMap(nodes);
   const edges = [];
   const seen = new Set();
@@ -839,6 +857,9 @@ function buildAutoEdges(nodes = boardState.nodes) {
       const a = nodes.find((n) => n.id === id);
       const b = nodes.find((n) => n.id === nid);
       if (!a || !b) return;
+      if (enabledSet && (!enabledSet.has(a.ring) || !enabledSet.has(b.ring))) {
+        return;
+      }
       const connected = !!a.stone_id && !!b.stone_id;
       edges.push({
         a: id,
@@ -868,7 +889,7 @@ const KE = {
   火: '金',
 };
 
-function computeQiFlow(edges, nodes = boardState.nodes) {
+function computeQiFlow(edges, nodes = boardState.nodes, enabledSet = null) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const adjacency = new Map();
   edges.forEach((edge) => {
@@ -889,6 +910,7 @@ function computeQiFlow(edges, nodes = boardState.nodes) {
 
   const startNodes = nodes.filter((n) => {
     if (!n.core_adjacent || !n.stone_id) return false;
+    if (enabledSet && !enabledSet.has(n.ring)) return false;
     const idx = n.core_source_idx ?? coreSourceIndex(n.base_theta);
     const src = coreSources[idx];
     if (!src) return false;
@@ -915,6 +937,10 @@ function computeQiFlow(edges, nodes = boardState.nodes) {
     const neighbors = adjacency.get(current) || [];
     neighbors.forEach((next) => {
       if (energized.has(next)) return;
+      if (enabledSet) {
+        const nextNode = nodeMap.get(next);
+        if (!nextNode || !enabledSet.has(nextNode.ring)) return;
+      }
       energized.add(next);
       queue.push(next);
       parentMap.set(next, current);
@@ -1094,9 +1120,10 @@ function computeQiNetwork(nodes, edges) {
 }
 
 function computeConnectivitySnapshot(nodes) {
-  const { edges, neighborMap } = buildAutoEdges(nodes);
-  const { energized, activeEdges, parentMap, sourceMap } = computeQiFlow(edges, nodes);
-  const powerUsed = nodes.filter((n) => n.stone_id).length;
+  const enabledSet = new Set(enabledRings());
+  const { edges, neighborMap } = buildAutoEdges(nodes, enabledSet);
+  const { energized, activeEdges, parentMap, sourceMap } = computeQiFlow(edges, nodes, enabledSet);
+  const powerUsed = nodes.filter((n) => enabledSet.has(n.ring) && n.stone_id).length;
   const bandwidthUsed = activeEdges.size;
   const powerOk = powerUsed <= boardState.qi_cap;
   const bandwidthOk = bandwidthUsed <= boardState.bandwidth_cap;
@@ -1108,7 +1135,9 @@ function computeConnectivitySnapshot(nodes) {
     const powered = powerOk && bandwidthOk && energized.has(node.id);
     nodePowered.set(node.id, powered);
     if (lit && !powered) {
-      if (!powerOk || !bandwidthOk) {
+      if (!enabledSet.has(node.ring)) {
+        nodeReasons.set(node.id, '境界未解锁');
+      } else if (!powerOk || !bandwidthOk) {
         nodeReasons.set(node.id, '预算不足');
       } else if (node.core_adjacent) {
         const idx = node.core_source_idx ?? coreSourceIndex(node.base_theta);
@@ -1586,7 +1615,12 @@ function renderBoard(now = performance.now()) {
       const haloAlpha = node.stone_id ? 0.55 : 0.22;
       svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 8}" fill="none" stroke="${rgba(haloColor, haloAlpha)}" stroke-width="1.6" />`;
     }
-    if (node.slot_type === SLOT_TYPES.skill) {
+    if (node.slot_type === SLOT_TYPES.core) {
+      const coreR = baseRadius + VISUAL_CFG.slot.outline + 2;
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${coreR}" fill="none" stroke="rgba(255,210,140,0.65)" stroke-width="2" />`;
+      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${coreR + 4}" fill="none" stroke="rgba(255,210,140,0.3)" stroke-width="1.5" />`;
+      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(255,230,190,0.9)" font-weight="700">核</text>`;
+    } else if (node.slot_type === SLOT_TYPES.skill) {
       const side = (baseRadius + VISUAL_CFG.slot.outline) * 2;
       svg += `<rect x="${cx + pos.x - side / 2}" y="${cy + pos.y - side / 2}" width="${side}" height="${side}" fill="none" stroke="rgba(200,220,240,0.45)" stroke-width="1.6" />`;
       svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(220,235,250,0.85)" font-weight="600">技</text>`;
@@ -1671,6 +1705,13 @@ function updateHud() {
   const powered = boardState.nodes.filter((n) => n.powered).length;
   dom.hudCounts.textContent = `${lit} / ${powered}`;
   dom.hudBonus.textContent = boardState.main_element || '无';
+  if (dom.hudRealmBonus) {
+    const rule = boardState.realm_rule || cfgData.realm_rules?.[boardState.realm] || {};
+    const skillMul = rule.skill_mul ?? 1;
+    const bandMul = rule.bandwidth_mul ?? 0.8;
+    const coreCap = rule.core_stone_cap ?? 0;
+    dom.hudRealmBonus.textContent = `技能×${skillMul.toFixed(2)} / 带宽×${bandMul.toFixed(2)} / 核心上限${coreCap}`;
+  }
   dom.cfgHash.textContent = cfgHash;
   dom.cfgVersion.textContent = cfgData.ruleset_version || '-';
   dom.cfgMtime.textContent = cfgMtime;
@@ -1719,6 +1760,7 @@ function slotTypeLabel(node) {
   if (node.slot_type === SLOT_TYPES.skill) base = '技能槽';
   if (node.slot_type === SLOT_TYPES.mod) base = '改造槽';
   if (node.slot_type === SLOT_TYPES.stat) base = '属性槽';
+  if (node.slot_type === SLOT_TYPES.core) base = '核心槽';
   if (node.core_adjacent) return `核心入口·${base}`;
   return base;
 }
@@ -1727,6 +1769,7 @@ function stoneCategoryLabel(category) {
   if (category === STONE_CATEGORIES.SKILL) return '技能';
   if (category === STONE_CATEGORIES.MOD) return '改造';
   if (category === STONE_CATEGORIES.STAT) return '属性';
+  if (category === STONE_CATEGORIES.CORE) return '核心';
   return '通用';
 }
 
@@ -1735,12 +1778,26 @@ const SLOT_ACCEPTS = {
   [SLOT_TYPES.stat]: [STONE_CATEGORIES.STAT],
   [SLOT_TYPES.mod]: [STONE_CATEGORIES.MOD],
   [SLOT_TYPES.normal]: [STONE_CATEGORIES.STAT],
+  [SLOT_TYPES.core]: [STONE_CATEGORIES.CORE],
 };
 
 function canPlaceStone(node, stone) {
   if (!stone) return true;
   const allowed = SLOT_ACCEPTS[node.slot_type] || [];
   return allowed.includes(stone.category);
+}
+
+function coreStoneLimitOk(node, stone) {
+  if (!stone || stone.category !== STONE_CATEGORIES.CORE) return true;
+  const cap = boardState.realm_rule?.core_stone_cap ?? 0;
+  if (cap <= 0) return false;
+  const coreCount = boardState.nodes.filter((n) => {
+    if (!n.stone_id) return false;
+    const s = STONES.find((it) => it.id === n.stone_id);
+    return s && s.category === STONE_CATEGORIES.CORE;
+  }).length;
+  if (node.stone_id) return true;
+  return coreCount < cap;
 }
 
 function computePathEdges(nodeId) {
@@ -1756,14 +1813,69 @@ function computePathEdges(nodeId) {
 }
 
 function runSolver() {
-  if (!window.BaguaSolver) return;
+  if (!window.BaguaSolver) {
+    showFeedback('求解器未加载');
+    return;
+  }
   const result = window.BaguaSolver.solveBoard(boardState, {
     stones: STONES,
     trigramMods: TRIGRAM_MODS,
+    realmRule: boardState.realm_rule,
   });
   runtime.evalResult = result;
   boardState.main_element = result.dominantElement;
   updateSolverUI(result);
+}
+
+function runSimulation() {
+  runSolver();
+  if (!runtime.evalResult || !window.BaguaSolver?.simulateBoss) {
+    showFeedback('无法启动模拟');
+    return;
+  }
+  const fight = window.BaguaSolver.simulateBoss(runtime.evalResult);
+  dom.sim.win.textContent = fight.win ? '胜利' : '失败';
+  const ttk = Number.isFinite(fight.timeToKill) ? `${fight.timeToKill.toFixed(1)}s` : '-';
+  const survive = Number.isFinite(fight.timeSurvive) ? `${fight.timeSurvive.toFixed(1)}s` : '-';
+  dom.sim.ttk.textContent = ttk;
+  dom.sim.survive.textContent = survive;
+  dom.sim.logs.textContent = fight.logs?.join('\n') || '';
+  const payload = {
+    timestamp: Date.now(),
+    bd: buildBDInfo(),
+    result: runtime.evalResult,
+    fight,
+  };
+  localStorage.setItem('battle_log', JSON.stringify(payload));
+}
+
+function buildBDInfo() {
+  const stoneMap = new Map(STONES.map((s) => [s.id, s]));
+  const slots = boardState.nodes.filter((n) => n.stone_id);
+  const byCategory = { SKILL: [], STAT: [], MOD: [], CORE: [] };
+  const byElement = { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 };
+  slots.forEach((node) => {
+    const stone = stoneMap.get(node.stone_id);
+    if (!stone) return;
+    byElement[stone.element] = (byElement[stone.element] || 0) + 1;
+    const cat = stone.category || 'STAT';
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push({
+      id: stone.id,
+      name: stone.name,
+      element: stone.element,
+      slot: node.id,
+      slotType: slotTypeLabel(node),
+      trigram: node.trigram,
+    });
+  });
+  return {
+    name: boardState.bd_name || '自定义构筑',
+    linggen: boardState.linggen_profile?.name || boardState.linggen_id,
+    dominant: boardState.main_element,
+    elementCounts: byElement,
+    stones: byCategory,
+  };
 }
 
 function updateSolverUI(result) {
@@ -1857,6 +1969,10 @@ function applyStone(node, stoneId) {
     showFeedback('槽位类型不匹配');
     return;
   }
+  if (stoneId && !coreStoneLimitOk(node, stone)) {
+    showFeedback('当前境界无法承载更多核心强化');
+    return;
+  }
 
   const nodesCopy = boardState.nodes.map((n) => ({ ...n }));
   const target = nodesCopy.find((n) => n.id === node.id);
@@ -1889,7 +2005,12 @@ function attachEvents() {
   console.log('[attachEvents] binding listeners');
   dom.realmSelect.addEventListener('change', () => {
     boardState.realm = dom.realmSelect.value;
-    boardState.qi_cap = cfgData.realm_rules[boardState.realm]?.qi_cap || boardState.qi_cap;
+    const rule = cfgData.realm_rules?.[boardState.realm] || {};
+    const baseQi = boardState.linggen_profile?.sources?.reduce((sum, s) => sum + s.capacity, 0) || boardState.qi_cap;
+    boardState.realm_rule = rule;
+    boardState.enabled_rings = rule.rings || ['inner', 'mid', 'outer'];
+    boardState.qi_cap = Math.min(baseQi, rule.qi_cap || baseQi);
+    boardState.bandwidth_cap = Math.round(boardState.qi_cap * (rule.bandwidth_mul ?? 0.8));
     scheduleUpdate({ recompute: true, cause: 'realm' });
     rerender();
   });
@@ -1946,8 +2067,10 @@ function attachEvents() {
       boardState.linggen_id = next.id;
       boardState.linggen_profile = next;
       boardState.core_sources = next.sources;
-      boardState.qi_cap = next.sources.reduce((sum, s) => sum + s.capacity, 0);
-      boardState.bandwidth_cap = Math.round(boardState.qi_cap * 0.8);
+      const rule = cfgData.realm_rules?.[boardState.realm] || {};
+      const baseQi = next.sources.reduce((sum, s) => sum + s.capacity, 0);
+      boardState.qi_cap = Math.min(baseQi, rule.qi_cap || baseQi);
+      boardState.bandwidth_cap = Math.round(boardState.qi_cap * (rule.bandwidth_mul ?? 0.8));
       recomputeConnectivity('linggen');
       runtime.needsRender = true;
     }
@@ -2102,6 +2225,16 @@ function attachEvents() {
     recomputeConnectivity('switch');
     runtime.needsRender = true;
     updateDetail(node.id);
+  });
+  dom.simulateBtn?.addEventListener('click', () => {
+    runSimulation();
+    window.open('battle_log.html', '_blank');
+  });
+  dom.openLog?.addEventListener('click', () => {
+    if (!localStorage.getItem('battle_log')) {
+      runSimulation();
+    }
+    window.open('battle_log.html', '_blank');
   });
 
   // BD 输出采用自动评估，无需手动触发

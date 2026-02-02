@@ -56,6 +56,11 @@
         <span id="hud-bonus">无</span>
       </div>
       <div class="hud-item">
+        <span class="hud-icon">✦</span>
+        境界加成
+        <span id="hud-realm-bonus">-</span>
+      </div>
+      <div class="hud-item">
         <span class="hud-icon">⬤</span>
         高对比
         <input type="checkbox" id="toggle-contrast" />
@@ -102,6 +107,15 @@
       <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
 
       <div class="panel-divider"></div>
+      <div class="panel-header small">预设 BD</div>
+      <div class="line-mode">
+        <label>预设
+          <select id="preset-select"></select>
+        </label>
+        <button id="load-preset" class="hud-action">载入</button>
+      </div>
+
+      <div class="panel-divider"></div>
       <div class="panel-header small">气脉显示</div>
       <div class="line-mode">
         <label>模式
@@ -129,6 +143,7 @@
       <div class="panel-header">求解结果</div>
       <div class="sim-actions">
         <button id="simulate-btn" class="hud-action">Simulate</button>
+        <button id="open-log" class="hud-action">战斗日志</button>
       </div>
       <div class="sim-grid">
         <div>DPS <span id="sim-dps">0</span></div>
@@ -160,7 +175,7 @@
           <span class="legend-slot skill">技</span> 技能槽
           <span class="legend-slot stat">属</span> 属性槽
           <span class="legend-slot mod"></span> 改造槽
-          <span class="legend-slot core">核</span> 核心入口
+          <span class="legend-slot core">核</span> 核心槽
         </div>
         <div class="legend-title">五行颜色</div>
         <div class="legend-row">
@@ -197,7 +212,7 @@
         <button id="reconfig-apply">应用重构</button>
       </div>
 
-      <div class="how-to">怎么玩：插灵石→相邻自动通气→观察技能变形。</div>
+      <div class="how-to">怎么玩：插灵石→相邻自动通气→观察技能变形与核心强化。</div>
     </div>
 
     <button id="dev-toggle" title="Dev Mode">🛠</button>
@@ -224,9 +239,6 @@
         <button id="export-current">Export Current</button>
         <button id="reset-session">Reset Session</button>
       </div>
-      <label>预设</label>
-      <select id="preset-select"></select>
-      <button id="load-preset">Load Preset</button>
       <label><input type="checkbox" id="toggle-sfx" checked /> 音效</label>
       <button id="undo-btn">撤销 (右键)</button>
       <button id="guide-btn">重新查看引导</button>
@@ -250,7 +262,7 @@
     <div id="debug-overlay" class="debug-overlay hidden"></div>
   </div>
 
-  <script src="core/solver.js?v=20260130"></script>
-  <script src="board.js?v=20260130"></script>
+  <script src="core/solver.js?v=20260202"></script>
+  <script src="board.js?v=20260202"></script>
 </body>
 </html>

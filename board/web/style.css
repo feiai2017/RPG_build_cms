@@ -314,6 +314,17 @@ body {
   padding: 4px 6px;
 }
 
+.line-mode button.hud-action {
+  width: 100%;
+}
+
+.sim-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .legend-slot {
   display: inline-flex;
   align-items: center;
@@ -789,4 +800,131 @@ body {
 
 .hidden {
   display: none;
+}
+
+/* Battle log page */
+.log-page {
+  background: #05070b;
+  color: #dfe8f2;
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  margin: 0;
+}
+
+.log-app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.log-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #e9f2ff;
+}
+
+.log-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.log-actions button,
+.log-actions a {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  color: #cfefff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.log-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.log-card {
+  background: rgba(10, 18, 28, 0.9);
+  border: 1px solid rgba(120, 190, 255, 0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.log-main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.log-section-title {
+  font-size: 13px;
+  color: #9ec9ff;
+  margin-bottom: 6px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.log-list li {
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(150, 180, 220, 0.15);
+}
+
+.log-table-wrap {
+  background: rgba(8, 12, 20, 0.9);
+  border: 1px solid rgba(120, 190, 255, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.log-table thead {
+  position: sticky;
+  top: 0;
+  background: rgba(12, 20, 30, 0.95);
+}
+
+.log-table th,
+.log-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(120, 190, 255, 0.12);
+  text-align: left;
+}
+
+.log-table tbody tr:nth-child(even) {
+  background: rgba(16, 22, 32, 0.5);
+}
+
+.log-empty {
+  padding: 24px;
+  text-align: center;
+  color: rgba(200, 210, 230, 0.7);
+}
+
+@media (max-width: 980px) {
+  .log-main {
+    grid-template-columns: 1fr;
+  }
 }

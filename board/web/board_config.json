@@ -1,5 +1,5 @@
 ﻿{
-  "ruleset_version": "v1.1",
+  "ruleset_version": "v1.2",
   "ring_map": {
     "core": "inner",
     "r1": "inner",
@@ -7,14 +7,14 @@
     "r3": "outer"
   },
   "realm_rules": {
-    "炼气": {"qi_cap": 10, "rings": ["inner", "mid"]},
-    "筑基": {"qi_cap": 14, "rings": ["inner", "mid"]},
-    "金丹": {"qi_cap": 18, "rings": ["inner", "mid", "outer"]},
-    "元婴": {"qi_cap": 22, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["inner_core"]},
-    "化神": {"qi_cap": 26, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "合体": {"qi_cap": 30, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "大乘": {"qi_cap": 34, "rings": ["inner", "mid", "outer", "inner_core"]},
-    "陆地神仙": {"qi_cap": 40, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["reconfig"]}
+    "炼气": {"qi_cap": 10, "bandwidth_mul": 0.6, "skill_mul": 0.9, "core_stone_cap": 0, "rings": ["inner", "mid"]},
+    "筑基": {"qi_cap": 14, "bandwidth_mul": 0.7, "skill_mul": 1.0, "core_stone_cap": 0, "rings": ["inner", "mid"]},
+    "金丹": {"qi_cap": 18, "bandwidth_mul": 0.8, "skill_mul": 1.05, "core_stone_cap": 1, "rings": ["inner", "mid", "outer"]},
+    "元婴": {"qi_cap": 22, "bandwidth_mul": 0.9, "skill_mul": 1.1, "core_stone_cap": 2, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["inner_core"]},
+    "化神": {"qi_cap": 26, "bandwidth_mul": 0.95, "skill_mul": 1.15, "core_stone_cap": 3, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "合体": {"qi_cap": 30, "bandwidth_mul": 1.0, "skill_mul": 1.2, "core_stone_cap": 3, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "大乘": {"qi_cap": 34, "bandwidth_mul": 1.1, "skill_mul": 1.25, "core_stone_cap": 4, "rings": ["inner", "mid", "outer", "inner_core"]},
+    "陆地神仙": {"qi_cap": 40, "bandwidth_mul": 1.2, "skill_mul": 1.35, "core_stone_cap": 5, "rings": ["inner", "mid", "outer", "inner_core"], "unlock": ["reconfig"]}
   },
   "inner_core": {"slots": 8, "radius": 90},
   "bridge_threshold_deg": 12,
