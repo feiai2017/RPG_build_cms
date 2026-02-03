@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>战斗日志 · 五行天赋盘</title>
+  <title>战斗日志 · 天道盘</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="log-page">
@@ -26,10 +26,24 @@
       <div class="log-card">
         <div class="log-section-title">构筑信息</div>
         <ul class="log-list" id="bd-info"></ul>
-        <div class="log-section-title" style="margin-top:10px;">灵石分布</div>
+        <div class="log-section-title" style="margin-top:10px;">符文/联结</div>
         <ul class="log-list" id="stone-info"></ul>
       </div>
       <div class="log-table-wrap">
+        <div class="log-filter">
+          <label>事件过滤
+            <select id="event-filter">
+              <option value="all">全部</option>
+              <option value="CAST">SKILL_CAST</option>
+              <option value="HIT">HIT</option>
+              <option value="MARK">MARK</option>
+              <option value="REACTION">REACTION</option>
+              <option value="EDGE">EDGE_RUNE</option>
+              <option value="COOLDOWN">COOLDOWN</option>
+              <option value="SUSTAIN">SUSTAIN</option>
+            </select>
+          </label>
+        </div>
         <table class="log-table">
           <thead>
             <tr>
@@ -39,15 +53,13 @@
               <th>目标</th>
               <th>数值</th>
               <th>类型</th>
-              <th>伤害/效果</th>
+              <th>元素/效果</th>
               <th>备注</th>
-              <th>Boss HP</th>
-              <th>玩家 HP</th>
             </tr>
           </thead>
           <tbody id="log-table-body"></tbody>
         </table>
-        <div class="log-empty hidden" id="log-empty">没有战斗日志，请回到棋盘点击 Simulate。</div>
+        <div class="log-empty hidden" id="log-empty">没有战斗日志，请回到棋盘点击 Run 10s。</div>
       </div>
     </div>
   </div>

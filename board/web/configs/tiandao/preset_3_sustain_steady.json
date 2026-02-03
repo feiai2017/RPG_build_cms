@@ -1,0 +1,27 @@
+﻿{
+  "name": "preset_3_sustain_steady",
+  "skills_by_gua": {
+    "乾": "skill_qian_pierce",
+    "兑": "skill_dui_echo",
+    "离": "skill_li_flare",
+    "震": "skill_zhen_chain",
+    "巽": "skill_xun_guard",
+    "坎": "skill_kan_tide",
+    "艮": "skill_gen_shell",
+    "坤": "skill_kun_reforge"
+  },
+  "private_runes": {
+    "乾": { "form": "spread", "loop": "hit_energy" },
+    "兑": { "form": "chain", "loop": "hit_energy" },
+    "离": { "form": "mark", "loop": "cond_accel" },
+    "震": { "form": "aoe", "loop": "cd_down" },
+    "巽": { "form": "channel", "loop": "hit_energy" },
+    "坎": { "form": "mark", "loop": "hit_energy" },
+    "艮": { "form": "melee", "loop": "crit_energy" },
+    "坤": { "form": "spread", "loop": "charge" }
+  },
+  "edge_runes": {
+    "巽|坎": "SUSTAIN_LINK",
+    "艮|坤": "CD_ROUTER"
+  }
+}

@@ -1,7 +1,9 @@
-function formatNumber(value) {
+﻿function formatNumber(value) {
   if (value == null || Number.isNaN(value)) return '-';
   return typeof value === 'number' ? value.toFixed(1) : String(value);
 }
+
+let filterValue = 'all';
 
 function render() {
   const raw = localStorage.getItem('battle_log');
@@ -23,53 +25,36 @@ function render() {
   if (!raw) {
     emptyEl.classList.remove('hidden');
     bdSummaryEl.textContent = '暂无日志';
-    fightSummaryEl.textContent = '请回到棋盘点击 Simulate 生成日志。';
+    fightSummaryEl.textContent = '请回到棋盘点击 Run 10s 生成日志。';
     return;
   }
 
   const payload = JSON.parse(raw);
   const bd = payload.bd || {};
-  const fight = payload.fight || {};
   const result = payload.result || {};
+  const fight = payload.fight || {};
   const events = fight.events || [];
 
-  const styleMap = {
-    金: '锋锐',
-    木: '扩散',
-    水: '续航',
-    火: '爆发',
-    土: '防御',
-    无: '均衡',
-  };
-  const styleLabel = styleMap[bd.dominant] || '均衡';
   bdSummaryEl.innerHTML = `
     <div>构筑：${bd.name || '未命名'}</div>
-    <div>灵根：${bd.linggen || '-'}</div>
-    <div>主导元素：${bd.dominant || '-'}</div>
-    <div>流派：${styleLabel}</div>
-  `;
-  fightSummaryEl.innerHTML = `
-    <div>Boss：${fight.boss?.name || '-'}</div>
-    <div>胜负：${fight.win ? '胜利' : '失败'}</div>
-    <div>击杀：${fight.timeToKill ? formatNumber(fight.timeToKill) + 's' : '-'}</div>
-    <div>存活：${fight.timeSurvive ? formatNumber(fight.timeSurvive) + 's' : '-'}</div>
-  `;
-  resultSummaryEl.innerHTML = `
-    <div>DPS：${formatNumber(result.totals?.dps)}</div>
-    <div>EHP：${formatNumber(result.totals?.ehp)}</div>
-    <div>续航：${formatNumber(result.totals?.sustain)}</div>
-    <div>稳定：${formatNumber(result.totals?.stability)}</div>
+    <div>技能槽：${Object.keys(bd.skills || {}).length}</div>
+    <div>联结槽：${Object.keys(bd.edges || {}).length}</div>
   `;
 
-  const elementCounts = bd.elementCounts || {};
-  const elementLine = Object.keys(elementCounts)
-    .map((k) => `${k}:${elementCounts[k]}`)
-    .join(' / ');
+  fightSummaryEl.innerHTML = `
+    <div>施放统计：${JSON.stringify(result.metrics?.casts_per_skill || {})}</div>
+    <div>反应统计：${JSON.stringify(result.metrics?.reaction_counts || {})}</div>
+  `;
+
+  resultSummaryEl.innerHTML = `
+    <div>空窗：${formatNumber(result.metrics?.downtime_ticks)}</div>
+    <div>续航：${formatNumber(result.metrics?.sustain_total)}</div>
+  `;
+
   const infoLines = [
-    `灵根：${bd.linggen || '-'}`,
-    `主导元素：${bd.dominant || '-'}`,
-    `流派倾向：${styleLabel}`,
-    `元素占比：${elementLine || '-'}`,
+    `技能配置：${JSON.stringify(bd.skills || {})}`,
+    `私有符文：${JSON.stringify(bd.runes || {})}`,
+    `联结符文：${JSON.stringify(bd.edges || {})}`,
   ];
   infoLines.forEach((line) => {
     const li = document.createElement('li');
@@ -77,18 +62,17 @@ function render() {
     bdInfoEl.appendChild(li);
   });
 
-  const stoneCats = bd.stones || {};
-  Object.keys(stoneCats).forEach((cat) => {
-    const list = stoneCats[cat] || [];
-    const header = document.createElement('li');
-    header.textContent = `${cat} (${list.length})`;
-    header.style.color = '#9ec9ff';
-    stoneInfoEl.appendChild(header);
-    list.forEach((item) => {
-      const li = document.createElement('li');
-      li.textContent = `${item.name} · ${item.element} · ${item.slotType} · ${item.trigram} · ${item.slot}`;
-      stoneInfoEl.appendChild(li);
-    });
+  const runeLines = [];
+  Object.entries(bd.runes || {}).forEach(([gua, runes]) => {
+    runeLines.push(`${gua}: Form=${runes.form || '-'} / Loop=${runes.loop || '-'}`);
+  });
+  Object.entries(bd.edges || {}).forEach(([edge, rune]) => {
+    runeLines.push(`联结 ${edge}: ${rune}`);
+  });
+  runeLines.forEach((line) => {
+    const li = document.createElement('li');
+    li.textContent = line;
+    stoneInfoEl.appendChild(li);
   });
 
   if (!events.length) {
@@ -97,7 +81,9 @@ function render() {
   }
   emptyEl.classList.add('hidden');
 
-  events.forEach((evt) => {
+  const filtered = filterValue === 'all' ? events : events.filter((evt) => evt.kind === filterValue);
+
+  filtered.forEach((evt) => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${evt.tick}</td>
@@ -108,8 +94,6 @@ function render() {
       <td>${evt.kind}</td>
       <td>${evt.type}</td>
       <td>${evt.note || ''}</td>
-      <td>${evt.bossHp != null ? formatNumber(evt.bossHp) : '-'}</td>
-      <td>${evt.playerHp != null ? formatNumber(evt.playerHp) : '-'}</td>
     `;
     tableBody.appendChild(row);
   });
@@ -118,5 +102,13 @@ function render() {
 document.getElementById('refresh-log').addEventListener('click', () => {
   render();
 });
+
+const filterEl = document.getElementById('event-filter');
+if (filterEl) {
+  filterEl.addEventListener('change', () => {
+    filterValue = filterEl.value;
+    render();
+  });
+}
 
 render();

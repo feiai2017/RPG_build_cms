@@ -3,111 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>五行天赋盘 · Play Mode</title>
+  <title>天道盘 · MVP V1</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
 </head>
 <body>
   <div id="app">
     <div id="canvas-container"></div>
 
     <div id="steps-bar">
-      <div class="step" data-step="1">① 插入灵石</div>
-      <div class="step" data-step="2">② 相邻自动通气</div>
-      <div class="step" data-step="3">③ 观察灵根供能与技能变形</div>
+      <div class="step" data-step="1">① 选择技能与符文</div>
+      <div class="step" data-step="2">② 配置联结槽</div>
+      <div class="step" data-step="3">③ Simulate 自动循环</div>
     </div>
 
     <div id="hud">
-      <div class="hud-title">五行天赋盘 · Play Mode</div>
-      <div class="hud-item">
-        <span class="hud-icon">◇</span>
-        境界
-        <select id="realm-select"></select>
-      </div>
-      <div class="hud-item">
-        <span class="hud-icon">☯</span>
-        灵根配置
-        <select id="linggen-select"></select>
-      </div>
+      <div class="hud-title">天道盘 · 自动循环 Build</div>
       <div class="hud-item">
         <span class="hud-icon">◆</span>
-        灵石
+        选择槽位物品
         <select id="stone-select"></select>
       </div>
       <button id="clear-slot" class="hud-action">清空槽位</button>
       <div class="hud-item">
-        <span class="hud-icon">⚡</span>
-        灵力
-        <span id="hud-power">0 / 0</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-icon">〰</span>
-        通气
-        <span id="hud-bandwidth">0 / 0</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-icon">◈</span>
-        已点亮 / 通电
-        <span id="hud-counts">0 / 0</span>
-      </div>
-      <div class="hud-item">
         <span class="hud-icon">⚖</span>
-        主元素
-        <span id="hud-bonus">无</span>
+        构筑状态
+        <span id="build-status">OK</span>
       </div>
-      <div class="hud-item">
-        <span class="hud-icon">✦</span>
-        境界加成
-        <span id="hud-realm-bonus">-</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-icon">⬤</span>
-        高对比
-        <input type="checkbox" id="toggle-contrast" />
-      </div>
-      <div class="hud-item">
-        <span class="hud-icon">⛓</span>
-        显示断线
-        <input type="checkbox" id="toggle-broken" />
-      </div>
-      <div class="hud-sub">点击槽位插入灵石；相邻槽位自动通气。</div>
-      <button id="clear-lit" class="hud-action">一键熄灭</button>
-      <button id="reconfig-btn" class="hud-action hidden">重构模式</button>
-      <div class="hud-meta">
-        <div>cfg_hash <span id="cfg-hash">-</span></div>
-        <div>ruleset <span id="cfg-version">-</span></div>
-      </div>
+      <div class="hud-sub">技能槽/符文槽/联结槽均可点击设置。</div>
     </div>
 
     <div id="panel">
       <div class="panel-header">节点详情</div>
       <div class="detail-grid">
-        <div>名称 <span id="detail-name">核心 BIOS</span></div>
-        <div>元素 <span id="detail-element">土</span></div>
-        <div>类型 <span id="detail-type">core</span></div>
-        <div>卦象 <span id="detail-trigram">坤 · 基底</span></div>
-        <div>元件 <span id="detail-component">—</span></div>
-        <div>效果 <span id="detail-effect">点击相邻节点开始</span></div>
-        <div>通气状态 <span id="detail-power">未通气</span></div>
-        <div>断气原因 <span id="detail-reason">—</span></div>
+        <div>名称 <span id="detail-name">-</span></div>
+        <div>元素 <span id="detail-element">-</span></div>
+        <div>类型 <span id="detail-type">-</span></div>
+        <div>卦位 <span id="detail-trigram">-</span></div>
+        <div>类别 <span id="detail-component">-</span></div>
+        <div>说明 <span id="detail-effect">-</span></div>
       </div>
-      <button id="toggle-switch" class="hud-action hidden">切换开关</button>
 
       <div class="panel-divider"></div>
-
-      <div class="panel-header">构筑属性汇总</div>
-      <div class="stat-grid">
-        <div>攻击 <span id="stat-atk">0</span></div>
-        <div>暴击 <span id="stat-crit">0</span></div>
-        <div>生命 <span id="stat-hp">0</span></div>
-        <div>护盾 <span id="stat-shield">0</span></div>
-        <div>回蓝 <span id="stat-mana">0</span></div>
-        <div>回能 <span id="stat-regen">0</span></div>
-      </div>
-      <div class="stat-sub">断电节点只计入潜在值，不计入通电值。</div>
+      <div class="panel-header small">构筑校验</div>
+      <ul id="build-issues" class="issue-list"></ul>
 
       <div class="panel-divider"></div>
-      <div class="panel-header small">预设 BD</div>
+      <div class="panel-header small">预置 Build</div>
       <div class="line-mode">
         <label>预设
           <select id="preset-select"></select>
@@ -116,153 +57,38 @@
       </div>
 
       <div class="panel-divider"></div>
-      <div class="panel-header small">气脉显示</div>
-      <div class="line-mode">
-        <label>模式
-          <select id="line-mode">
-            <option value="all">全部</option>
-            <option value="path">路径高亮</option>
-            <option value="element">元素过滤</option>
-          </select>
-        </label>
-        <label>元素
-          <select id="line-element">
-            <option value="金">金</option>
-            <option value="木">木</option>
-            <option value="水">水</option>
-            <option value="火">火</option>
-            <option value="土">土</option>
-          </select>
-        </label>
-      </div>
-      <div class="stat-sub">悬浮槽位可高亮从核心到该槽的气脉路径。</div>
-      <div class="stat-sub">实线=通气；虚线=连通但无气。线色=主导灵力，hover查看比例与乱流。</div>
-      <button id="reset-zoom" class="hud-action">重置缩放</button>
-
-      <div class="panel-divider"></div>
-      <div class="panel-header">求解结果</div>
+      <div class="panel-header">10秒木桩指标</div>
       <div class="sim-actions">
-        <button id="simulate-btn" class="hud-action">Simulate</button>
+        <button id="simulate-btn" class="hud-action">Run 10s</button>
         <button id="open-log" class="hud-action">战斗日志</button>
       </div>
       <div class="sim-grid">
-        <div>DPS <span id="sim-dps">0</span></div>
-        <div>EHP <span id="sim-ehp">0</span></div>
-        <div>续航 <span id="sim-sustain">0</span></div>
-        <div>稳定 <span id="sim-stability">0</span></div>
+        <div>施放统计 <span id="metric-casts">-</span></div>
+        <div>反应统计 <span id="metric-reactions">-</span></div>
+        <div>空窗 <span id="metric-downtime">-</span></div>
+        <div>续航总量 <span id="metric-sustain">-</span></div>
       </div>
-      <div class="panel-header small">Boss验证</div>
-      <div class="sim-grid">
-        <div>胜负 <span id="sim-win">-</span></div>
-        <div>击杀 <span id="sim-ttk">-</span></div>
-        <div>存活 <span id="sim-survive">-</span></div>
-      </div>
-      <details id="sim-explain" class="sim-explain">
-        <summary>Explain</summary>
-        <pre id="sim-logs"></pre>
+
+      <details class="sim-explain" open>
+        <summary>开发者日志</summary>
+        <pre id="dev-log-text"></pre>
       </details>
 
       <div class="legend">
-        <div class="legend-title">节点图例</div>
-        <div class="legend-row">
-          <span class="legend-dot core"></span> 核心
-          <span class="legend-dot major"></span> 主节点
-          <span class="legend-dot normal"></span> 普通
-          <span class="legend-dot disabled"></span> 禁用
-        </div>
-        <div class="legend-title">槽位类型</div>
+        <div class="legend-title">槽位图例</div>
         <div class="legend-row">
           <span class="legend-slot skill">技</span> 技能槽
-          <span class="legend-slot stat">属</span> 属性槽
-          <span class="legend-slot mod"></span> 改造槽
-          <span class="legend-slot core">核</span> 核心槽
+          <span class="legend-slot stat">F</span> Form
+          <span class="legend-slot mod">L</span> Loop
+          <span class="legend-slot edge">联</span> 联结槽
         </div>
-        <div class="legend-title">五行颜色</div>
-        <div class="legend-row">
-          <span class="legend-chip metal"></span>金
-          <span class="legend-chip wood"></span>木
-          <span class="legend-chip water"></span>水
-          <span class="legend-chip fire"></span>火
-          <span class="legend-chip earth"></span>土
-        </div>
-        <div class="legend-title">通气图例</div>
-        <div class="legend-row">
-          <span class="legend-line powered"></span>通气(实线)
-          <span class="legend-line broken"></span>连通无气(虚线)
-        </div>
-        <div class="legend-title">元件说明</div>
-        <div class="legend-row legend-components">
-          <span class="legend-text">SOURCE 电源</span>
-          <span class="legend-text">RESISTOR 电阻</span>
-          <span class="legend-text">CAPACITOR 电容</span>
-          <span class="legend-text">DIODE 二极管</span>
-          <span class="legend-text">SWITCH 开关</span>
-          <span class="legend-text">AMPLIFIER 放大器</span>
-        </div>
-      </div>
-
-      <div id="reconfig-panel" class="reconfig hidden">
-        <div class="panel-header">槽位重构</div>
-        <label>节点
-          <select id="reconfig-node"></select>
-        </label>
-        <label>目标槽位
-          <select id="reconfig-slot"></select>
-        </label>
-        <button id="reconfig-apply">应用重构</button>
-      </div>
-
-      <div class="how-to">怎么玩：插灵石→相邻自动通气→观察技能变形与核心强化。</div>
-    </div>
-
-    <button id="dev-toggle" title="Dev Mode">🛠</button>
-    <div id="dev-drawer" class="hidden">
-      <div class="dev-header">Dev Mode</div>
-      <label><input type="checkbox" id="toggle-sectors" checked /> 显示扇区底色</label>
-      <label><input type="checkbox" id="toggle-rings" checked /> 显示环线</label>
-      <label><input type="checkbox" id="toggle-edges" checked /> 显示连线</label>
-      <label><input type="checkbox" id="toggle-labels" /> 显示节点编号</label>
-      <label><input type="checkbox" id="toggle-autoedges" /> 启用自动连通(调试)</label>
-      <label><input type="checkbox" id="toggle-debug" /> Debug Overlay</label>
-      <label>配置版本 <span id="cfg-mtime">-</span></label>
-      <label>邻接通道 <input type="range" id="channel-count" min="1" max="5" step="1" value="3" /></label>
-      <label>接触阈值 <input type="range" id="contact-threshold" min="35" max="90" step="1" value="62" /></label>
-      <label>Glow 强度 <input type="range" id="glow-strength" min="0" max="1" step="0.01" value="0.18" /></label>
-      <label>Edges 强度 <input type="range" id="edge-strength" min="0.1" max="1" step="0.01" value="0.6" /></label>
-      <label>Sector 透明度 <input type="range" id="sector-opacity" min="0" max="0.12" step="0.005" value="0.05" /></label>
-      <label>Ring 强度 <input type="range" id="ring-strength" min="0.1" max="1" step="0.01" value="0.55" /></label>
-      <label>缩放 <input type="range" id="scale" min="0.7" max="1.6" step="0.01" value="0.7" /></label>
-      <label>搜索节点 <input type="text" id="search" placeholder="node_id" /></label>
-      <div id="search-result"></div>
-      <div class="dev-row">
-        <button id="reload-config">Reload Config</button>
-        <button id="export-current">Export Current</button>
-        <button id="reset-session">Reset Session</button>
-      </div>
-      <label><input type="checkbox" id="toggle-sfx" checked /> 音效</label>
-      <button id="undo-btn">撤销 (右键)</button>
-      <button id="guide-btn">重新查看引导</button>
-    </div>
-
-    <div id="guide" class="guide hidden">
-      <div class="guide-card">
-        <div class="guide-title">新手引导</div>
-        <div class="guide-step" data-step="1">① 选择灵根与灵石</div>
-        <div class="guide-step" data-step="2">② 插入灵石触发通气</div>
-        <div class="guide-step" data-step="3">③ 查看技能槽变形与求解结果</div>
-        <div class="guide-actions">
-          <button id="guide-skip">跳过</button>
-          <button id="guide-next">下一步</button>
-        </div>
+        <div class="legend-title">联结槽上限</div>
+        <div class="legend-row">全盘≤3，单技能≤2</div>
       </div>
     </div>
-
-    <div id="feedback" class="feedback hidden"></div>
-    <div id="tooltip" class="tooltip"></div>
-    <div id="debug-overlay" class="debug-overlay hidden"></div>
   </div>
 
-  <script src="core/solver.js?v=20260202"></script>
-  <script src="board.js?v=20260202"></script>
+  <script src="core/solver.js"></script>
+  <script src="tiandao.js"></script>
 </body>
 </html>

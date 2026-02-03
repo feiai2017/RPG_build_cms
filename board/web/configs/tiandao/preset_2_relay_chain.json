@@ -1,0 +1,28 @@
+﻿{
+  "name": "preset_2_relay_chain",
+  "skills_by_gua": {
+    "乾": "skill_qian_pierce",
+    "兑": "skill_dui_echo",
+    "离": "skill_li_flare",
+    "震": "skill_zhen_chain",
+    "巽": "skill_xun_guard",
+    "坎": "skill_kan_tide",
+    "艮": "skill_gen_shell",
+    "坤": "skill_kun_reforge"
+  },
+  "private_runes": {
+    "乾": { "form": "spread", "loop": "charge" },
+    "兑": { "form": "chain", "loop": "auto_recast" },
+    "离": { "form": "aoe", "loop": "cd_down" },
+    "震": { "form": "mark", "loop": "cond_accel" },
+    "巽": { "form": "channel", "loop": "hit_energy" },
+    "坎": { "form": "mark", "loop": "hit_energy" },
+    "艮": { "form": "melee", "loop": "crit_energy" },
+    "坤": { "form": "spread", "loop": "cd_down" }
+  },
+  "edge_runes": {
+    "乾|兑": "RELAY",
+    "兑|离": "RELAY",
+    "离|震": "RELAY"
+  }
+}
