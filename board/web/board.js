@@ -167,6 +167,13 @@ const VISUAL_CFG = {
     text: 10,
   },
 };
+const SLOT_STYLE = {
+  skill: { stroke: '#7fe9ff', fill: 0.08, width: 2.6, text: '技' },
+  mod: { stroke: '#ff8bd1', fill: 0.08, width: 2.6, text: '改' },
+  stat: { stroke: '#ffd166', fill: 0.06, width: 2.2, text: '属' },
+  normal: { stroke: '#c2cbd6', fill: 0.03, width: 1.6, text: '' },
+  core: { stroke: '#ffc46b', fill: 0.08, width: 2.8, text: '核' },
+};
 
 const QI_CFG = {
   k_gen: 0.06,
@@ -1615,24 +1622,37 @@ function renderBoard(now = performance.now()) {
       const haloAlpha = node.stone_id ? 0.55 : 0.22;
       svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + 8}" fill="none" stroke="${rgba(haloColor, haloAlpha)}" stroke-width="1.6" />`;
     }
-    if (node.slot_type === SLOT_TYPES.core) {
-      const coreR = baseRadius + VISUAL_CFG.slot.outline + 2;
-      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${coreR}" fill="none" stroke="rgba(255,210,140,0.65)" stroke-width="2" />`;
-      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${coreR + 4}" fill="none" stroke="rgba(255,210,140,0.3)" stroke-width="1.5" />`;
-      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(255,230,190,0.9)" font-weight="700">核</text>`;
-    } else if (node.slot_type === SLOT_TYPES.skill) {
-      const side = (baseRadius + VISUAL_CFG.slot.outline) * 2;
-      svg += `<rect x="${cx + pos.x - side / 2}" y="${cy + pos.y - side / 2}" width="${side}" height="${side}" fill="none" stroke="rgba(200,220,240,0.45)" stroke-width="1.6" />`;
-      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(220,235,250,0.85)" font-weight="600">技</text>`;
-    } else if (node.slot_type === SLOT_TYPES.mod) {
-      const r = baseRadius + VISUAL_CFG.slot.outline;
+    {
+      const typeKey = node.slot_type || SLOT_TYPES.normal;
+      const style = SLOT_STYLE[typeKey] || SLOT_STYLE.normal;
+      const outlineR = baseRadius + VISUAL_CFG.slot.outline + (typeKey === SLOT_TYPES.core ? 3 : 0);
+      const alpha = node.stone_id ? 0.8 : 0.45;
+      const fillAlpha = node.stone_id ? style.fill + 0.04 : style.fill;
+      const stroke = rgba(style.stroke, alpha);
+      const fill = rgba(style.stroke, fillAlpha);
       const x = cx + pos.x;
       const y = cy + pos.y;
-      svg += `<polygon points="${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}" fill="none" stroke="rgba(190,220,250,0.45)" stroke-width="1.6" />`;
-      svg += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(220,235,250,0.8)" font-weight="600">改</text>`;
-    } else if (node.slot_type === SLOT_TYPES.stat) {
-      svg += `<circle cx="${cx + pos.x}" cy="${cy + pos.y}" r="${baseRadius + VISUAL_CFG.slot.outline}" fill="none" stroke="rgba(180,210,235,0.35)" stroke-width="1.2" stroke-dasharray="3 5" />`;
-      svg += `<text x="${cx + pos.x}" y="${cy + pos.y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text}" fill="rgba(210,230,245,0.75)" font-weight="600">属</text>`;
+
+      if (typeKey === SLOT_TYPES.core) {
+        svg += `<circle cx="${x}" cy="${y}" r="${outlineR}" fill="${fill}" stroke="${stroke}" stroke-width="${style.width}" />`;
+        svg += `<circle cx="${x}" cy="${y}" r="${outlineR + 5}" fill="none" stroke="${rgba(style.stroke, 0.35)}" stroke-width="1.6" />`;
+      } else if (typeKey === SLOT_TYPES.skill) {
+        const side = outlineR * 2;
+        svg += `<rect x="${x - side / 2}" y="${y - side / 2}" width="${side}" height="${side}" rx="4" ry="4" fill="${fill}" stroke="${stroke}" stroke-width="${style.width}" />`;
+      } else if (typeKey === SLOT_TYPES.mod) {
+        const r = outlineR;
+        svg += `<polygon points="${x},${y - r} ${x + r},${y} ${x},${y + r} ${x - r},${y}" fill="${fill}" stroke="${stroke}" stroke-width="${style.width}" />`;
+        const r2 = r * 0.65;
+        svg += `<polygon points="${x},${y - r2} ${x + r2},${y} ${x},${y + r2} ${x - r2},${y}" fill="none" stroke="${rgba(style.stroke, 0.4)}" stroke-width="1.2" />`;
+      } else if (typeKey === SLOT_TYPES.stat) {
+        svg += `<circle cx="${x}" cy="${y}" r="${outlineR}" fill="${fill}" stroke="${stroke}" stroke-width="${style.width}" stroke-dasharray="4 6" />`;
+      } else {
+        svg += `<circle cx="${x}" cy="${y}" r="${outlineR}" fill="none" stroke="${stroke}" stroke-width="${style.width}" />`;
+      }
+
+      if (style.text) {
+        svg += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="${VISUAL_CFG.slot.text + 1}" fill="${rgba(style.stroke, 0.95)}" font-weight="700">${style.text}</text>`;
+      }
     }
 
     if (node.type === 'core') {
