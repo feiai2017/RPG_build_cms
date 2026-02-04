@@ -33,58 +33,89 @@
     </div>
 
     <div id="panel">
-      <div class="panel-header">节点详情</div>
-      <div class="detail-grid">
-        <div>名称 <span id="detail-name">-</span></div>
-        <div>元素 <span id="detail-element">-</span></div>
-        <div>类型 <span id="detail-type">-</span></div>
-        <div>卦位 <span id="detail-trigram">-</span></div>
-        <div>类别 <span id="detail-component">-</span></div>
-        <div>说明 <span id="detail-effect">-</span></div>
-      </div>
-
-      <div class="panel-divider"></div>
-      <div class="panel-header small">构筑校验</div>
-      <ul id="build-issues" class="issue-list"></ul>
-
-      <div class="panel-divider"></div>
-      <div class="panel-header small">预置 Build</div>
-      <div class="line-mode">
-        <label>预设
-          <select id="preset-select"></select>
+      <div class="panel-toolbar">
+        <label class="toggle-line">
+          <input type="checkbox" id="detail-verbose" />
+          详细技能信息
         </label>
-        <button id="load-preset" class="hud-action">载入</button>
       </div>
+      <details class="panel-section" open>
+        <summary class="panel-header">节点详情</summary>
+        <div class="detail-grid">
+          <div>名称 <span id="detail-name">-</span></div>
+          <div>元素 <span id="detail-element">-</span></div>
+          <div>类型 <span id="detail-type">-</span></div>
+          <div>卦位 <span id="detail-trigram">-</span></div>
+          <div>类别 <span id="detail-component">-</span></div>
+          <div>说明 <span id="detail-effect">-</span></div>
+          <div>符文 <span id="detail-runes">-</span></div>
+          <div>ID <span id="detail-id">-</span> <button class="copy-btn" data-copy-target="detail-id">复制ID</button></div>
+          <div>联动 <span id="detail-links">-</span></div>
+        </div>
+      </details>
 
       <div class="panel-divider"></div>
-      <div class="panel-header">10秒木桩指标</div>
-      <div class="sim-actions">
-        <button id="simulate-btn" class="hud-action">Run 10s</button>
-        <button id="open-log" class="hud-action">战斗日志</button>
-      </div>
-      <div class="sim-grid">
-        <div>施放统计 <span id="metric-casts">-</span></div>
-        <div>反应统计 <span id="metric-reactions">-</span></div>
-        <div>空窗 <span id="metric-downtime">-</span></div>
-        <div>续航总量 <span id="metric-sustain">-</span></div>
-      </div>
+      <details class="panel-section" open>
+        <summary class="panel-header small">构筑校验</summary>
+        <ul id="build-issues" class="issue-list"></ul>
+      </details>
 
-      <details class="sim-explain" open>
-        <summary>开发者日志</summary>
+      <div class="panel-divider"></div>
+      <details class="panel-section" open>
+        <summary class="panel-header small">预置 Build</summary>
+        <div class="line-mode">
+          <label>预设
+            <select id="preset-select"></select>
+          </label>
+          <button id="load-preset" class="hud-action">载入</button>
+        </div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section" open>
+        <summary class="panel-header">10秒木桩指标</summary>
+        <div class="sim-actions">
+          <button id="simulate-btn" class="hud-action">Run 10s</button>
+          <button id="open-log" class="hud-action">战斗日志</button>
+        </div>
+        <div class="sim-grid">
+          <div>施放统计 <span id="metric-casts">-</span></div>
+          <div>反应统计 <span id="metric-reactions">-</span></div>
+          <div>空窗 <span id="metric-downtime">-</span></div>
+          <div>续航总量 <span id="metric-sustain">-</span></div>
+        </div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section">
+        <summary class="panel-header small">开发者日志</summary>
         <pre id="dev-log-text"></pre>
       </details>
 
-      <div class="legend">
-        <div class="legend-title">槽位图例</div>
-        <div class="legend-row">
-          <span class="legend-slot skill">技</span> 技能槽
-          <span class="legend-slot stat">F</span> Form
-          <span class="legend-slot mod">L</span> Loop
-          <span class="legend-slot edge">联</span> 联结槽
+      <div class="panel-divider"></div>
+      <details class="panel-section">
+        <summary class="panel-header small">导出</summary>
+        <button id="export-board" class="hud-action">导出 tiandao_board.json</button>
+        <div class="stat-sub">导出内容与 Godot 渲染结构一致（slot/位置/边插口）。</div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section">
+        <summary class="panel-header small">图例与约束</summary>
+        <div class="legend">
+          <div class="legend-title">槽位图例</div>
+          <div class="legend-row">
+            <span class="legend-slot skill">贯</span> 技能槽
+            <span class="legend-slot form">F</span> Form
+            <span class="legend-slot loop">L</span> Loop
+            <span class="legend-slot edge">⛓</span> 联结槽
+          </div>
+          <div class="legend-title">颜色语义</div>
+          <div class="legend-row">形状=类型，颜色=元素</div>
+          <div class="legend-title">联结槽上限</div>
+          <div class="legend-row">全盘≤3，单技能≤2</div>
         </div>
-        <div class="legend-title">联结槽上限</div>
-        <div class="legend-row">全盘≤3，单技能≤2</div>
-      </div>
+      </details>
     </div>
   </div>
 

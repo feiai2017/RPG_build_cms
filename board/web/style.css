@@ -254,6 +254,26 @@ body {
   z-index: 4;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.panel-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.toggle-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #b8c9d8;
+}
+
+.toggle-line input {
+  accent-color: var(--cyan);
 }
 
 .panel-header {
@@ -271,6 +291,41 @@ body {
 .detail-grid span {
   color: var(--cyan);
   font-weight: 600;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#detail-effect {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.term {
+  display: inline-block;
+  border-bottom: 1px dotted rgba(140, 200, 255, 0.7);
+  position: relative;
+  cursor: help;
+  color: #e9f4ff;
+}
+
+.term::after {
+  display: none;
+}
+
+#term-tooltip {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  max-width: 280px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(8, 12, 18, 0.96);
+  border: 1px solid rgba(120, 180, 200, 0.6);
+  color: #dfe8f2;
+  font-size: 11px;
+  line-height: 1.4;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
 
 .panel-divider {
@@ -980,4 +1035,49 @@ body {
 .legend-slot.edge {
   border-color: rgba(120, 200, 255, 0.9);
   color: rgba(220, 240, 255, 0.9);
+}
+
+.panel-section {
+  margin-bottom: 6px;
+}
+
+.panel-section > summary {
+  cursor: pointer;
+}
+
+.panel-section[open] > summary {
+  color: #ffffff;
+}
+
+.copy-btn {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 180, 200, 0.4);
+  background: rgba(8, 12, 18, 0.8);
+  color: #9fe7ff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.legend-slot.form,
+.legend-slot.loop {
+  border-color: rgba(160, 200, 240, 0.8);
+  color: rgba(230, 240, 250, 0.9);
+}
+
+.legend-slot.edge {
+  border-color: rgba(140, 220, 255, 0.9);
+  color: rgba(230, 240, 255, 0.9);
+}
+
+.detail-grid button.copy-btn {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 180, 200, 0.4);
+  background: rgba(8, 12, 18, 0.8);
+  color: #9fe7ff;
+  font-size: 11px;
+  cursor: pointer;
 }
