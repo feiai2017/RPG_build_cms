@@ -435,6 +435,64 @@ body {
   font-weight: 600;
 }
 
+.metric-text {
+  color: var(--cyan);
+  font-weight: 600;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.boss-select {
+  margin: 10px 0 12px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(120, 160, 180, 0.25);
+  background: rgba(8, 12, 18, 0.65);
+}
+
+.boss-title {
+  font-size: 12px;
+  color: #cfe0f2;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.boss-list {
+  display: grid;
+  gap: 6px;
+}
+
+.boss-card {
+  border: 1px solid rgba(120, 180, 200, 0.4);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: rgba(12, 18, 26, 0.85);
+  color: #cfe3f6;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.boss-card.active {
+  border-color: rgba(120, 220, 255, 0.8);
+  box-shadow: 0 0 10px rgba(120, 220, 255, 0.25);
+  color: #ffffff;
+}
+
+.boss-detail {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9fb4c8;
+}
+
+.glossary .legend-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  line-height: 1.4;
+}
+
 .sim-explain {
   margin-top: 6px;
   font-size: 12px;

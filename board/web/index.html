@@ -78,11 +78,16 @@
           <button id="simulate-btn" class="hud-action">Run 10s</button>
           <button id="open-log" class="hud-action">战斗日志</button>
         </div>
+        <div class="boss-select">
+          <div class="boss-title">Boss 选择</div>
+          <div id="boss-list" class="boss-list"></div>
+          <div id="boss-detail" class="boss-detail">请选择一个 Boss</div>
+        </div>
         <div class="sim-grid">
-          <div>施放统计 <span id="metric-casts">-</span></div>
-          <div>反应统计 <span id="metric-reactions">-</span></div>
-          <div>空窗 <span id="metric-downtime">-</span></div>
-          <div>续航总量 <span id="metric-sustain">-</span></div>
+          <div>施放统计 <div id="metric-casts" class="metric-text">-</div></div>
+          <div>反应统计 <div id="metric-reactions" class="metric-text">-</div></div>
+          <div>空窗 <div id="metric-downtime" class="metric-text">-</div></div>
+          <div>续航总量 <div id="metric-sustain" class="metric-text">-</div></div>
         </div>
       </details>
 
@@ -97,6 +102,18 @@
         <summary class="panel-header small">导出</summary>
         <button id="export-board" class="hud-action">导出 tiandao_board.json</button>
         <div class="stat-sub">导出内容与 Godot 渲染结构一致（slot/位置/边插口）。</div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section">
+        <summary class="panel-header small">术语表</summary>
+        <div class="legend glossary">
+          <div class="legend-row"><span class="legend-text">SUSTAIN</span> 续航（护盾/治疗/回能的总量）</div>
+          <div class="legend-row"><span class="legend-text">DPS</span> 每秒伤害估计值</div>
+          <div class="legend-row"><span class="legend-text">EHP</span> 有效生命（抗伤能力）</div>
+          <div class="legend-row"><span class="legend-text">REACTION</span> 元素反应触发次数</div>
+          <div class="legend-row"><span class="legend-text">COOLDOWN</span> 冷却缩减事件</div>
+        </div>
       </details>
 
       <div class="panel-divider"></div>
@@ -120,6 +137,9 @@
   </div>
 
   <script src="core/solver.js"></script>
-  <script src="tiandao.js"></script>
+  <script src="core/board-model.js"></script>
+  <script src="adapters/godot-export.js"></script>
+  <script src="ui/board-render.js"></script>
+  <script src="ui/board-controller.js"></script>
 </body>
 </html>

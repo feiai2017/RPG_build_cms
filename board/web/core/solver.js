@@ -56,6 +56,12 @@
     '火|土': { type: 'LAVA_FIELD', name: '熔域', bonus: 0.5 },
   };
 
+  const BOSS_PROFILES = [
+    { id: 'dummy', name: '木桩', hp: 1200, dps: 0, spike: 0, spikeInterval: 10, desc: '基准对照' },
+    { id: 'burst', name: '玄铁巨兽', hp: 1800, dps: 20, spike: 120, spikeInterval: 8, desc: '爆发型' },
+    { id: 'pressure', name: '玄水魅影', hp: 1600, dps: 45, spike: 60, spikeInterval: 12, desc: '持续压制' },
+  ];
+
   function canonicalElementPair(a, b) {
     return [a, b].sort().join('|');
   }
@@ -428,12 +434,16 @@
     return result;
   }
 
-  function simulateBoss(result) {
-    // V1 仅提供木桩结果，保留接口
+  function simulateBoss(result, bossProfile) {
+    const boss = bossProfile || BOSS_PROFILES[0];
+    if (global.CircuitCore?.simulateCombat) {
+      return global.CircuitCore.simulateCombat(result, boss);
+    }
     return {
       win: null,
-      timeToKill: null,
-      timeSurvive: null,
+      time_to_kill: null,
+      time_survived: null,
+      boss: boss?.name || '木桩',
       logs: result.logs,
       events: result.events,
     };
@@ -447,6 +457,8 @@
     FORM_RUNES,
     LOOP_RUNES,
     EDGE_RUNES,
+    REACTIONS,
+    BOSS_PROFILES,
     GUA_INFO,
   };
 })(window);

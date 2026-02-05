@@ -7,6 +7,15 @@ board/
     gen_board.py
   web/
     index.html
+    tiandao.js
+    adapters/
+      godot-export.js
+    core/
+      board-model.js
+      solver.js
+    ui/
+      board-controller.js
+      board-render.js
     board.js
     style.css
     board.json
@@ -34,6 +43,22 @@ cd web
 python -m http.server 8000
 ```
 浏览器访问 `http://localhost:8000`。
+
+## Tiandao 构筑（当前主路径）
+- 入口：`web/index.html`（加载 `core/solver.js` + `core/board-model.js` + `ui/*` + `adapters/godot-export.js`）。
+- 分层约定：
+  - `web/core/board-model.js`：构筑/验证/序列化等纯逻辑。
+  - `web/ui/board-render.js`：SVG 渲染与详情视图。
+  - `web/ui/board-controller.js`：事件绑定与状态同步。
+  - `web/adapters/godot-export.js`：最小导出结构适配层。
+
+## Tiandao 最小导出清单（无版本号）
+导出 `tiandao_board.json` 仅包含以下字段：
+- `meta.elements`
+- `rings[]`
+- `nodes[]`
+- `edges[]`
+- `build.slots[]`
 
 ## 交互操作
 - 拖拽棋盘：旋转当前选中环（松手带惯性，2~4 秒内停止）。

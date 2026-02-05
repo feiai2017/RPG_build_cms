@@ -30,7 +30,7 @@
 
     const spikeThreat = boss.spike / Math.max(1, ehp * 0.2);
     if (spikeThreat > 1.2) {
-      logs.push('Boss爆发偏高，注意减载');
+      logs.push('Boss 爆发偏高，注意减载');
     }
 
     const win = timeToKill <= timeSurvived;

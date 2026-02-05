@@ -1,0 +1,31 @@
+{
+  "bosses": [
+    {
+      "id": "dummy",
+      "name": "木桩",
+      "hp": 1200,
+      "dps": 0,
+      "spike": 0,
+      "spikeInterval": 10,
+      "desc": "基准对照，不造成压力"
+    },
+    {
+      "id": "burst",
+      "name": "玄铁巨兽",
+      "hp": 1800,
+      "dps": 20,
+      "spike": 120,
+      "spikeInterval": 8,
+      "desc": "爆发型，间歇高伤害"
+    },
+    {
+      "id": "pressure",
+      "name": "玄水魅影",
+      "hp": 1600,
+      "dps": 45,
+      "spike": 60,
+      "spikeInterval": 12,
+      "desc": "持续压制，稳定耗血"
+    }
+  ]
+}

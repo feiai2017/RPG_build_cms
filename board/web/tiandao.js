@@ -1,4 +1,7 @@
-﻿const dom = {
+﻿if (window.TiandaoController?.init) {
+  window.TiandaoController.init();
+} else {
+const dom = {
   container: document.getElementById('canvas-container'),
   steps: Array.from(document.querySelectorAll('#steps-bar .step')),
   itemSelect: document.getElementById('stone-select'),
@@ -898,3 +901,4 @@ function init() {
 }
 
 init();
+}
