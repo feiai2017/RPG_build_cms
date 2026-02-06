@@ -106,6 +106,31 @@
 
       <div class="panel-divider"></div>
       <details class="panel-section">
+        <summary class="panel-header small">BD流程与循环</summary>
+        <div class="bd-flow">
+          <div class="flow-title">主流程</div>
+          <ol class="flow-list">
+            <li><span class="flow-step">初始化</span> <code>buildDefaultConfig</code> → <code>buildBoardState</code> → <code>validateBuild</code>。</li>
+            <li><span class="flow-step">渲染</span> <code>renderBoard</code> 输出 SVG，详情区同步。</li>
+            <li><span class="flow-step">交互</span> 选槽位/换物品 → <code>applyItem</code> 更新构筑。</li>
+            <li><span class="flow-step">校验</span> 联结数量与依赖规则检查。</li>
+            <li><span class="flow-step">持久化</span> <code>persistPayload</code> 写入 <code>tiandao_board</code>。</li>
+            <li><span class="flow-step">模拟/日志</span> <code>simulateBuild</code> → <code>battle_log</code>。</li>
+          </ol>
+          <div class="flow-title">循环概览</div>
+          <ol class="flow-list">
+            <li><span class="flow-step">Tick</span> 更新冷却与延迟队列。</li>
+            <li><span class="flow-step">选技</span> 按卦序选择可施放技能。</li>
+            <li><span class="flow-step">施放</span> 处理复施/接力与联结触发。</li>
+            <li><span class="flow-step">反应</span> 印记与元素反应结算。</li>
+            <li><span class="flow-step">统计</span> DPS/续航/空窗等汇总。</li>
+          </ol>
+          <div class="flow-note">完整说明见 <code>board/docs/bd-flow.md</code>。</div>
+        </div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section">
         <summary class="panel-header small">术语表</summary>
         <div class="legend glossary">
           <div class="legend-row"><span class="legend-text">SUSTAIN</span> 续航（护盾/治疗/回能的总量）</div>

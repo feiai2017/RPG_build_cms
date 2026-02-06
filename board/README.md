@@ -22,6 +22,8 @@ board/
   godot/
     BoardView.gd
     board.json
+  docs/
+    bd-flow.md
   README.md
 ```
 
@@ -51,6 +53,9 @@ python -m http.server 8000
   - `web/ui/board-render.js`：SVG 渲染与详情视图。
   - `web/ui/board-controller.js`：事件绑定与状态同步。
   - `web/adapters/godot-export.js`：最小导出结构适配层。
+
+## BD 流程与循环
+详见 `docs/bd-flow.md`，涵盖入口加载、构筑数据结构、交互与校验链路、模拟循环概览，以及导出/日志路径说明，可用于快速对齐系统流转与调参语境。
 
 ## Tiandao 最小导出清单（无版本号）
 导出 `tiandao_board.json` 仅包含以下字段：
