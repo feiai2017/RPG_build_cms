@@ -1,0 +1,93 @@
+﻿builds:
+  - build_id: dot_core
+    name: DOT核心
+    model_id: model_human
+    talent_id: talent_berserker
+    skill_set:
+      main_skill: mvp_basic_attack
+      main_mods:
+        - mvp_mod_damage_20
+        - mvp_mod_haste
+      triggers:
+        - condition: on_hit
+          skill: mvp_crit_execute
+          mods:
+            - mvp_mod_damage_20
+          enabled: true
+      max_depth: 1
+    key_mechanisms:
+      - dot_refresh_enabled
+    feature_flags_default:
+      lifesteal_loop_enabled: false
+      overheal_to_shield_enabled: false
+      dot_refresh_enabled: true
+      dr_stacking_enabled: false
+    mechanism_params:
+      dot_dps_ratio: 0.35
+    mechanism_disable_strategy:
+      dot_refresh_enabled: zero
+
+  - build_id: lifesteal_loop
+    name: 吸血循环
+    model_id: model_human
+    talent_id: talent_berserker
+    skill_set:
+      main_skill: mvp_basic_attack
+      main_mods:
+        - mvp_mod_damage_20
+        - mvp_mod_haste
+      triggers:
+        - condition: on_hit
+          skill: mvp_crit_execute
+          mods:
+            - mvp_mod_damage_20
+          enabled: true
+        - condition: hp_lt_30
+          skill: mvp_emergency_mend
+          mods: []
+          enabled: true
+      max_depth: 1
+    key_mechanisms:
+      - lifesteal_loop_enabled
+      - overheal_to_shield_enabled
+    feature_flags_default:
+      lifesteal_loop_enabled: true
+      overheal_to_shield_enabled: true
+      dot_refresh_enabled: false
+      dr_stacking_enabled: false
+    mechanism_params:
+      lifesteal_ratio: 0.12
+      overheal_to_shield_ratio: 0.6
+      shield_cap_mult: 0.5
+    mechanism_disable_strategy:
+      lifesteal_loop_enabled: zero
+      overheal_to_shield_enabled: zero
+
+  - build_id: turtle_dr
+    name: 乌龟减伤
+    model_id: model_human
+    talent_id: talent_berserker
+    skill_set:
+      main_skill: mvp_basic_attack
+      main_mods:
+        - mvp_mod_tough
+        - mvp_mod_damage_20
+      triggers:
+        - condition: on_hit
+          skill: mvp_crit_execute
+          mods:
+            - mvp_mod_crit_10
+          enabled: true
+      max_depth: 1
+    key_mechanisms:
+      - dr_stacking_enabled
+    feature_flags_default:
+      lifesteal_loop_enabled: false
+      overheal_to_shield_enabled: false
+      dot_refresh_enabled: false
+      dr_stacking_enabled: true
+    mechanism_params:
+      dr_stack_per_sec: 0.05
+      dr_stack_cap: 0.5
+    mechanism_disable_strategy:
+      dr_stacking_enabled: zero

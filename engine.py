@@ -668,6 +668,9 @@ class DiabloEngine:
             max_time: float = 20.0,
             dt: float = 0.1,
             seed: int = 0,
+            damage_mul: float = 1.0,
+            heal_mul: float = 1.0,
+            shield_mul: float = 1.0,
             boss_crit_interval: float = 4.0,
             boss_crit_mult: float = 2.5,
             max_depth: int = 1,
@@ -691,6 +694,33 @@ class DiabloEngine:
 
         rng = random.Random(int(seed))
 
+        nerf_profile = kwargs.get("nerf_profile") or {}
+        damage_mul = float(nerf_profile.get("damage_mul", damage_mul))
+        heal_mul = float(nerf_profile.get("heal_mul", heal_mul))
+        shield_mul = float(nerf_profile.get("shield_mul", shield_mul))
+
+        mechanism_flags = kwargs.get("mechanism_flags") or {}
+        mechanism_params = kwargs.get("mechanism_params") or {}
+        mechanism_disable_strategy = kwargs.get("mechanism_disable_strategy") or {}
+
+        lifesteal_enabled = bool(mechanism_flags.get("lifesteal_loop_enabled", True))
+        overheal_enabled = bool(mechanism_flags.get("overheal_to_shield_enabled", True))
+        dot_enabled = bool(mechanism_flags.get("dot_refresh_enabled", True))
+        dr_enabled = bool(mechanism_flags.get("dr_stacking_enabled", True))
+
+        lifesteal_ratio = float(mechanism_params.get("lifesteal_ratio", 0.0))
+        lifesteal_static = float(mechanism_params.get("lifesteal_static_hps", 0.0))
+        dot_ratio = float(mechanism_params.get("dot_dps_ratio", 0.0))
+        dot_static = float(mechanism_params.get("dot_static_dps", 0.0))
+        overheal_to_shield_ratio = float(mechanism_params.get("overheal_to_shield_ratio", 0.0))
+        shield_cap_mult = float(mechanism_params.get("shield_cap_mult", 0.5))
+        dr_stack_per_sec = float(mechanism_params.get("dr_stack_per_sec", 0.0))
+        dr_stack_cap = float(mechanism_params.get("dr_stack_cap", 0.0))
+        dr_static_mult = float(mechanism_params.get("dr_static_mult", 1.0))
+
+        shield_hp = 0.0
+        dr_stack = 0.0
+
         # --- BOSS 机制参数（由试炼用例配置）---
         boss_crit_interval = float(boss_crit_interval)
         boss_crit_mult = float(boss_crit_mult)
@@ -708,6 +738,8 @@ class DiabloEngine:
                 "dt": float(dt),
                 "boss_crit_interval": float(boss_crit_interval),
                 "boss_crit_mult": float(boss_crit_mult),
+                "hero_max_hp": float(hero_max_hp),
+                "enemy_max_hp": float(init_enemy_hp),
                 "timeline": timeline,
                 "logs": logs,
                 "combat_log": combat_log,
@@ -723,6 +755,10 @@ class DiabloEngine:
                 "boss_crit_mult": payload["boss_crit_mult"],
                 "final_hero_hp": int(max(hero_hp, 0)),
                 "final_enemy_hp": int(max(enemy_hp, 0)),
+                "damage_mul": float(damage_mul),
+                "heal_mul": float(heal_mul),
+                "shield_mul": float(shield_mul),
+                "mechanism_flags": mechanism_flags,
                 "timeline_hash": _stable_hash(timeline),
                 "logs_hash": _stable_hash(logs),
                 "combat_log_hash": _stable_hash(combat_log),
@@ -736,7 +772,25 @@ class DiabloEngine:
             self.set_simulation_state(hp_pct)
 
             # 2. 计算玩家当前状态 (DPS, 期望减伤, 期望回血)
-            dps, logs, profile = self.simulate_chain_with_profile(root_node, max_depth=max_depth)
+            base_dps, logs, profile = self.simulate_chain_with_profile(root_node, max_depth=max_depth)
+            dps = base_dps
+
+            # 机制：DOT 额外伤害
+            if dot_enabled:
+                dps += base_dps * dot_ratio
+            else:
+                if mechanism_disable_strategy.get("dot_refresh_enabled") == "static":
+                    dps += dot_static
+
+            # Nerf：玩家伤害倍率
+            dps *= damage_mul
+
+            # 机制：吸血循环（基于当前DPS转化为HPS）
+            if lifesteal_enabled:
+                profile["heal_per_sec"] += dps * lifesteal_ratio
+            else:
+                if mechanism_disable_strategy.get("lifesteal_loop_enabled") == "static":
+                    profile["heal_per_sec"] += lifesteal_static
 
             # --- 玩家输出阶段 ---
             dmg_to_enemy = float(dps) * dt
@@ -757,26 +811,43 @@ class DiabloEngine:
             # 应用玩家减伤
             # 来源：装备 stats + 技能 profile (e.g. 护盾)
             final_taken_mult = float(self.stats.get("damage_taken_mult", 1.0)) * float(profile.get("damage_taken_mult", 1.0))
+            if dr_enabled:
+                dr_stack = min(dr_stack_cap, dr_stack + dr_stack_per_sec * dt)
+                final_taken_mult *= max(0.05, 1.0 - dr_stack)
+            else:
+                if mechanism_disable_strategy.get("dr_stacking_enabled") == "static":
+                    final_taken_mult *= dr_static_mult
             # 限制硬减伤上限 (防止无敌)
             final_taken_mult = max(0.1, min(2.0, final_taken_mult))
 
             actual_taken = incoming_dmg * final_taken_mult
+            if shield_hp > 0:
+                absorb = min(shield_hp, actual_taken)
+                shield_hp -= absorb
+                actual_taken -= absorb
             hero_hp -= actual_taken
 
             # --- 玩家回血阶段 ---
-            heal_amt = float(profile.get("heal_per_sec", 0.0)) * dt
+            heal_amt = float(profile.get("heal_per_sec", 0.0)) * dt * heal_mul
             if heal_amt > 0 and hero_hp < hero_max_hp:
                 # 记录一下回血关键时刻
                 if hero_hp < hero_max_hp * 0.3:
                     combat_log.append(f"[{time:.1f}s] 🚑 触发紧急治疗 (+{int(heal_amt/dt)} HP/s)")
-                hero_hp = min(hero_max_hp, hero_hp + heal_amt)
+                new_hp = min(hero_max_hp, hero_hp + heal_amt)
+                overheal = max(0.0, hero_hp + heal_amt - hero_max_hp)
+                hero_hp = new_hp
+                if overheal > 0 and overheal_enabled and overheal_to_shield_ratio > 0:
+                    shield_gain = overheal * overheal_to_shield_ratio * shield_mul
+                    shield_cap = hero_max_hp * max(0.0, shield_cap_mult)
+                    shield_hp = min(shield_hp + shield_gain, shield_cap)
 
             # --- 记录 Timeline (用于画图) ---
             timeline.append({
                 "time": round(time, 1),
                 "hero_hp": int(max(hero_hp, 0)),
                 "enemy_hp": int(max(enemy_hp, 0)),
-                "is_crit": is_boss_crit
+                "is_crit": is_boss_crit,
+                "shield_hp": int(max(shield_hp, 0)),
             })
 
             # --- 胜负判定 ---

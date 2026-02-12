@@ -1,0 +1,21 @@
+﻿profiles:
+  - id: baseline
+    damage_mul: 1.0
+    heal_mul: 1.0
+    shield_mul: 1.0
+  - id: dmg_0_8
+    damage_mul: 0.8
+    heal_mul: 1.0
+    shield_mul: 1.0
+  - id: dmg_0_7
+    damage_mul: 0.7
+    heal_mul: 1.0
+    shield_mul: 1.0
+  - id: heal_0_8
+    damage_mul: 1.0
+    heal_mul: 0.8
+    shield_mul: 1.0
+  - id: shield_0_8
+    damage_mul: 1.0
+    heal_mul: 1.0
+    shield_mul: 0.8

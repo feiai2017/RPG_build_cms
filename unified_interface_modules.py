@@ -199,6 +199,81 @@ def render_loot_system():
             if selected_challenge:
                 challenge = next(c for c in available_challenges if c["name"] == selected_challenge)
                 st.write(f"**描述**: {challenge['description']}")
+
+
+def render_bd_evaluation():
+    """渲染BD评测界面"""
+    st.title("🧪 BD评测")
+    st.caption("验证“机制有效 vs 数值虚高”的可复测评测系统（Boss套件 × BD预设 × 削弱矩阵 × 机制开关）")
+
+    from core.eval import eval_runner
+
+    configs = eval_runner.load_eval_configs()
+    build_ids = eval_runner.list_build_ids(configs)
+    boss_suites = ["all"] + eval_runner.list_boss_suite_ids(configs)
+
+    if not build_ids:
+        st.warning("未找到可用 builds.yaml，请检查 configs/eval/builds.yaml")
+        return
+
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            build_id = st.selectbox("选择 Build", build_ids, index=0)
+        with col2:
+            boss_suite = st.selectbox("选择 Boss 套件", boss_suites, index=0)
+
+        seeds_input = st.text_input("Seeds", "101,102,103")
+        seeds = []
+        for part in seeds_input.replace(" ", ",").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                seeds.append(int(part))
+            except Exception:
+                pass
+        if not seeds:
+            seeds = [101, 102, 103]
+
+        run = st.button("🚀 运行评测", type="primary", use_container_width=True)
+
+    if run:
+        with st.spinner("评测运行中..."):
+            report = eval_runner.run_evaluation(
+                build_id=build_id,
+                boss_suite=boss_suite,
+                seeds=seeds,
+                nerf_profiles=None,
+                mechanism_modes=None,
+            )
+        st.session_state["eval_report"] = report
+
+    report = st.session_state.get("eval_report")
+    if not report:
+        st.info("请点击“运行评测”生成报告。")
+        return
+
+    summary = report.get("summary", {})
+    with st.container(border=True):
+        st.subheader("汇总指标")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("robust_pass_rate", summary.get("robust_pass_rate", 0))
+        c2.metric("mechanism_delta_ttk", summary.get("mechanism_delta_ttk", 0))
+        c3.metric("mechanism_delta_survival", summary.get("mechanism_delta_survival", 0))
+        c4.metric("specialization_score", summary.get("specialization_score", 0))
+        st.caption(f"Final label: `{summary.get('final_label', '-')}`")
+
+    df = report.get("df")
+    if df is not None:
+        st.subheader("明细表")
+        st.dataframe(df, use_container_width=True)
+
+    with st.container(border=True):
+        st.subheader("导出")
+        bytes_out = eval_runner.export_report_bytes(report)
+        st.download_button("⬇️ 导出 CSV", data=bytes_out["csv"], file_name="bd_eval_report.csv", mime="text/csv")
+        st.download_button("⬇️ 导出 JSON", data=bytes_out["json"], file_name="bd_eval_report.json", mime="application/json")
                 st.write(f"**等级要求**: {challenge['level_requirement']}")
                 
                 if st.button("开始挑战"):
@@ -551,6 +626,8 @@ def render_unified_interface():
         render_loot_system()
     elif page_mode == "📊 BD分析":
         render_bd_analysis()
+    elif page_mode == "🧪 BD评测":
+        render_bd_evaluation()
     elif page_mode == "⚙️ 系统设置":
         render_system_settings()
     elif page_mode == "📄 传统界面":

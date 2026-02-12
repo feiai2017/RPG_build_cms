@@ -1,0 +1,45 @@
+﻿suites:
+  low_pressure_high_hp:
+    name: 低压高血
+    bosses:
+      - boss_id: low_pressure_giant
+        name: 木桩巨人
+        base_hp: 15000
+        dps_profile:
+          base_dps: 8
+          max_time: 20
+          boss_crit_interval: 4.0
+          boss_crit_mult: 2.0
+        thresholds:
+          max_ttk: 18
+          min_survival_margin: 0.35
+  high_freq_damage:
+    name: 高频高压
+    bosses:
+      - boss_id: high_freq_assassin
+        name: 狂暴刺客
+        base_hp: 3200
+        dps_profile:
+          base_dps: 85
+          max_time: 30
+          boss_crit_interval: 4.0
+          boss_crit_mult: 2.5
+        thresholds:
+          max_ttk: 25
+          min_survival_margin: 0.15
+  mechanic_boss:
+    name: 机制Boss
+    bosses:
+      - boss_id: spike_crusher
+        name: 蓄力重击者
+        base_hp: 6500
+        dps_profile:
+          base_dps: 28
+          max_time: 25
+          boss_crit_interval: 3.0
+          boss_crit_mult: 4.0
+        mechanic_flags:
+          spike_heavy: true
+        thresholds:
+          max_ttk: 22
+          min_survival_margin: 0.2
