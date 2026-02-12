@@ -52,6 +52,20 @@ function render() {
   const result = payload.result || {};
   const fight = payload.fight || {};
   const events = fight.events || [];
+  const bossLogs = fight.summary?.timeline_logs || fight.summary?.logs || [];
+  const hasBossEvents = events.some((evt) => evt.kind === 'BOSS');
+  const bossEvents = hasBossEvents
+    ? []
+    : bossLogs.map((line) => ({
+        tick: '-',
+        time: '-',
+        source: 'Boss',
+        target: boss.name || fight.summary?.boss || 'Boss',
+        amount: '-',
+        kind: 'BOSS',
+        type: 'SUMMARY',
+        note: line,
+      }));
   const boss = payload.boss || {};
   const catalog = payload.catalog || {};
 
@@ -101,7 +115,8 @@ function render() {
   }
   emptyEl.classList.add('hidden');
 
-  const filtered = filterValue === 'all' ? events : events.filter((evt) => evt.kind === filterValue);
+  const allEvents = events.concat(bossEvents);
+  const filtered = filterValue === 'all' ? allEvents : allEvents.filter((evt) => evt.kind === filterValue);
 
   filtered.forEach((evt) => {
     const row = document.createElement('tr');
