@@ -62,6 +62,81 @@
     { id: 'pressure', name: '玄水魅影', hp: 1600, dps: 45, spike: 60, spikeInterval: 12, desc: '持续压制' },
   ];
 
+  const GUA_TRAITS = {
+    '乾': {
+      id: 'qian_pierce',
+      name: '贯通',
+      desc: '反应不消耗印记，可连续触发。',
+      noConsumeMark: true,
+    },
+    '兑': {
+      id: 'dui_echo',
+      name: '回响',
+      desc: '施放后追加一次回响施放（延迟1 tick）。',
+      echoDelay: 1,
+    },
+    '离': {
+      id: 'li_ignite',
+      name: '引燃',
+      desc: '印记持续时间 +1。',
+      markBonus: 1,
+    },
+    '震': {
+      id: 'zhen_chain',
+      name: '连动',
+      desc: '触发反应后当前技能冷却-1。',
+      reactionCooldown: 1,
+    },
+    '巽': {
+      id: 'xun_guard',
+      name: '护持',
+      desc: '输出技能命中后转化部分伤害为护持。',
+      sustainFromDamageRatio: 0.08,
+    },
+    '坎': {
+      id: 'kan_tide',
+      name: '潮汐',
+      desc: '目标已有印记时，施放后冷却-1。',
+      accelOnMark: 1,
+    },
+    '艮': {
+      id: 'gen_wall',
+      name: '壁垒',
+      desc: '命中后部分伤害转为续航。',
+      damageToSustainRatio: 0.06,
+    },
+    '坤': {
+      id: 'kun_revive',
+      name: '回元',
+      desc: '每次施放后获得固定续航。',
+      flatSustain: 2,
+    },
+  };
+
+  const DEFAULT_MECHANISM_FLAGS = {
+    lifesteal_loop_enabled: true,
+    overheal_to_shield_enabled: true,
+    dot_refresh_enabled: true,
+    dr_stacking_enabled: true,
+  };
+
+  function toNumber(value, fallback) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
+  function resolveMechanismFlags(flags) {
+    return { ...DEFAULT_MECHANISM_FLAGS, ...(flags || {}) };
+  }
+
+  function makeSeededRng(seed) {
+    let state = (seed >>> 0) || 1;
+    return function rng() {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      return state / 0x100000000;
+    };
+  }
+
   function canonicalElementPair(a, b) {
     return [a, b].sort().join('|');
   }
@@ -111,6 +186,19 @@
   function simulateBuild(build, options = {}) {
     const tickSeconds = options.tickSeconds || 0.5;
     const maxTicks = options.maxTicks || 20;
+    const nerfProfile = options.nerfProfile || options.nerf_profile || null;
+    const damageMul = toNumber(options.damageMul ?? options.damage_mul ?? nerfProfile?.damage_mul, 1);
+    const healMul = toNumber(options.healMul ?? options.heal_mul ?? nerfProfile?.heal_mul, 1);
+    const shieldMul = toNumber(options.shieldMul ?? options.shield_mul ?? nerfProfile?.shield_mul, 1);
+    const mechanismFlags = resolveMechanismFlags(options.mechanismFlags || options.mechanism_flags);
+    const dotRefreshEnabled = mechanismFlags.dot_refresh_enabled !== false;
+    const lifestealEnabled = mechanismFlags.lifesteal_loop_enabled !== false;
+    const overhealToShieldEnabled = mechanismFlags.overheal_to_shield_enabled !== false;
+    const drStackingEnabled = mechanismFlags.dr_stacking_enabled !== false;
+    const seedValue = options.seed;
+    const seed = Number.isFinite(Number(seedValue)) ? Number(seedValue) : null;
+    const rng = seed == null ? null : makeSeededRng(seed);
+    const baseEhp = toNumber(options.baseEhp ?? options.base_ehp, 100);
     const guaOrder = GUA_ORDER;
     const skillsByGua = build.skills_by_gua || {};
     const privateRunes = build.private_runes || {};
@@ -141,10 +229,13 @@
     const castsPerSkill = {};
     const reactionCounts = {};
     let downtimeTicks = 0;
-    let sustainTotal = 0;
+    let sustainRaw = 0;
     let totalDamage = 0;
 
-    const target = { id: 'dummy', name: '木桩', mark: null };
+    const targetName = options.targetName || options.target?.name || '木桩';
+    const targetId = options.targetId || options.target?.id || 'dummy';
+    const target = { id: targetId, name: targetName, mark: null };
+    const targetLabel = target.name || '木桩';
     const detonateWindows = new Map();
     const immediateQueue = [];
 
@@ -184,12 +275,14 @@
       }
 
       const isRelay = !!castItem;
+      const isTraitEcho = castItem?.tag === 'ECHO';
       const gua = skillToCast.gua;
+      const trait = GUA_TRAITS[gua];
       const form = skillToCast.formRune ? FORM_RUNES[skillToCast.formRune] : null;
       const loop = skillToCast.loopRune ? LOOP_RUNES[skillToCast.loopRune] : null;
       const hits = form?.hits || 1;
       const baseMul = form?.mult || 1;
-      const markBonus = form?.markBonus || 0;
+      const markBonus = dotRefreshEnabled ? (form?.markBonus || 0) + (trait?.markBonus || 0) : 0;
       const relayMul = isRelay ? EDGE_RUNES.RELAY.mul : 1;
       const totalMul = baseMul * relayMul;
 
@@ -219,6 +312,10 @@
         immediateQueue.push({ gua, delay: loop.recastDelay, relay: true });
       }
 
+      if (trait?.echoDelay && !isRelay && !isTraitEcho) {
+        immediateQueue.push({ gua, delay: trait.echoDelay, relay: true, tag: 'ECHO' });
+      }
+
       const edgeLinks = edgeMap.get(gua) || [];
       edgeLinks.forEach((link) => {
         if (link.rune === 'RELAY' && !isRelay) {
@@ -237,10 +334,12 @@
         }
       });
 
+      let hadMarkBeforeAny = false;
       for (let h = 0; h < hits; h += 1) {
         if (skillToCast.kind === 'support') {
-          const sustain = (skillToCast.sustain || 4) * totalMul;
-          sustainTotal += sustain;
+          const sustainBase = (skillToCast.sustain || 4) * totalMul;
+          const sustain = sustainBase * shieldMul;
+          sustainRaw += sustain;
           pushEvent(events, {
             tick,
             time: tick * tickSeconds,
@@ -255,15 +354,18 @@
           continue;
         }
 
-        const damage = skillToCast.baseDamage * totalMul;
+        const baseDamage = skillToCast.baseDamage * totalMul;
+        const damage = baseDamage * damageMul;
         totalDamage += damage;
 
         // reaction check
         let reaction = null;
-        if (target.mark && target.mark.element !== skillToCast.element) {
+        const hadMarkBefore = !!target.mark;
+        if (hadMarkBefore) hadMarkBeforeAny = true;
+        if (dotRefreshEnabled && target.mark && target.mark.element !== skillToCast.element) {
           const key = canonicalElementPair(target.mark.element, skillToCast.element);
           reaction = REACTIONS[key] || null;
-          target.mark = null;
+          if (!trait?.noConsumeMark) target.mark = null;
         }
 
         pushEvent(events, {
@@ -283,35 +385,53 @@
           },
         });
 
-        if (loop?.sustainOnHit) {
-          sustainTotal += loop.sustainOnHit;
+        if (trait?.sustainFromDamageRatio && skillToCast.kind === 'output') {
+          const gain = damage * trait.sustainFromDamageRatio * healMul;
+          sustainRaw += gain;
           pushEvent(events, {
             tick,
             time: tick * tickSeconds,
             source: skillToCast.name,
             target: '玩家',
-            amount: loop.sustainOnHit,
+            amount: gain,
             kind: 'SUSTAIN',
-            type: '回能',
-            note: loop.name,
-            extra: { event: 'SUSTAIN_GAINED', amount: loop.sustainOnHit, kind: 'energy', source: skillToCast.id },
+            type: '护持',
+            note: `卦位${gua}护持`,
+            extra: { event: 'SUSTAIN_GAINED', amount: gain, kind: 'shield', source: skillToCast.id },
           });
         }
 
-        if (loop?.sustainOnCrit) {
-          const crit = ((tick + h + skillToCast.baseCd) % 5) === 0;
+        if (loop?.sustainOnHit && lifestealEnabled) {
+          const sustain = loop.sustainOnHit * healMul;
+          sustainRaw += sustain;
+          pushEvent(events, {
+            tick,
+            time: tick * tickSeconds,
+            source: skillToCast.name,
+            target: '玩家',
+            amount: sustain,
+            kind: 'SUSTAIN',
+            type: '回能',
+            note: loop.name,
+            extra: { event: 'SUSTAIN_GAINED', amount: sustain, kind: 'energy', source: skillToCast.id },
+          });
+        }
+
+        if (loop?.sustainOnCrit && lifestealEnabled) {
+          const crit = rng ? rng() < 0.2 : ((tick + h + skillToCast.baseCd) % 5) === 0;
           if (crit) {
-            sustainTotal += loop.sustainOnCrit;
+            const sustain = loop.sustainOnCrit * healMul;
+            sustainRaw += sustain;
             pushEvent(events, {
               tick,
               time: tick * tickSeconds,
               source: skillToCast.name,
               target: '玩家',
-              amount: loop.sustainOnCrit,
+              amount: sustain,
               kind: 'SUSTAIN',
               type: '暴击回能',
               note: loop.name,
-              extra: { event: 'SUSTAIN_GAINED', amount: loop.sustainOnCrit, kind: 'energy', source: skillToCast.id, crit: true },
+              extra: { event: 'SUSTAIN_GAINED', amount: sustain, kind: 'energy', source: skillToCast.id, crit: true },
             });
           }
         }
@@ -336,8 +456,8 @@
             }
           }
           if (link.rune === 'SUSTAIN_LINK') {
-            const gain = damage * EDGE_RUNES.SUSTAIN_LINK.ratio;
-            sustainTotal += gain;
+            const gain = damage * EDGE_RUNES.SUSTAIN_LINK.ratio * healMul;
+            sustainRaw += gain;
             pushEvent(events, {
               tick,
               time: tick * tickSeconds,
@@ -372,59 +492,109 @@
               extra_effects: reaction.name,
             },
           });
+          if (trait?.reactionCooldown) {
+            applyCooldownReduction(skillToCast, trait.reactionCooldown, `卦位${gua}连动`, tick, events);
+          }
         }
 
-        // apply mark
-        const markDuration = 4 + markBonus;
-        target.mark = { element: skillToCast.element, expires: tick + markDuration };
+        if (dotRefreshEnabled) {
+          // apply mark
+          const markDuration = 4 + markBonus;
+          target.mark = { element: skillToCast.element, expires: tick + markDuration };
+          pushEvent(events, {
+            tick,
+            time: tick * tickSeconds,
+            source: skillToCast.name,
+            target: target.name,
+            amount: 0,
+            kind: 'MARK',
+            type: skillToCast.element,
+            note: `持续${markDuration}`,
+            extra: { event: 'MARK_APPLIED', element: skillToCast.element, expires_tick: tick + markDuration },
+          });
+
+          // REACT_DETONATOR window
+          edgeLinks.forEach((link) => {
+            if (link.rune === 'REACT_DETONATOR') {
+              detonateWindows.set(link.to, { expires: tick + EDGE_RUNES.REACT_DETONATOR.window, markElement: skillToCast.element });
+              pushEvent(events, {
+                tick,
+                time: tick * tickSeconds,
+                source: gua,
+                target: link.to,
+                amount: 0,
+                kind: 'EDGE',
+                type: 'REACT_DETONATOR',
+                note: '引爆窗口',
+                extra: { event: 'EDGE_RUNE_TRIGGERED', edge_type: 'REACT_DETONATOR', from_gua: gua, to_gua: link.to },
+              });
+            }
+          });
+        }
+      }
+
+      // conditional accel
+      if (dotRefreshEnabled && loop?.accelOnMark && target.mark) {
+        applyCooldownReduction(skillToCast, loop.accelOnMark, '印记加速', tick, events);
+      }
+      if (dotRefreshEnabled && trait?.accelOnMark && hadMarkBeforeAny) {
+        applyCooldownReduction(skillToCast, trait.accelOnMark, `卦位${gua}潮汐`, tick, events);
+      }
+
+      if (trait?.damageToSustainRatio && skillToCast.kind === 'output') {
+        const gain = totalMul * (skillToCast.baseDamage || 0) * trait.damageToSustainRatio * healMul;
+        sustainRaw += gain;
         pushEvent(events, {
           tick,
           time: tick * tickSeconds,
           source: skillToCast.name,
-          target: target.name,
-          amount: 0,
-          kind: 'MARK',
-          type: skillToCast.element,
-          note: `持续${markDuration}`,
-          extra: { event: 'MARK_APPLIED', element: skillToCast.element, expires_tick: tick + markDuration },
-        });
-
-        // REACT_DETONATOR window
-        edgeLinks.forEach((link) => {
-          if (link.rune === 'REACT_DETONATOR') {
-            detonateWindows.set(link.to, { expires: tick + EDGE_RUNES.REACT_DETONATOR.window, markElement: skillToCast.element });
-            pushEvent(events, {
-              tick,
-              time: tick * tickSeconds,
-              source: gua,
-              target: link.to,
-              amount: 0,
-              kind: 'EDGE',
-              type: 'REACT_DETONATOR',
-              note: '引爆窗口',
-              extra: { event: 'EDGE_RUNE_TRIGGERED', edge_type: 'REACT_DETONATOR', from_gua: gua, to_gua: link.to },
-            });
-          }
+          target: '玩家',
+          amount: gain,
+          kind: 'SUSTAIN',
+          type: '续航',
+          note: `卦位${gua}壁垒`,
+          extra: { event: 'SUSTAIN_GAINED', amount: gain, kind: 'energy', source: skillToCast.id },
         });
       }
 
-      // conditional accel
-      if (loop?.accelOnMark && target.mark) {
-        applyCooldownReduction(skillToCast, loop.accelOnMark, '印记加速', tick, events);
+      if (trait?.flatSustain) {
+        const gain = trait.flatSustain * healMul;
+        sustainRaw += gain;
+        pushEvent(events, {
+          tick,
+          time: tick * tickSeconds,
+          source: '玩家',
+          target: '玩家',
+          amount: gain,
+          kind: 'SUSTAIN',
+          type: '回元',
+          note: `卦位${gua}回元`,
+          extra: { event: 'SUSTAIN_GAINED', amount: gain, kind: 'energy', source: skillToCast.id },
+        });
       }
     }
 
     const dps = totalDamage / (maxTicks * tickSeconds);
+    const sustainEffective = drStackingEnabled ? sustainRaw : 0;
+    const ehp = overhealToShieldEnabled ? sustainRaw * 0.4 : 0;
     const result = {
-      totals: { dps, sustain: sustainTotal, ehp: sustainTotal * 0.4, stability: 0 },
+      totals: {
+        dps,
+        sustain: sustainEffective,
+        sustain_raw: sustainRaw,
+        ehp,
+        base_ehp: baseEhp,
+        stability: 0,
+        mechanism_flags: mechanismFlags,
+      },
       metrics: {
         casts_per_skill: castsPerSkill,
         reaction_counts: reactionCounts,
         downtime_ticks: downtimeTicks,
-        sustain_total: sustainTotal,
+        sustain_total: sustainRaw,
       },
       logs: [
-        `10秒木桩：施放${Object.values(castsPerSkill).reduce((a, b) => a + b, 0)}次`,
+        `${(maxTicks * tickSeconds).toFixed(0)}秒${targetLabel}：施放${Object.values(castsPerSkill).reduce((a, b) => a + b, 0)}次`,
         `反应次数：${Object.values(reactionCounts).reduce((a, b) => a + b, 0)}次`,
         `空窗：${downtimeTicks} tick`,
       ],
@@ -434,10 +604,10 @@
     return result;
   }
 
-  function simulateBoss(result, bossProfile) {
+  function simulateBoss(result, bossProfile, options = {}) {
     const boss = bossProfile || BOSS_PROFILES[0];
     if (global.CircuitCore?.simulateCombat) {
-      return global.CircuitCore.simulateCombat(result, boss);
+      return global.CircuitCore.simulateCombat(result, boss, options);
     }
     return {
       win: null,
@@ -460,5 +630,6 @@
     REACTIONS,
     BOSS_PROFILES,
     GUA_INFO,
+    GUA_TRAITS,
   };
 })(window);

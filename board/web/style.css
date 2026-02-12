@@ -261,6 +261,8 @@ body {
 .panel-toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
 }
 
@@ -274,6 +276,37 @@ body {
 
 .toggle-line input {
   accent-color: var(--cyan);
+}
+
+.compare-hint {
+  margin: 6px 0 10px;
+}
+
+#compare-tooltip {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(8, 12, 18, 0.96);
+  border: 1px solid rgba(120, 180, 200, 0.6);
+  color: #dfe8f2;
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  display: none;
+}
+
+.compare-title {
+  color: #9fe7ff;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.compare-line {
+  color: #cfe0f2;
 }
 
 .panel-header {
@@ -1149,6 +1182,276 @@ body {
   background: rgba(8, 12, 18, 0.6);
   border: 1px solid rgba(120, 180, 200, 0.25);
   color: #cfefff;
+}
+
+.eval-form {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.eval-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #b6c7d8;
+}
+
+.eval-form select,
+.eval-form input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(120, 180, 200, 0.35);
+  background: rgba(6, 10, 16, 0.9);
+  color: var(--text);
+}
+
+.eval-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.eval-page {
+  background: #05070b;
+  color: #dfe8f2;
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  margin: 0;
+}
+
+.eval-app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.eval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.eval-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #e9f2ff;
+}
+
+.eval-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9bb0c4;
+}
+
+.eval-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.eval-controls {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.eval-controls .hud-action {
+  margin-top: 0;
+  width: 100%;
+}
+
+.eval-build-detail {
+  margin-top: 12px;
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(8, 12, 18, 0.7);
+}
+
+.eval-system-detail,
+.eval-skill-overview,
+.eval-rune-overview,
+.eval-flow-detail {
+  margin-top: 12px;
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(8, 12, 18, 0.7);
+}
+
+.eval-section-title {
+  font-size: 13px;
+  color: #9fe7ff;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.eval-detail-body {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: #b8c9d8;
+}
+
+.eval-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.eval-detail-card {
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(6, 10, 16, 0.7);
+}
+
+.eval-detail-card h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #cfe8ff;
+}
+
+.eval-detail-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.eval-detail-list span {
+  color: var(--cyan);
+  margin-right: 6px;
+}
+
+.eval-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(120, 180, 200, 0.3);
+  background: rgba(8, 12, 18, 0.8);
+  color: #cfefff;
+  font-size: 11px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+.eval-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.eval-detail-table thead {
+  background: rgba(12, 20, 30, 0.9);
+}
+
+.eval-detail-table th,
+.eval-detail-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(120, 190, 255, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+
+.eval-detail-table tbody tr:nth-child(even) {
+  background: rgba(16, 22, 32, 0.4);
+}
+
+.eval-note-list {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.eval-flow {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  background: rgba(6, 10, 16, 0.75);
+  color: #cfe8ff;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.eval-term {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.eval-card {
+  border-radius: 8px;
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  background: rgba(8, 12, 18, 0.7);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #9fb4c8;
+}
+
+.eval-card-title {
+  font-size: 11px;
+  color: #9fe7ff;
+  margin-bottom: 4px;
+}
+
+.eval-card-value {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.eval-table-wrap {
+  border-radius: 10px;
+  border: 1px solid rgba(120, 180, 200, 0.2);
+  background: rgba(8, 12, 18, 0.75);
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.eval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.eval-table thead {
+  background: rgba(12, 20, 30, 0.95);
+}
+
+.eval-table th,
+.eval-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(120, 190, 255, 0.12);
+  text-align: left;
+}
+
+.eval-table tbody tr:nth-child(even) {
+  background: rgba(16, 22, 32, 0.45);
+}
+
+.eval-empty {
+  text-align: center;
+  padding: 12px;
+  color: #9bb0c4;
+}
+
+.eval-pass {
+  color: #7fe9b0;
+  font-weight: 600;
+}
+
+.eval-fail {
+  color: #ff8f8f;
+  font-weight: 600;
 }
 
 .copy-btn {

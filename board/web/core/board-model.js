@@ -8,6 +8,7 @@
   const EDGE_RUNES_LIB = SOLVER_CATALOG.EDGE_RUNES || {};
   const REACTIONS = SOLVER_CATALOG.REACTIONS || {};
   const BOSS_PROFILES = SOLVER_CATALOG.BOSS_PROFILES || [];
+  const GUA_TRAITS = SOLVER_CATALOG.GUA_TRAITS || {};
 
   const GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
   const GUA_INFO = {
@@ -321,6 +322,7 @@
   Model.EDGE_RUNES_LIB = EDGE_RUNES_LIB;
   Model.REACTIONS = REACTIONS;
   Model.BOSS_PROFILES = BOSS_PROFILES;
+  Model.GUA_TRAITS = GUA_TRAITS;
   Model.SKILLS = SKILLS;
   Model.FORM_RUNES = FORM_RUNES;
   Model.LOOP_RUNES = LOOP_RUNES;
@@ -341,7 +343,11 @@
     if (!window.BaguaSolver?.simulateBuild) return null;
     const maxTicks = options?.maxTicks ?? 20;
     const tickSeconds = options?.tickSeconds ?? TICK_SECONDS;
-    return window.BaguaSolver.simulateBuild(state.build, { maxTicks, tickSeconds });
+    const targetName = options?.targetName;
+    const targetId = options?.targetId;
+    const target = options?.target;
+    const payload = { ...(options || {}), maxTicks, tickSeconds, targetName, targetId, target };
+    return window.BaguaSolver.simulateBuild(state.build, payload);
   };
 
   Model.simulateBoss = function simulateBoss(result, bossProfile) {

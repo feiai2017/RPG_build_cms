@@ -1,0 +1,55 @@
+﻿{
+  "builds": [
+    {
+      "build_id": "dot_core",
+      "name": "DOT核心",
+      "preset": "preset_1_reaction_loop",
+      "skill_set": "tiandao",
+      "key_mechanisms": ["dot_refresh", "reaction_chain"],
+      "highlights": [
+        "印记叠加 + 反应引爆，依赖元素连携",
+        "循环偏爆发，适合验证 DOT 刷新与反应机制"
+      ],
+      "feature_flags_default": {
+        "lifesteal_loop_enabled": true,
+        "overheal_to_shield_enabled": true,
+        "dot_refresh_enabled": true,
+        "dr_stacking_enabled": true
+      }
+    },
+    {
+      "build_id": "lifesteal_loop",
+      "name": "续航循环",
+      "preset": "preset_3_sustain_steady",
+      "skill_set": "tiandao",
+      "key_mechanisms": ["lifesteal_loop", "overheal_to_shield"],
+      "highlights": [
+        "命中/暴击回能叠加续航",
+        "续航稳定，偏持久战"
+      ],
+      "feature_flags_default": {
+        "lifesteal_loop_enabled": true,
+        "overheal_to_shield_enabled": true,
+        "dot_refresh_enabled": true,
+        "dr_stacking_enabled": true
+      }
+    },
+    {
+      "build_id": "turtle_dr",
+      "name": "硬壳抗压",
+      "preset": "preset_2_relay_chain",
+      "skill_set": "tiandao",
+      "key_mechanisms": ["dr_stacking", "relay_chain"],
+      "highlights": [
+        "三段接力链，缩短循环空窗",
+        "偏向稳定输出与抗压"
+      ],
+      "feature_flags_default": {
+        "lifesteal_loop_enabled": true,
+        "overheal_to_shield_enabled": true,
+        "dot_refresh_enabled": true,
+        "dr_stacking_enabled": true
+      }
+    }
+  ]
+}

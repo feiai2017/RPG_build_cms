@@ -1,0 +1,46 @@
+﻿{
+  "boss_suites": [
+    {
+      "suite_id": "low_pressure_high_hp",
+      "name": "低压高血",
+      "bosses": [
+        {
+          "boss_id": "low_pressure_dummy",
+          "name": "木桩·高血",
+          "base_hp": 2400,
+          "dps_profile": { "dps": 8, "spike": 0, "spike_interval": 10 },
+          "mechanic_flags": [],
+          "thresholds": { "max_ttk": 40, "min_survival_margin": 0.25 }
+        }
+      ]
+    },
+    {
+      "suite_id": "high_freq_damage",
+      "name": "高频伤害",
+      "bosses": [
+        {
+          "boss_id": "high_freq_pressure",
+          "name": "玄水魅影·急袭",
+          "base_hp": 1500,
+          "dps_profile": { "dps": 35, "spike": 30, "spike_interval": 4 },
+          "mechanic_flags": [],
+          "thresholds": { "max_ttk": 28, "min_survival_margin": 0.15 }
+        }
+      ]
+    },
+    {
+      "suite_id": "mechanic_boss",
+      "name": "机制Boss",
+      "bosses": [
+        {
+          "boss_id": "mechanic_burst",
+          "name": "玄铁巨兽·爆发",
+          "base_hp": 1800,
+          "dps_profile": { "dps": 22, "spike": 120, "spike_interval": 8 },
+          "mechanic_flags": ["spike"],
+          "thresholds": { "max_ttk": 35, "min_survival_margin": 0.2 }
+        }
+      ]
+    }
+  ]
+}

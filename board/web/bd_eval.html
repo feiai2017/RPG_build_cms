@@ -1,0 +1,89 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BD 评测</title>
+  <link rel="stylesheet" href="style.css?v=20260212b" />
+</head>
+<body class="eval-page">
+  <div class="eval-app">
+    <div class="eval-header">
+      <div>
+        <h1>BD 评测</h1>
+        <div class="eval-sub">一键跑：Boss 套件 × BD 预设 × 削弱矩阵 × 机制开关</div>
+      </div>
+      <div class="eval-actions">
+        <a class="hud-action" href="index.html">返回主面板</a>
+      </div>
+    </div>
+
+    <div class="eval-controls">
+      <label>Build
+        <select id="eval-build"></select>
+      </label>
+      <label>Boss 套件
+        <select id="eval-suite"></select>
+      </label>
+      <label>Seeds
+        <input id="eval-seeds" type="text" value="101,102,103" />
+      </label>
+      <button id="eval-run" class="hud-action">运行评测</button>
+      <button id="eval-export" class="hud-action">导出 CSV + JSON</button>
+    </div>
+
+    <div id="eval-status" class="stat-sub">配置加载中...</div>
+
+    <div class="eval-build-detail">
+      <div class="eval-section-title">BD 详情</div>
+      <div id="eval-build-detail" class="eval-detail-body">详情加载中...</div>
+    </div>
+
+    <div class="eval-system-detail">
+      <div class="eval-section-title">战斗体系与术语</div>
+      <div id="eval-system-detail" class="eval-detail-body"></div>
+    </div>
+
+    <div class="eval-flow-detail">
+      <div class="eval-section-title">循环流程图</div>
+      <div id="eval-flow-detail" class="eval-detail-body"></div>
+    </div>
+
+    <div class="eval-skill-overview">
+      <div class="eval-section-title">技能总览</div>
+      <div id="eval-skill-overview" class="eval-detail-body"></div>
+    </div>
+
+    <div class="eval-rune-overview">
+      <div class="eval-section-title">符文 / 联结说明</div>
+      <div id="eval-rune-overview" class="eval-detail-body"></div>
+    </div>
+
+    <div id="eval-summary" class="eval-summary"></div>
+
+    <div class="eval-table-wrap">
+      <table class="eval-table">
+        <thead>
+          <tr>
+            <th>套件</th>
+            <th>Boss</th>
+            <th>削弱</th>
+            <th>模式</th>
+            <th>TTK</th>
+            <th>生存</th>
+            <th>DPS</th>
+            <th>结论</th>
+          </tr>
+        </thead>
+        <tbody id="eval-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="core/solver.js?v=20260212b"></script>
+  <script src="core/combat_sim.js?v=20260212b"></script>
+  <script src="core/board-model.js?v=20260212b"></script>
+  <script src="core/eval-runner.js?v=20260212b"></script>
+  <script src="ui/eval-panel.js?v=20260212b"></script>
+</body>
+</html>

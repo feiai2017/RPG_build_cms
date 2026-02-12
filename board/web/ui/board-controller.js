@@ -37,6 +37,8 @@
     devLog: document.getElementById('dev-log-text'),
     copyButtons: Array.from(document.querySelectorAll('[data-copy-target]')),
     detailVerbose: document.getElementById('detail-verbose'),
+    compareMode: document.getElementById('compare-mode'),
+    compareHint: document.getElementById('compare-hint'),
   };
 
   let boardState = null;
@@ -46,6 +48,11 @@
   let focusId = null;
   let bossProfiles = [];
   let selectedBossId = null;
+  let compareEnabled = false;
+  let compareSkillId = null;
+  let compareSkillGua = null;
+  let compareTooltip = null;
+  let lastCompareSlotId = null;
 
   function updateIssuePanel() {
     if (!dom.buildIssues) return;
@@ -66,7 +73,8 @@
 
   function refreshBoard() {
     if (!dom.container || !boardState) return;
-    dom.container.innerHTML = Render.renderBoard(boardState, selectedSlotId, focusId);
+    const compareState = { enabled: compareEnabled, skillId: compareSkillId };
+    dom.container.innerHTML = Render.renderBoard(boardState, selectedSlotId, focusId, compareState);
     GodotExport.persistPayload(boardState);
   }
 
@@ -82,6 +90,108 @@
     if (!slot || !dom.detail) return;
     const verbose = dom.detailVerbose?.checked;
     Render.updateDetail(dom, boardState, slot, verbose);
+  }
+
+  function ensureCompareTooltip() {
+    if (compareTooltip) return compareTooltip;
+    compareTooltip = document.createElement('div');
+    compareTooltip.id = 'compare-tooltip';
+    document.body.appendChild(compareTooltip);
+    return compareTooltip;
+  }
+
+  function showCompareTooltip(html, evt) {
+    const tip = ensureCompareTooltip();
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    const padding = 12;
+    const maxX = window.innerWidth - tip.offsetWidth - padding;
+    const maxY = window.innerHeight - tip.offsetHeight - padding;
+    const x = Math.min(maxX, evt.clientX + 14);
+    const y = Math.min(maxY, evt.clientY + 16);
+    tip.style.left = `${Math.max(padding, x)}px`;
+    tip.style.top = `${Math.max(padding, y)}px`;
+  }
+
+  function hideCompareTooltip() {
+    if (!compareTooltip) return;
+    compareTooltip.style.display = 'none';
+  }
+
+  function describeEdgeRune(edgeId) {
+    const edge = Model.EDGE_RUNES_LIB?.[edgeId] || {};
+    const name = edge?.name || edgeId || '未知';
+    if (edgeId === 'RELAY') return `${name}（${edgeId}）：延迟${edge.delay}tick再施放，倍率${edge.mul}`;
+    if (edgeId === 'CD_ROUTER') return `${name}（${edgeId}）：命中后减少目标冷却约${Math.round(edge.ratio * 100)}%`;
+    if (edgeId === 'REACT_DETONATOR') return `${name}（${edgeId}）：引爆窗口${edge.window}tick`;
+    if (edgeId === 'SUSTAIN_LINK') return `${name}（${edgeId}）：伤害${Math.round(edge.ratio * 100)}%转续航`;
+    return `${name}（${edgeId}）`;
+  }
+
+  function compareSummary(skillId, targetGua) {
+    const skill = Model.SKILL_LIBRARY?.[skillId];
+    if (!skill) return '<div class="compare-line">未找到技能</div>';
+    const runes = boardState.build.private_runes?.[targetGua] || {};
+    const form = Model.FORM_RUNES_LIB?.[runes.form] || null;
+    const loop = Model.LOOP_RUNES_LIB?.[runes.loop] || null;
+    const trait = Model.GUA_TRAITS?.[targetGua];
+    const baseCd = Math.max(1, (skill.baseCd || 0) + (form?.cdAdd || 0) + (loop?.cdDelta || 0));
+    const hits = form?.hits || 1;
+    const mult = form?.mult || 1;
+    const markBonus = form?.markBonus || 0;
+    const perHit = (skill.baseDamage || 0) * mult;
+    const total = perHit * hits;
+    const sustain = (skill.sustain || 0) * mult;
+
+    const formLine = form
+      ? `Form：${form.name}（${form.id}）| 倍率${mult} | 命中${hits}${form.cdAdd ? ` | 冷却+${form.cdAdd}` : ''}${markBonus ? ` | 印记+${markBonus}` : ''}`
+      : 'Form：无';
+    const loopLine = loop
+      ? `Loop：${loop.name}（${loop.id}）${loop.cdDelta ? ` | 冷却${loop.cdDelta}` : ''}${loop.charges ? ` | 充能${loop.charges}` : ''}${loop.recastDelay ? ` | 复诵${loop.recastDelay}tick` : ''}${loop.accelOnMark ? ` | 条件加速${loop.accelOnMark}` : ''}${loop.sustainOnHit ? ` | 回能+${loop.sustainOnHit}` : ''}${loop.sustainOnCrit ? ` | 暴击回能+${loop.sustainOnCrit}` : ''}`
+      : 'Loop：无';
+
+    const prev = Model.GUA_ORDER[(Model.GUA_ORDER.indexOf(targetGua) - 1 + Model.GUA_ORDER.length) % Model.GUA_ORDER.length];
+    const next = Model.nextGua(targetGua);
+    const edgePrev = boardState.build.edge_runes?.[Model.canonicalEdgeKey(prev, targetGua)];
+    const edgeNext = boardState.build.edge_runes?.[Model.canonicalEdgeKey(targetGua, next)];
+    const edges = [edgePrev, edgeNext].filter(Boolean).map(describeEdgeRune);
+    const edgeLine = edges.length ? `联结：${edges.join('；')}` : '联结：无';
+
+    const baseLine = `基础：${skill.element} / ${skill.kind === 'support' ? '辅助' : '输出'}，D/C ${skill.baseDamage || 0}/${skill.baseCd || 0}`;
+    const effectLine = skill.kind === 'support'
+      ? `估算：护持${sustain.toFixed(1)}，冷却${baseCd}tick(${(baseCd * Model.TICK_SECONDS).toFixed(1)}s)`
+      : `估算：每段${perHit.toFixed(1)} ×${hits} = ${total.toFixed(1)}，冷却${baseCd}tick(${(baseCd * Model.TICK_SECONDS).toFixed(1)}s)`;
+
+    const compareFrom = compareSkillGua;
+    const diffParts = [];
+    if (compareFrom) {
+      const baseRunes = boardState.build.private_runes?.[compareFrom] || {};
+      if (baseRunes.form !== runes.form) diffParts.push(`Form ${baseRunes.form || '无'} → ${runes.form || '无'}`);
+      if (baseRunes.loop !== runes.loop) diffParts.push(`Loop ${baseRunes.loop || '无'} → ${runes.loop || '无'}`);
+      const baseTrait = Model.GUA_TRAITS?.[compareFrom];
+      if (baseTrait?.id !== trait?.id) diffParts.push(`卦位特性 ${baseTrait?.name || '无'} → ${trait?.name || '无'}`);
+      const basePrev = Model.GUA_ORDER[(Model.GUA_ORDER.indexOf(compareFrom) - 1 + Model.GUA_ORDER.length) % Model.GUA_ORDER.length];
+      const baseNext = Model.nextGua(compareFrom);
+      const baseEdgePrev = boardState.build.edge_runes?.[Model.canonicalEdgeKey(basePrev, compareFrom)];
+      const baseEdgeNext = boardState.build.edge_runes?.[Model.canonicalEdgeKey(compareFrom, baseNext)];
+      if (baseEdgePrev !== edgePrev || baseEdgeNext !== edgeNext) diffParts.push('联结不同');
+      if (compareFrom !== targetGua) diffParts.push(`卦序位置 ${compareFrom} → ${targetGua}`);
+    }
+    const diffLine = diffParts.length
+      ? `差异：${diffParts.join('，')}`
+      : '差异：无（符文/联结相同）';
+
+    return `
+      <div class="compare-title">技能：${skill.name} → 卦位 ${targetGua}</div>
+      <div class="compare-line">${baseLine}</div>
+      <div class="compare-line">卦位特性：${trait ? `${trait.name}（${trait.desc}）` : '无'}</div>
+      <div class="compare-line">${formLine}</div>
+      <div class="compare-line">${loopLine}</div>
+      <div class="compare-line">${edgeLine}</div>
+      <div class="compare-line">${effectLine}</div>
+      <div class="compare-line">${diffLine}</div>
+      <div class="compare-line">提示：卦位差异来自符文/联结/施放顺序。</div>
+    `;
   }
 
   function applyItem(slotId, itemId) {
@@ -114,8 +224,22 @@
 
   function runSimulation() {
     if (issues.length) return;
-    const result = Model.simulateBuild(boardState, { maxTicks: 20, tickSeconds: Model.TICK_SECONDS });
+    const boss = bossProfiles.find((b) => b.id === selectedBossId) || bossProfiles[0] || null;
+    const result = Model.simulateBuild(boardState, {
+      maxTicks: 20,
+      tickSeconds: Model.TICK_SECONDS,
+      targetName: boss?.name,
+      targetId: boss?.id,
+      target: boss || undefined,
+    });
     if (!result) return;
+    if (boss?.name && Array.isArray(result.events)) {
+      result.events = result.events.map((evt) => {
+        if (!evt || evt.kind === 'BOSS') return evt;
+        if (evt.target === '玩家') return evt;
+        return { ...evt, target: boss.name };
+      });
+    }
     const metrics = result.metrics || {};
     dom.metrics.casts.textContent = Render.formatCasts(metrics.casts_per_skill || {});
     dom.metrics.reactions.textContent = Render.formatReactions(metrics.reaction_counts || {});
@@ -123,9 +247,22 @@
     dom.metrics.sustain.textContent = metrics.sustain_total ?? '-';
     if (dom.devLog) dom.devLog.textContent = result.logs?.join('\n') || '';
 
-    const boss = bossProfiles.find((b) => b.id === selectedBossId) || bossProfiles[0] || null;
     const fight = Model.simulateBoss(result, boss);
     if (dom.bossDetail) dom.bossDetail.textContent = formatBossSummary(boss, fight);
+    const bossEvents = Array.isArray(fight?.events) ? fight.events : [];
+    const mergedEvents = (result.events || [])
+      .concat(bossEvents)
+      .map((evt, idx) => ({ ...evt, __order: idx }))
+      .sort((a, b) => {
+        const at = typeof a.time === 'number' ? a.time : Number.POSITIVE_INFINITY;
+        const bt = typeof b.time === 'number' ? b.time : Number.POSITIVE_INFINITY;
+        if (at !== bt) return at - bt;
+        const aTick = typeof a.tick === 'number' ? a.tick : Number.POSITIVE_INFINITY;
+        const bTick = typeof b.tick === 'number' ? b.tick : Number.POSITIVE_INFINITY;
+        if (aTick !== bTick) return aTick - bTick;
+        return a.__order - b.__order;
+      })
+      .map(({ __order, ...evt }) => evt);
 
     const payload = {
       bd: {
@@ -147,7 +284,7 @@
         metrics: result.metrics,
       },
       fight: {
-        events: result.events,
+        events: mergedEvents,
         summary: fight,
       },
     };
@@ -225,6 +362,15 @@
       selectedSlotId = slotEl.getAttribute('data-slot-id');
       focusId = selectedSlotId;
       const slot = Model.getSlot(boardState, selectedSlotId);
+      if (compareEnabled && slot?.kind === Model.SLOT_KIND.SKILL) {
+        compareSkillId = slot.item_id;
+        compareSkillGua = slot.gua;
+        if (dom.compareHint) {
+          dom.compareHint.textContent = compareSkillId
+            ? `对比模式：当前技能「${Model.SKILL_LIBRARY?.[compareSkillId]?.name || compareSkillId}」，悬停各卦位查看效果。`
+            : '对比模式：该槽位未配置技能。';
+        }
+      }
       updateItemSelect(slot);
       updateDetail(slot);
       refreshBoard();
@@ -275,6 +421,51 @@
       updateDetail(Model.getSlot(boardState, selectedSlotId));
     });
 
+    dom.compareMode?.addEventListener('change', () => {
+      compareEnabled = !!dom.compareMode.checked;
+      compareSkillId = compareEnabled ? compareSkillId : null;
+      compareSkillGua = compareEnabled ? compareSkillGua : null;
+      if (dom.compareHint) {
+        dom.compareHint.classList.toggle('hidden', !compareEnabled);
+        dom.compareHint.textContent = compareEnabled
+          ? '对比模式：点击任意技能槽后，悬停其它卦位即可查看该技能在不同卦位的效果。'
+          : '';
+      }
+      hideCompareTooltip();
+      refreshBoard();
+    });
+
+    dom.container.addEventListener('mousemove', (evt) => {
+      if (!compareEnabled || !compareSkillId) {
+        hideCompareTooltip();
+        lastCompareSlotId = null;
+        return;
+      }
+      const slotEl = evt.target.closest('[data-slot-id]');
+      if (!slotEl) {
+        hideCompareTooltip();
+        lastCompareSlotId = null;
+        return;
+      }
+      const slotId = slotEl.getAttribute('data-slot-id');
+      const slot = Model.getSlot(boardState, slotId);
+      if (!slot || slot.kind !== Model.SLOT_KIND.SKILL) {
+        hideCompareTooltip();
+        lastCompareSlotId = null;
+        return;
+      }
+      if (slotId !== lastCompareSlotId) {
+        lastCompareSlotId = slotId;
+      }
+      const html = compareSummary(compareSkillId, slot.gua);
+      showCompareTooltip(html, evt);
+    });
+
+    dom.container.addEventListener('mouseleave', () => {
+      hideCompareTooltip();
+      lastCompareSlotId = null;
+    });
+
     window.addEventListener('keydown', (evt) => {
       if (evt.key === 'Escape') {
         focusId = null;
@@ -301,6 +492,7 @@
     initPresets();
     await loadBosses();
     attachEvents();
+    if (dom.compareHint) dom.compareHint.classList.add('hidden');
   }
 
   init();

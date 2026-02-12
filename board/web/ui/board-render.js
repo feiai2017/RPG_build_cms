@@ -174,11 +174,12 @@
     return svg;
   }
 
-  function renderBoard(state, selectedSlotId, focusId) {
+  function renderBoard(state, selectedSlotId, focusId, compareState) {
     const size = Model.VISUAL.size;
     const cx = size / 2;
     const cy = size / 2;
     const focusSet = Model.computeRelatedIds(state, focusId);
+    const compareEnabled = !!(compareState?.enabled && compareState?.skillId);
 
     let svg = `<svg class="board" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
     svg += '<defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
@@ -241,8 +242,10 @@
           const runes = state.build.private_runes?.[slot.gua] || {};
           const form = Model.FORM_RUNES_LIB[runes.form];
           const loop = Model.LOOP_RUNES_LIB[runes.loop];
+          const trait = Model.GUA_TRAITS?.[slot.gua];
           const detailText = computeSkillDetailText(baseSkill, form, loop).replace(/\n/g, ' | ');
-          title = `技能：${slotItem.name} | ${formatSkillKind(baseSkill.kind)} | 元素:${baseSkill.element} | ${detailText}`;
+          const traitText = trait ? ` | 卦位特性:${trait.name}(${trait.desc})` : '';
+          title = `技能：${slotItem.name} | ${formatSkillKind(baseSkill.kind)} | 元素:${baseSkill.element} | ${detailText}${traitText}`;
         } else {
           title = '技能槽：空';
         }
@@ -252,7 +255,11 @@
         title = slotItem ? `Loop：${slotItem.name} - ${slotItem.desc}` : 'Loop 槽：空';
       }
 
-      svg += `<g data-slot-id="${slot.id}"><title>${title}</title>`;
+      const showTitle = !(compareEnabled && slot.kind === Model.SLOT_KIND.SKILL);
+      svg += `<g data-slot-id="${slot.id}">`;
+      if (showTitle) {
+        svg += `<title>${title}</title>`;
+      }
 
       if (slot.kind === Model.SLOT_KIND.SKILL) {
         const r = size;
@@ -262,6 +269,20 @@
           points.push(`${slot.x + Math.cos(angle) * r},${slot.y + Math.sin(angle) * r}`);
         }
         svg += `<polygon points="${points.join(' ')}" fill="${SLOT_FILL}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}" />`;
+        if (compareEnabled) {
+          const runes = state.build.private_runes?.[slot.gua] || {};
+          const hasForm = !!runes.form;
+          const hasLoop = !!runes.loop;
+          const prev = Model.GUA_ORDER[(Model.GUA_ORDER.indexOf(slot.gua) - 1 + Model.GUA_ORDER.length) % Model.GUA_ORDER.length];
+          const next = Model.nextGua(slot.gua);
+          const edgePrev = state.build.edge_runes?.[Model.canonicalEdgeKey(prev, slot.gua)];
+          const edgeNext = state.build.edge_runes?.[Model.canonicalEdgeKey(slot.gua, next)];
+          const edgeCount = (edgePrev ? 1 : 0) + (edgeNext ? 1 : 0);
+          const score = (hasForm ? 1 : 0) + (hasLoop ? 1 : 0) + edgeCount;
+          const compareColors = ['rgba(120,130,140,0.3)', '#5cc3ff', '#7fe9b0', '#ffbf5a', '#ff7f7f'];
+          const compareColor = compareColors[Math.min(score, compareColors.length - 1)];
+          svg += `<circle cx="${slot.x}" cy="${slot.y}" r="${size + 14}" fill="none" stroke="${compareColor}" stroke-width="1.4" opacity="${opacity}" />`;
+        }
       } else if (slot.kind === Model.SLOT_KIND.LOOP) {
         const r = size;
         const points = `${slot.x},${slot.y - r} ${slot.x + r},${slot.y} ${slot.x},${slot.y + r} ${slot.x - r},${slot.y}`;
@@ -300,8 +321,12 @@
       const runes = state.build.private_runes?.[slot.gua] || {};
       const form = Model.FORM_RUNES_LIB[runes.form];
       const loop = Model.LOOP_RUNES_LIB[runes.loop];
+      const trait = Model.GUA_TRAITS?.[slot.gua];
       dom.detail.component.textContent = verbose ? `${item.category} · ${formatSkillKind(baseSkill.kind)} · 元素:${baseSkill.element}` : `${item.category} · ${formatSkillKind(baseSkill.kind)}`;
-      const detailText = verbose ? `${computeSkillDetailText(baseSkill, form, loop)}\nID:${item.id}` : formatSkillEffect(item);
+      const traitText = trait ? `卦位特性：${trait.name}（${trait.desc}）` : '卦位特性：无';
+      const detailText = verbose
+        ? `${computeSkillDetailText(baseSkill, form, loop)}\n${traitText}\nID:${item.id}`
+        : formatSkillEffect(item);
       dom.detail.effect.innerHTML = renderWithGlossary(detailText);
     } else {
       dom.detail.component.textContent = item?.category || '-';

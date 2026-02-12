@@ -38,7 +38,12 @@
           <input type="checkbox" id="detail-verbose" />
           详细技能信息
         </label>
+        <label class="toggle-line">
+          <input type="checkbox" id="compare-mode" />
+          对比模式
+        </label>
       </div>
+      <div id="compare-hint" class="stat-sub compare-hint hidden">对比模式：点击任意技能槽后，悬停其它卦位即可查看该技能在不同卦位的效果。</div>
       <details class="panel-section" open>
         <summary class="panel-header">节点详情</summary>
         <div class="detail-grid">
@@ -89,6 +94,13 @@
           <div>空窗 <div id="metric-downtime" class="metric-text">-</div></div>
           <div>续航总量 <div id="metric-sustain" class="metric-text">-</div></div>
         </div>
+      </details>
+
+      <div class="panel-divider"></div>
+      <details class="panel-section" open>
+        <summary class="panel-header">BD评测</summary>
+        <a class="hud-action" href="bd_eval.html" target="_blank">打开评测页</a>
+        <div class="stat-sub">在独立页面运行 Boss × BD × 削弱矩阵。</div>
       </details>
 
       <div class="panel-divider"></div>
@@ -161,10 +173,11 @@
     </div>
   </div>
 
-  <script src="core/solver.js"></script>
-  <script src="core/board-model.js"></script>
+  <script src="core/solver.js?v=20260212b"></script>
+  <script src="core/combat_sim.js?v=20260212b"></script>
+  <script src="core/board-model.js?v=20260212b"></script>
   <script src="adapters/godot-export.js"></script>
-  <script src="ui/board-render.js"></script>
-  <script src="ui/board-controller.js"></script>
+  <script src="ui/board-render.js?v=20260212b"></script>
+  <script src="ui/board-controller.js?v=20260212b"></script>
 </body>
 </html>
