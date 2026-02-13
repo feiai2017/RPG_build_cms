@@ -1,0 +1,95 @@
+{
+  "skills": {
+    "skill_qian_pierce": {
+      "id": "skill_qian_pierce",
+      "name": "贯金斩",
+      "gua": "乾",
+      "kind": "output",
+      "element": "金",
+      "baseDamage": 26,
+      "baseCd": 5,
+      "desc": "单体穿透"
+    },
+    "skill_dui_echo": {
+      "id": "skill_dui_echo",
+      "name": "回音刃",
+      "gua": "兑",
+      "kind": "output",
+      "element": "金",
+      "baseDamage": 22,
+      "baseCd": 4,
+      "desc": "连击回刃"
+    },
+    "skill_li_flare": {
+      "id": "skill_li_flare",
+      "name": "燃光爆",
+      "gua": "离",
+      "kind": "output",
+      "element": "火",
+      "baseDamage": 30,
+      "baseCd": 6,
+      "desc": "爆发燃击",
+      "dot": {
+        "tick_damage": 8,
+        "duration": 6,
+        "tick_interval": 1,
+        "max_stacks": 3,
+        "refresh_mode": "extend",
+        "snapshot": false
+      }
+    },
+    "skill_zhen_chain": {
+      "id": "skill_zhen_chain",
+      "name": "连木冲",
+      "gua": "震",
+      "kind": "output",
+      "element": "木",
+      "baseDamage": 20,
+      "baseCd": 4,
+      "desc": "连锁突刺"
+    },
+    "skill_kan_tide": {
+      "id": "skill_kan_tide",
+      "name": "控水潮",
+      "gua": "坎",
+      "kind": "output",
+      "element": "水",
+      "baseDamage": 24,
+      "baseCd": 5,
+      "desc": "水势压制"
+    },
+    "skill_xun_guard": {
+      "id": "skill_xun_guard",
+      "name": "散影护",
+      "gua": "巽",
+      "kind": "support",
+      "element": "木",
+      "baseDamage": 0,
+      "baseCd": 5,
+      "sustain": 6,
+      "desc": "护持辅助"
+    },
+    "skill_gen_shell": {
+      "id": "skill_gen_shell",
+      "name": "镇岳盾",
+      "gua": "艮",
+      "kind": "support",
+      "element": "土",
+      "baseDamage": 0,
+      "baseCd": 6,
+      "sustain": 8,
+      "desc": "高护持"
+    },
+    "skill_kun_reforge": {
+      "id": "skill_kun_reforge",
+      "name": "护体阵",
+      "gua": "坤",
+      "kind": "support",
+      "element": "土",
+      "baseDamage": 0,
+      "baseCd": 4,
+      "sustain": 5,
+      "desc": "持续守护"
+    }
+  }
+}

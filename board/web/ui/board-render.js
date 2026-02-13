@@ -385,7 +385,8 @@
     if (!reactionCounts || !Object.keys(reactionCounts).length) return '-';
     const map = {};
     Object.values(Model.REACTIONS || {}).forEach((r) => {
-      map[r.type] = r.name;
+      if (r.type) map[r.type] = r.name || r.type;
+      if (r.name) map[r.name] = r.name;
     });
     return Object.entries(reactionCounts)
       .map(([type, count]) => `${map[type] || type} × ${count}`)

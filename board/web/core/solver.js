@@ -1,6 +1,6 @@
 ﻿(function (global) {
-  const GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
-  const GUA_INFO = {
+  let GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+  let GUA_INFO = {
     '乾': { element: '金', verb: '贯' },
     '兑': { element: '金', verb: '回' },
     '离': { element: '火', verb: '燃' },
@@ -11,109 +11,80 @@
     '坤': { element: '土', verb: '护' },
   };
 
-  const SKILL_LIBRARY = {
-    skill_qian_pierce: { id: 'skill_qian_pierce', name: '贯金斩', gua: '乾', kind: 'output', element: '金', baseDamage: 26, baseCd: 5 },
-    skill_dui_echo: { id: 'skill_dui_echo', name: '回音刃', gua: '兑', kind: 'output', element: '金', baseDamage: 22, baseCd: 4 },
-    skill_li_flare: { id: 'skill_li_flare', name: '燃光爆', gua: '离', kind: 'output', element: '火', baseDamage: 30, baseCd: 6 },
-    skill_zhen_chain: { id: 'skill_zhen_chain', name: '连木冲', gua: '震', kind: 'output', element: '木', baseDamage: 20, baseCd: 4 },
-    skill_kan_tide: { id: 'skill_kan_tide', name: '控水潮', gua: '坎', kind: 'output', element: '水', baseDamage: 24, baseCd: 5 },
-    skill_xun_guard: { id: 'skill_xun_guard', name: '散影护', gua: '巽', kind: 'support', element: '木', baseDamage: 0, baseCd: 5, sustain: 6 },
-    skill_gen_shell: { id: 'skill_gen_shell', name: '镇岳盾', gua: '艮', kind: 'support', element: '土', baseDamage: 0, baseCd: 6, sustain: 8 },
-    skill_kun_reforge: { id: 'skill_kun_reforge', name: '护体阵', gua: '坤', kind: 'support', element: '土', baseDamage: 0, baseCd: 4, sustain: 5 },
-  };
+  let SKILL_LIBRARY = {};
 
-  const FORM_RUNES = {
-    spread: { id: 'spread', name: '散射', mult: 0.6, hits: 2 },
-    aoe: { id: 'aoe', name: '范围', mult: 1.2, hits: 1 },
-    chain: { id: 'chain', name: '弹射', mult: 0.55, hits: 2 },
-    channel: { id: 'channel', name: '持续', mult: 0.4, hits: 3 },
-    melee: { id: 'melee', name: '近战', mult: 1.5, hits: 1, cdAdd: 1 },
-    mark: { id: 'mark', name: '印记', mult: 1, hits: 1, markBonus: 2 },
-  };
+  function resolveSkillLibrary() {
+    return global.BD_SKILLS || SKILL_LIBRARY;
+  }
 
-  const LOOP_RUNES = {
-    cd_down: { id: 'cd_down', name: '降冷', cdDelta: -1 },
-    charge: { id: 'charge', name: '充能', charges: 2 },
-    auto_recast: { id: 'auto_recast', name: '复诵', recastDelay: 2, recastMul: 0.55 },
-    cond_accel: { id: 'cond_accel', name: '条件加速', accelOnMark: 1 },
-    hit_energy: { id: 'hit_energy', name: '命中回能', sustainOnHit: 3 },
-    crit_energy: { id: 'crit_energy', name: '暴击回能', sustainOnCrit: 5 },
-  };
+  function setSkillLibrary(library) {
+    SKILL_LIBRARY = library || {};
+    if (global.BaguaSolver) {
+      global.BaguaSolver.SKILL_LIBRARY = SKILL_LIBRARY;
+    }
+    return SKILL_LIBRARY;
+  }
 
-  const EDGE_RUNES = {
-    RELAY: { id: 'RELAY', name: '接力', delay: 2, mul: 0.55 },
-    CD_ROUTER: { id: 'CD_ROUTER', name: '减冷路由', ratio: 0.1 },
-    REACT_DETONATOR: { id: 'REACT_DETONATOR', name: '反应引爆', window: 4 },
-    SUSTAIN_LINK: { id: 'SUSTAIN_LINK', name: '续航纽带', ratio: 0.05 },
-  };
+  function setRuneLibrary(runes) {
+    FORM_RUNES = runes?.form_runes || {};
+    LOOP_RUNES = runes?.loop_runes || {};
+    EDGE_RUNES = runes?.edge_runes || {};
+    if (global.BaguaSolver) {
+      global.BaguaSolver.FORM_RUNES = FORM_RUNES;
+      global.BaguaSolver.LOOP_RUNES = LOOP_RUNES;
+      global.BaguaSolver.EDGE_RUNES = EDGE_RUNES;
+    }
+    return { FORM_RUNES, LOOP_RUNES, EDGE_RUNES };
+  }
 
-  const REACTIONS = {
-    '火|水': { type: 'STEAM', name: '蒸汽', bonus: 0.6 },
-    '水|金': { type: 'FROST', name: '凝霜', bonus: 0.4 },
-    '木|火': { type: 'BURN_SPREAD', name: '焚化', bonus: 0.5 },
-    '木|土': { type: 'ROOT', name: '生根', bonus: 0.35 },
-    '金|土': { type: 'SHATTER', name: '崩解', bonus: 0.45 },
-    '火|土': { type: 'LAVA_FIELD', name: '熔域', bonus: 0.5 },
-  };
+  function setReactions(reactions) {
+    REACTIONS = reactions || {};
+    if (global.BaguaSolver) {
+      global.BaguaSolver.REACTIONS = REACTIONS;
+    }
+    return REACTIONS;
+  }
 
-  const BOSS_PROFILES = [
-    { id: 'dummy', name: '木桩', hp: 1200, dps: 0, spike: 0, spikeInterval: 10, desc: '基准对照' },
-    { id: 'burst', name: '玄铁巨兽', hp: 1800, dps: 20, spike: 120, spikeInterval: 8, desc: '爆发型' },
-    { id: 'pressure', name: '玄水魅影', hp: 1600, dps: 45, spike: 60, spikeInterval: 12, desc: '持续压制' },
-  ];
+  function setGuaTraits(traits) {
+    GUA_TRAITS = traits || {};
+    if (global.BaguaSolver) {
+      global.BaguaSolver.GUA_TRAITS = GUA_TRAITS;
+    }
+    return GUA_TRAITS;
+  }
 
-  const GUA_TRAITS = {
-    '乾': {
-      id: 'qian_pierce',
-      name: '贯通',
-      desc: '反应不消耗印记，可连续触发。',
-      noConsumeMark: true,
-    },
-    '兑': {
-      id: 'dui_echo',
-      name: '回响',
-      desc: '施放后追加一次回响施放（延迟1 tick）。',
-      echoDelay: 1,
-    },
-    '离': {
-      id: 'li_ignite',
-      name: '引燃',
-      desc: '印记持续时间 +1。',
-      markBonus: 1,
-    },
-    '震': {
-      id: 'zhen_chain',
-      name: '连动',
-      desc: '触发反应后当前技能冷却-1。',
-      reactionCooldown: 1,
-    },
-    '巽': {
-      id: 'xun_guard',
-      name: '护持',
-      desc: '输出技能命中后转化部分伤害为护持。',
-      sustainFromDamageRatio: 0.08,
-    },
-    '坎': {
-      id: 'kan_tide',
-      name: '潮汐',
-      desc: '目标已有印记时，施放后冷却-1。',
-      accelOnMark: 1,
-    },
-    '艮': {
-      id: 'gen_wall',
-      name: '壁垒',
-      desc: '命中后部分伤害转为续航。',
-      damageToSustainRatio: 0.06,
-    },
-    '坤': {
-      id: 'kun_revive',
-      name: '回元',
-      desc: '每次施放后获得固定续航。',
-      flatSustain: 2,
-    },
-  };
+  function setBossProfiles(bosses) {
+    BOSS_PROFILES = Array.isArray(bosses) ? bosses : [];
+    if (global.BaguaSolver) {
+      global.BaguaSolver.BOSS_PROFILES = BOSS_PROFILES;
+    }
+    return BOSS_PROFILES;
+  }
 
-  const DEFAULT_MECHANISM_FLAGS = {
+  function setGuaConfig(config) {
+    if (Array.isArray(config?.gua_order) && config.gua_order.length) {
+      GUA_ORDER = config.gua_order.slice();
+    }
+    if (config?.gua_info) {
+      GUA_INFO = Object.assign({}, config.gua_info);
+    }
+    if (global.BaguaSolver) {
+      global.BaguaSolver.GUA_ORDER = GUA_ORDER;
+      global.BaguaSolver.GUA_INFO = GUA_INFO;
+    }
+    return { GUA_ORDER, GUA_INFO };
+  }
+
+  let FORM_RUNES = {};
+  let LOOP_RUNES = {};
+  let EDGE_RUNES = {};
+  let REACTIONS = {};
+
+  let BOSS_PROFILES = [];
+
+  let GUA_TRAITS = {};
+
+  let DEFAULT_MECHANISM_FLAGS = {
     lifesteal_loop_enabled: true,
     overheal_to_shield_enabled: true,
     dot_refresh_enabled: true,
@@ -127,6 +98,14 @@
 
   function resolveMechanismFlags(flags) {
     return { ...DEFAULT_MECHANISM_FLAGS, ...(flags || {}) };
+  }
+
+  function setMechanismFlags(flags) {
+    DEFAULT_MECHANISM_FLAGS = { ...DEFAULT_MECHANISM_FLAGS, ...(flags || {}) };
+    if (global.BaguaSolver) {
+      global.BaguaSolver.DEFAULT_MECHANISM_FLAGS = DEFAULT_MECHANISM_FLAGS;
+    }
+    return DEFAULT_MECHANISM_FLAGS;
   }
 
   function makeSeededRng(seed) {
@@ -145,8 +124,8 @@
     events.push(evt);
   }
 
-  function buildSkillState(skillId, formRune, loopRune) {
-    const base = SKILL_LIBRARY[skillId];
+  function buildSkillState(skillId, formRune, loopRune, skillLibrary) {
+    const base = skillLibrary?.[skillId];
     if (!base) return null;
     const form = formRune ? FORM_RUNES[formRune] : null;
     const loop = loopRune ? LOOP_RUNES[loopRune] : null;
@@ -183,6 +162,36 @@
     }
   }
 
+  function normalizeDotConfig(dot) {
+    if (!dot) return null;
+    const tickDamage = toNumber(dot.tick_damage, null);
+    if (!Number.isFinite(tickDamage)) return null;
+    return {
+      tick_damage: tickDamage,
+      duration: Math.max(1, toNumber(dot.duration, 1)),
+      tick_interval: Math.max(1, toNumber(dot.tick_interval, 1)),
+      max_stacks: Math.max(1, toNumber(dot.max_stacks, 1)),
+      refresh_mode: dot.refresh_mode || 'reset',
+      snapshot: dot.snapshot === true,
+    };
+  }
+
+  function normalizeFieldConfig(reaction) {
+    if (!reaction) return null;
+    if (reaction.type !== 'FIELD' && !reaction.field) return null;
+    const field = reaction.field || {};
+    const dot = field.dot || field;
+    const tickDamage = toNumber(dot.tick_damage, null);
+    if (!Number.isFinite(tickDamage)) return null;
+    return {
+      tick_damage: tickDamage,
+      duration: Math.max(1, toNumber(dot.duration ?? field.duration, 1)),
+      tick_interval: Math.max(1, toNumber(dot.tick_interval ?? field.tick_interval, 1)),
+      amp_dot: toNumber(field.amp_dot, 0),
+      amp_reaction: toNumber(field.amp_reaction, 0),
+    };
+  }
+
   function simulateBuild(build, options = {}) {
     const tickSeconds = options.tickSeconds || 0.5;
     const maxTicks = options.maxTicks || 20;
@@ -203,13 +212,14 @@
     const skillsByGua = build.skills_by_gua || {};
     const privateRunes = build.private_runes || {};
     const edgeRunes = build.edge_runes || {};
+    const skillLibrary = resolveSkillLibrary();
 
     const skillStates = new Map();
     guaOrder.forEach((gua) => {
       const skillId = skillsByGua[gua];
       if (!skillId) return;
       const runes = privateRunes[gua] || {};
-      const state = buildSkillState(skillId, runes.form, runes.loop);
+      const state = buildSkillState(skillId, runes.form, runes.loop, skillLibrary);
       if (state) skillStates.set(gua, state);
     });
 
@@ -225,19 +235,270 @@
       edgeMap.get(b).push({ to: a, rune: runeId });
     });
 
+    skillStates.forEach((skill) => {
+      if (normalizeDotConfig(skill.dot)) {
+        dotSkillList.push(`${skill.name}(${skill.id})`);
+      }
+    });
+
     const events = [];
     const castsPerSkill = {};
     const reactionCounts = {};
     let downtimeTicks = 0;
     let sustainRaw = 0;
     let totalDamage = 0;
+    let hitDamage = 0;
+    let dotDamage = 0;
+    let fieldDamage = 0;
+    let reactionBonusDamage = 0;
+    let dotActiveTicks = 0;
+    let dotStackSum = 0;
+    let fieldActiveTicks = 0;
 
     const targetName = options.targetName || options.target?.name || '木桩';
     const targetId = options.targetId || options.target?.id || 'dummy';
-    const target = { id: targetId, name: targetName, mark: null };
+    const target = { id: targetId, name: targetName, mark: null, activeDots: new Map(), activeFields: new Map() };
     const targetLabel = target.name || '木桩';
     const detonateWindows = new Map();
     const immediateQueue = [];
+    const dotSkillList = [];
+
+    function resolveActiveMark(gua, tick) {
+      if (target.mark && Number.isFinite(target.mark.expires) && tick >= target.mark.expires) {
+        target.mark = null;
+      }
+      detonateWindows.forEach((window, key) => {
+        if (tick > window.expires) detonateWindows.delete(key);
+      });
+      if (target.mark) return { mark: target.mark, virtual: false };
+      if (gua) {
+        const window = detonateWindows.get(gua);
+        if (window && tick <= window.expires) {
+          return { mark: { element: window.markElement, stacks: 0, dot_amp_per_stack: 0 }, virtual: true };
+        }
+      }
+      return { mark: null, virtual: false };
+    }
+
+    function applyMark(element, tick, duration, markConfig, sourceName) {
+      const maxStacks = Math.max(1, toNumber(markConfig?.max_stacks, 1));
+      const dotAmp = toNumber(markConfig?.dot_amp_per_stack, 0);
+      let stacks = 1;
+      if (target.mark && target.mark.element === element && dotRefreshEnabled) {
+        stacks = Math.min(maxStacks, (target.mark.stacks || 1) + 1);
+      }
+      target.mark = {
+        element,
+        expires: tick + duration,
+        stacks,
+        dot_amp_per_stack: dotAmp,
+        max_stacks: maxStacks,
+      };
+      pushEvent(events, {
+        tick,
+        time: tick * tickSeconds,
+        source: sourceName || '系统',
+        target: target.name,
+        amount: 0,
+        kind: 'MARK',
+        type: element,
+        note: `持续${duration}`,
+        extra: {
+          event: 'MARK_APPLIED',
+          element,
+          expires_tick: tick + duration,
+          stacks,
+          max_stacks: maxStacks,
+          dot_amp_per_stack: dotAmp,
+        },
+      });
+    }
+
+    function applyDot(skill, tick) {
+      const dotCfg = normalizeDotConfig(skill.dot);
+      if (!dotCfg) return;
+      const key = skill.id;
+      const existing = target.activeDots.get(key);
+      if (existing) {
+        if (!dotRefreshEnabled) return;
+        if (dotCfg.refresh_mode === 'stack') {
+          existing.stacks = Math.min(dotCfg.max_stacks, (existing.stacks || 1) + 1);
+          existing.expires = tick + dotCfg.duration;
+        } else if (dotCfg.refresh_mode === 'extend') {
+          const cap = tick + dotCfg.duration * dotCfg.max_stacks;
+          existing.expires = Math.min(cap, existing.expires + dotCfg.duration);
+        } else {
+          existing.expires = tick + dotCfg.duration;
+          existing.stacks = Math.min(dotCfg.max_stacks, existing.stacks || 1);
+        }
+        existing.tick_damage = dotCfg.tick_damage;
+        existing.tick_interval = dotCfg.tick_interval;
+        existing.refresh_mode = dotCfg.refresh_mode;
+        pushEvent(events, {
+          tick,
+          time: tick * tickSeconds,
+          source: skill.name,
+          target: target.name,
+          amount: 0,
+          kind: 'DOT',
+          type: skill.element,
+          note: 'DOT刷新',
+          extra: {
+            event: 'DOT_REFRESH',
+            skill_id: skill.id,
+            stacks: existing.stacks,
+            expires_tick: existing.expires,
+            refresh_mode: dotCfg.refresh_mode,
+          },
+        });
+        return;
+      }
+
+      target.activeDots.set(key, {
+        skill_id: skill.id,
+        name: skill.name,
+        element: skill.element,
+        gua: skill.gua,
+        tick_damage: dotCfg.tick_damage,
+        tick_interval: dotCfg.tick_interval,
+        refresh_mode: dotCfg.refresh_mode,
+        stacks: 1,
+        expires: tick + dotCfg.duration,
+        next_tick_at: tick + dotCfg.tick_interval,
+      });
+      pushEvent(events, {
+        tick,
+        time: tick * tickSeconds,
+        source: skill.name,
+        target: target.name,
+        amount: 0,
+        kind: 'DOT',
+        type: skill.element,
+        note: 'DOT施加',
+        extra: {
+          event: 'DOT_APPLIED',
+          skill_id: skill.id,
+          stacks: 1,
+          duration: dotCfg.duration,
+          tick_interval: dotCfg.tick_interval,
+          refresh_mode: dotCfg.refresh_mode,
+        },
+      });
+    }
+
+    function applyField(reaction, tick, sourceElement) {
+      const fieldCfg = normalizeFieldConfig(reaction);
+      if (!fieldCfg) return;
+      const key = reaction.name || reaction.type || 'FIELD';
+      const existing = target.activeFields.get(key);
+      if (existing) {
+        existing.expires = Math.max(existing.expires, tick + fieldCfg.duration);
+        existing.tick_damage = fieldCfg.tick_damage;
+        existing.tick_interval = fieldCfg.tick_interval;
+        existing.amp_dot = fieldCfg.amp_dot;
+      } else {
+        target.activeFields.set(key, {
+          id: key,
+          name: reaction.name || key,
+          element: sourceElement,
+          tick_damage: fieldCfg.tick_damage,
+          tick_interval: fieldCfg.tick_interval,
+          amp_dot: fieldCfg.amp_dot,
+          expires: tick + fieldCfg.duration,
+          next_tick_at: tick + fieldCfg.tick_interval,
+        });
+      }
+      pushEvent(events, {
+        tick,
+        time: tick * tickSeconds,
+        source: '反应场',
+        target: target.name,
+        amount: 0,
+        kind: 'FIELD',
+        type: key,
+        note: reaction.name || key,
+        extra: {
+          event: 'FIELD_APPLIED',
+          reaction_type: reaction.type,
+          duration: fieldCfg.duration,
+          tick_interval: fieldCfg.tick_interval,
+          amp_dot: fieldCfg.amp_dot,
+        },
+      });
+    }
+
+    function sumFieldAmpDot(tick) {
+      let amp = 0;
+      target.activeFields.forEach((field) => {
+        if (field?.amp_dot && (field.expires == null || tick < field.expires)) amp += field.amp_dot;
+      });
+      return amp;
+    }
+
+    function handleReaction(element, damage, tick, trait, gua) {
+      if (!dotRefreshEnabled) return;
+      const markState = resolveActiveMark(gua, tick);
+      const mark = markState.mark;
+      if (!mark || mark.element === element) return;
+      const key = canonicalElementPair(mark.element, element);
+      const reaction = REACTIONS[key] || null;
+      if (!reaction) return;
+      const reactionType = reaction.type === 'FIELD' ? (reaction.name || 'FIELD') : (reaction.type || 'BONUS');
+      reactionCounts[reactionType] = (reactionCounts[reactionType] || 0) + 1;
+      if (markState.virtual && gua) {
+        detonateWindows.delete(gua);
+      }
+      if (!trait?.noConsumeMark && !markState.virtual) target.mark = null;
+
+      const isField = reaction.type === 'FIELD' || reaction.field;
+      if (isField) {
+        pushEvent(events, {
+          tick,
+          time: tick * tickSeconds,
+          source: '反应',
+          target: target.name,
+          amount: 0,
+          kind: 'REACTION',
+          type: reactionType,
+          note: reaction.name,
+          extra: {
+            event: 'REACTION_TRIGGERED',
+            reaction_type: reactionType,
+            elements: [element],
+            extra_effects: reaction.name,
+            field: true,
+          },
+        });
+        applyField(reaction, tick, element);
+      } else {
+        const extra = damage * reaction.bonus;
+        totalDamage += extra;
+        reactionBonusDamage += extra;
+        pushEvent(events, {
+          tick,
+          time: tick * tickSeconds,
+          source: '反应',
+          target: target.name,
+          amount: extra,
+          kind: 'REACTION',
+          type: reactionType,
+          note: reaction.name,
+          extra: {
+            event: 'REACTION_TRIGGERED',
+            reaction_type: reactionType,
+            elements: [element],
+            extra_effects: reaction.name,
+          },
+        });
+      }
+      if (trait?.reactionCooldown) {
+        const skill = skillStates.get(gua) || null;
+        if (skill) {
+          applyCooldownReduction(skill, trait.reactionCooldown, `卦位${gua}连动`, tick, events);
+        }
+      }
+    }
+
 
     for (let tick = 0; tick < maxTicks; tick += 1) {
       // cooldown tick
@@ -247,6 +508,84 @@
 
       // process delayed queue
       immediateQueue.forEach((item) => { item.delay -= 1; });
+
+      if (target.mark && Number.isFinite(target.mark.expires) && tick >= target.mark.expires) {
+        target.mark = null;
+      }
+
+      let dotActiveThisTick = false;
+      let dotStacksThisTick = 0;
+      const fieldAmp = sumFieldAmpDot(tick);
+      target.activeDots.forEach((dot, key) => {
+        if (tick >= dot.expires) {
+          target.activeDots.delete(key);
+          return;
+        }
+        dotActiveThisTick = true;
+        dotStacksThisTick += dot.stacks || 1;
+        while (tick >= dot.next_tick_at && tick < dot.expires) {
+          const markAmp = target.mark ? (target.mark.stacks || 1) * (target.mark.dot_amp_per_stack || 0) : 0;
+          const amp = 1 + markAmp + fieldAmp;
+          const baseTick = dot.tick_damage * (dot.stacks || 1);
+          const dmg = baseTick * amp * damageMul;
+          totalDamage += dmg;
+          dotDamage += dmg;
+          pushEvent(events, {
+            tick,
+            time: tick * tickSeconds,
+            source: dot.name || 'DOT',
+            target: target.name,
+            amount: dmg,
+            kind: 'DOT',
+            type: dot.element,
+            note: 'DOT跳伤',
+            extra: {
+              event: 'DOT_TICK',
+              skill_id: dot.skill_id,
+              stacks: dot.stacks || 1,
+              mark_amp: markAmp,
+              field_amp: fieldAmp,
+            },
+          });
+          const dotTrait = dot.gua ? GUA_TRAITS[dot.gua] : null;
+          handleReaction(dot.element, dmg, tick, dotTrait, dot.gua);
+          dot.next_tick_at += dot.tick_interval;
+        }
+      });
+      if (dotActiveThisTick) {
+        dotActiveTicks += 1;
+        dotStackSum += dotStacksThisTick;
+      }
+
+      let fieldActiveThisTick = false;
+      target.activeFields.forEach((field, key) => {
+        if (tick >= field.expires) {
+          target.activeFields.delete(key);
+          return;
+        }
+        fieldActiveThisTick = true;
+        while (tick >= field.next_tick_at && tick < field.expires) {
+          const dmg = field.tick_damage * damageMul;
+          totalDamage += dmg;
+          fieldDamage += dmg;
+          pushEvent(events, {
+            tick,
+            time: tick * tickSeconds,
+            source: field.name || '反应场',
+            target: target.name,
+            amount: dmg,
+            kind: 'FIELD',
+            type: field.id,
+            note: '反应场跳伤',
+            extra: {
+              event: 'FIELD_TICK',
+              field_id: field.id,
+            },
+          });
+          field.next_tick_at += field.tick_interval;
+        }
+      });
+      if (fieldActiveThisTick) fieldActiveTicks += 1;
 
       let castItem = immediateQueue.find((item) => item.delay <= 0);
       if (castItem) {
@@ -282,6 +621,7 @@
       const loop = skillToCast.loopRune ? LOOP_RUNES[skillToCast.loopRune] : null;
       const hits = form?.hits || 1;
       const baseMul = form?.mult || 1;
+      const markConfig = form?.mark || null;
       const markBonus = dotRefreshEnabled ? (form?.markBonus || 0) + (trait?.markBonus || 0) : 0;
       const relayMul = isRelay ? EDGE_RUNES.RELAY.mul : 1;
       const totalMul = baseMul * relayMul;
@@ -357,16 +697,10 @@
         const baseDamage = skillToCast.baseDamage * totalMul;
         const damage = baseDamage * damageMul;
         totalDamage += damage;
+        hitDamage += damage;
 
-        // reaction check
-        let reaction = null;
         const hadMarkBefore = !!target.mark;
         if (hadMarkBefore) hadMarkBeforeAny = true;
-        if (dotRefreshEnabled && target.mark && target.mark.element !== skillToCast.element) {
-          const key = canonicalElementPair(target.mark.element, skillToCast.element);
-          reaction = REACTIONS[key] || null;
-          if (!trait?.noConsumeMark) target.mark = null;
-        }
 
         pushEvent(events, {
           tick,
@@ -384,6 +718,12 @@
             applied_mark: skillToCast.element,
           },
         });
+
+        if (h === 0) {
+          applyDot(skillToCast, tick);
+        }
+
+        handleReaction(skillToCast.element, damage, tick, trait, gua);
 
         if (trait?.sustainFromDamageRatio && skillToCast.kind === 'output') {
           const gain = damage * trait.sustainFromDamageRatio * healMul;
@@ -472,46 +812,9 @@
           }
         });
 
-        if (reaction) {
-          const extra = damage * reaction.bonus;
-          totalDamage += extra;
-          reactionCounts[reaction.type] = (reactionCounts[reaction.type] || 0) + 1;
-          pushEvent(events, {
-            tick,
-            time: tick * tickSeconds,
-            source: '反应',
-            target: target.name,
-            amount: extra,
-            kind: 'REACTION',
-            type: reaction.type,
-            note: reaction.name,
-            extra: {
-              event: 'REACTION_TRIGGERED',
-              reaction_type: reaction.type,
-              elements: [skillToCast.element],
-              extra_effects: reaction.name,
-            },
-          });
-          if (trait?.reactionCooldown) {
-            applyCooldownReduction(skillToCast, trait.reactionCooldown, `卦位${gua}连动`, tick, events);
-          }
-        }
-
         if (dotRefreshEnabled) {
-          // apply mark
           const markDuration = 4 + markBonus;
-          target.mark = { element: skillToCast.element, expires: tick + markDuration };
-          pushEvent(events, {
-            tick,
-            time: tick * tickSeconds,
-            source: skillToCast.name,
-            target: target.name,
-            amount: 0,
-            kind: 'MARK',
-            type: skillToCast.element,
-            note: `持续${markDuration}`,
-            extra: { event: 'MARK_APPLIED', element: skillToCast.element, expires_tick: tick + markDuration },
-          });
+          applyMark(skillToCast.element, tick, markDuration, markConfig, skillToCast.name);
 
           // REACT_DETONATOR window
           edgeLinks.forEach((link) => {
@@ -574,9 +877,15 @@
       }
     }
 
-    const dps = totalDamage / (maxTicks * tickSeconds);
+    const durationSeconds = maxTicks * tickSeconds;
+    const dps = durationSeconds > 0 ? totalDamage / durationSeconds : 0;
     const sustainEffective = drStackingEnabled ? sustainRaw : 0;
     const ehp = overhealToShieldEnabled ? sustainRaw * 0.4 : 0;
+    const dotUptimeRatio = maxTicks > 0 ? dotActiveTicks / maxTicks : 0;
+    const dotAvgStacks = dotActiveTicks > 0 ? dotStackSum / dotActiveTicks : 0;
+    const fieldUptimeRatio = maxTicks > 0 ? fieldActiveTicks / maxTicks : 0;
+    const totalReactions = Object.values(reactionCounts).reduce((a, b) => a + b, 0);
+    const reactionsPer10s = durationSeconds > 0 ? (totalReactions / durationSeconds) * 10 : 0;
     const result = {
       totals: {
         dps,
@@ -586,16 +895,35 @@
         base_ehp: baseEhp,
         stability: 0,
         mechanism_flags: mechanismFlags,
+        damage_breakdown: {
+          hit: Number(hitDamage.toFixed(3)),
+          dot: Number(dotDamage.toFixed(3)),
+          field: Number(fieldDamage.toFixed(3)),
+          reaction_bonus: Number(reactionBonusDamage.toFixed(3)),
+        },
       },
       metrics: {
         casts_per_skill: castsPerSkill,
         reaction_counts: reactionCounts,
         downtime_ticks: downtimeTicks,
         sustain_total: sustainRaw,
+        dot_uptime_ratio: Number(dotUptimeRatio.toFixed(3)),
+        dot_avg_stacks: Number(dotAvgStacks.toFixed(3)),
+        field_uptime_ratio: Number(fieldUptimeRatio.toFixed(3)),
+        reactions_per_10s: Number(reactionsPer10s.toFixed(3)),
+        damage_breakdown: {
+          hit: Number(hitDamage.toFixed(3)),
+          dot: Number(dotDamage.toFixed(3)),
+          field: Number(fieldDamage.toFixed(3)),
+          reaction_bonus: Number(reactionBonusDamage.toFixed(3)),
+        },
       },
       logs: [
+        dotSkillList.length ? `DOT技能：${dotSkillList.join('、')}` : 'DOT技能：无',
         `${(maxTicks * tickSeconds).toFixed(0)}秒${targetLabel}：施放${Object.values(castsPerSkill).reduce((a, b) => a + b, 0)}次`,
-        `反应次数：${Object.values(reactionCounts).reduce((a, b) => a + b, 0)}次`,
+        `反应次数：${totalReactions}次`,
+        `DOT覆盖率：${(dotUptimeRatio * 100).toFixed(1)}% | 平均叠层：${dotAvgStacks.toFixed(2)}`,
+        `反应场覆盖率：${(fieldUptimeRatio * 100).toFixed(1)}% | 10秒反应：${reactionsPer10s.toFixed(2)}`,
         `空窗：${downtimeTicks} tick`,
       ],
       events,
@@ -605,7 +933,7 @@
   }
 
   function simulateBoss(result, bossProfile, options = {}) {
-    const boss = bossProfile || BOSS_PROFILES[0];
+    const boss = bossProfile || BOSS_PROFILES[0] || { name: 'Boss', hp: 1200, dps: 0, spike: 0, spikeInterval: 10 };
     if (global.CircuitCore?.simulateCombat) {
       return global.CircuitCore.simulateCombat(result, boss, options);
     }
@@ -623,7 +951,14 @@
     simulateBuild,
     solveBoard: simulateBuild,
     simulateBoss,
-    SKILL_LIBRARY,
+    SKILL_LIBRARY: resolveSkillLibrary(),
+    setSkillLibrary,
+    setRuneLibrary,
+    setReactions,
+    setGuaTraits,
+    setBossProfiles,
+    setMechanismFlags,
+    setGuaConfig,
     FORM_RUNES,
     LOOP_RUNES,
     EDGE_RUNES,

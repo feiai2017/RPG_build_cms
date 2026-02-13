@@ -50,16 +50,23 @@
 
   async function loadConfigs() {
     setStatus('加载评测配置...');
+    if (window.SkillLoader?.loadCatalog) {
+      try {
+        await window.SkillLoader.loadCatalog();
+      } catch (err) {
+        console.warn('技能库加载失败，将使用现有配置。', err);
+      }
+    }
     const [buildsCfg, bossesCfg, nerfCfg] = await Promise.all([
-      fetchJson('./configs/eval/builds.json'),
-      fetchJson('./configs/eval/bosses.json'),
-      fetchJson('./configs/eval/nerf_profiles.json'),
+      fetchJson('./configs/eval_builds.json'),
+      fetchJson('./configs/eval_bosses.json'),
+      fetchJson('./configs/eval_nerf_profiles.json'),
     ]);
 
     const builds = buildsCfg.builds || [];
     for (const build of builds) {
       if (build.preset) {
-        const preset = await fetchJson(`./configs/tiandao/${build.preset}.json`);
+        const preset = await fetchJson(`./configs/${build.preset}.json`);
         build.build_data = preset;
       }
     }
@@ -75,6 +82,10 @@
     ];
     fillSelect(dom.suiteSelect, suiteOptions, 'suite_id', 'name');
     renderBuildDetail(builds[0]);
+    renderSystemDetail();
+    renderFlowDetail();
+    renderSkillOverview();
+    renderRuneOverview();
     setStatus('配置就绪');
   }
 
@@ -504,8 +515,4 @@ Tick 开始
     });
   }
 
-  renderSystemDetail();
-  renderFlowDetail();
-  renderSkillOverview();
-  renderRuneOverview();
 })();

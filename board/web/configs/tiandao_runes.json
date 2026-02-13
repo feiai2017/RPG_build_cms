@@ -1,0 +1,103 @@
+{
+  "form_runes": {
+    "spread": {
+      "id": "spread",
+      "name": "散射",
+      "mult": 0.6,
+      "hits": 2
+    },
+    "aoe": {
+      "id": "aoe",
+      "name": "范围",
+      "mult": 1.2,
+      "hits": 1
+    },
+    "chain": {
+      "id": "chain",
+      "name": "弹射",
+      "mult": 0.55,
+      "hits": 2
+    },
+    "channel": {
+      "id": "channel",
+      "name": "持续",
+      "mult": 0.4,
+      "hits": 3
+    },
+    "melee": {
+      "id": "melee",
+      "name": "近战",
+      "mult": 1.5,
+      "hits": 1,
+      "cdAdd": 1
+    },
+    "mark": {
+      "id": "mark",
+      "name": "印记",
+      "mult": 1,
+      "hits": 1,
+      "markBonus": 2,
+      "mark": {
+        "max_stacks": 5,
+        "dot_amp_per_stack": 0.05,
+        "explode_threshold": 5
+      }
+    }
+  },
+  "loop_runes": {
+    "cd_down": {
+      "id": "cd_down",
+      "name": "降冷",
+      "cdDelta": -1
+    },
+    "charge": {
+      "id": "charge",
+      "name": "充能",
+      "charges": 2
+    },
+    "auto_recast": {
+      "id": "auto_recast",
+      "name": "复诵",
+      "recastDelay": 2,
+      "recastMul": 0.55
+    },
+    "cond_accel": {
+      "id": "cond_accel",
+      "name": "条件加速",
+      "accelOnMark": 1
+    },
+    "hit_energy": {
+      "id": "hit_energy",
+      "name": "命中回能",
+      "sustainOnHit": 3
+    },
+    "crit_energy": {
+      "id": "crit_energy",
+      "name": "暴击回能",
+      "sustainOnCrit": 5
+    }
+  },
+  "edge_runes": {
+    "RELAY": {
+      "id": "RELAY",
+      "name": "接力",
+      "delay": 2,
+      "mul": 0.55
+    },
+    "CD_ROUTER": {
+      "id": "CD_ROUTER",
+      "name": "减冷路由",
+      "ratio": 0.1
+    },
+    "REACT_DETONATOR": {
+      "id": "REACT_DETONATOR",
+      "name": "反应引爆",
+      "window": 4
+    },
+    "SUSTAIN_LINK": {
+      "id": "SUSTAIN_LINK",
+      "name": "续航纽带",
+      "ratio": 0.05
+    }
+  }
+}

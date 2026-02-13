@@ -1,0 +1,39 @@
+{
+  "reactions": {
+    "火|水": {
+      "type": "FIELD",
+      "name": "蒸汽",
+      "field": {
+        "duration": 4,
+        "tick_damage": 6,
+        "tick_interval": 1,
+        "amp_dot": 0.2
+      }
+    },
+    "水|金": {
+      "type": "FROST",
+      "name": "凝霜",
+      "bonus": 0.4
+    },
+    "木|火": {
+      "type": "BURN_SPREAD",
+      "name": "焚化",
+      "bonus": 0.5
+    },
+    "木|土": {
+      "type": "ROOT",
+      "name": "生根",
+      "bonus": 0.35
+    },
+    "金|土": {
+      "type": "SHATTER",
+      "name": "崩解",
+      "bonus": 0.45
+    },
+    "火|土": {
+      "type": "LAVA_FIELD",
+      "name": "熔域",
+      "bonus": 0.5
+    }
+  }
+}

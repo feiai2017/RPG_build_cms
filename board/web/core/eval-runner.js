@@ -48,7 +48,8 @@
   }
 
   function resolveMechanismFlags(defaults, overrides) {
-    return { ...DEFAULT_MECHANISM_FLAGS, ...(defaults || {}), ...(overrides || {}) };
+    const base = global.BD_MECHANISM_FLAGS || DEFAULT_MECHANISM_FLAGS;
+    return { ...base, ...(defaults || {}), ...(overrides || {}) };
   }
 
   function buildBossInstance(bossDef) {

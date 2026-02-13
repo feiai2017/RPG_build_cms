@@ -16,7 +16,8 @@ function formatReactions(reactions, catalog) {
   if (!reactions || !Object.keys(reactions).length) return '-';
   const nameMap = {};
   Object.values(catalog?.reactions || {}).forEach((r) => {
-    nameMap[r.type] = r.name;
+    if (r.type) nameMap[r.type] = r.name || r.type;
+    if (r.name) nameMap[r.name] = r.name;
   });
   return Object.entries(reactions)
     .map(([id, count]) => `${nameMap[id] || id} × ${count}`)

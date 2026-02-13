@@ -12,13 +12,14 @@
   function simulateCombat(solveResult, bossProfile, options = {}) {
     const logs = [];
     const events = [];
-    const boss = bossProfile || {
-      name: '玄铁巨兽',
+    const fallbackBoss = (global.BaguaSolver?.BOSS_PROFILES || [])[0] || {
+      name: 'Boss',
       hp: 1200,
       dps: 28,
       spike: 80,
       spikeInterval: 10,
     };
+    const boss = bossProfile || fallbackBoss;
 
     let dps = solveResult.totals.dps;
     const baseEhp = solveResult.totals.base_ehp ?? 100;

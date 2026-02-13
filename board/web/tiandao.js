@@ -1,6 +1,7 @@
 ﻿if (window.TiandaoController?.init) {
   window.TiandaoController.init();
 } else {
+  (async function () {
 const dom = {
   container: document.getElementById('canvas-container'),
   steps: Array.from(document.querySelectorAll('#steps-bar .step')),
@@ -35,8 +36,17 @@ const dom = {
   detailVerbose: document.getElementById('detail-verbose'),
 };
 
-const GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
-const GUA_INFO = {
+if (window.SkillLoader?.loadCatalog) {
+  try {
+    await window.SkillLoader.loadCatalog();
+  } catch (err) {
+    console.warn('配置加载失败，将使用内置配置。', err);
+  }
+}
+
+const BOARD_CONFIG = window.BD_BOARD_CONFIG || {};
+const DEFAULT_GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+const DEFAULT_GUA_INFO = {
   '乾': { element: '金', verb: '贯', symbol: '☰' },
   '兑': { element: '金', verb: '回', symbol: '☱' },
   '离': { element: '火', verb: '燃', symbol: '☲' },
@@ -46,12 +56,18 @@ const GUA_INFO = {
   '艮': { element: '土', verb: '镇', symbol: '☶' },
   '坤': { element: '土', verb: '护', symbol: '☷' },
 };
+
+const GUA_ORDER = Array.isArray(BOARD_CONFIG.gua_order) && BOARD_CONFIG.gua_order.length
+  ? BOARD_CONFIG.gua_order
+  : DEFAULT_GUA_ORDER;
+const GUA_INFO = Object.assign({}, DEFAULT_GUA_INFO, BOARD_CONFIG.gua_info || {});
+
 const SOLVER_CATALOG = window.BaguaSolver || {};
-const SKILL_LIBRARY = SOLVER_CATALOG.SKILL_LIBRARY || {};
-const FORM_RUNES_LIB = SOLVER_CATALOG.FORM_RUNES || {};
-const LOOP_RUNES_LIB = SOLVER_CATALOG.LOOP_RUNES || {};
-const EDGE_RUNES_LIB = SOLVER_CATALOG.EDGE_RUNES || {};
-const TICK_SECONDS = 0.5;
+const SKILL_LIBRARY = window.BD_SKILLS || SOLVER_CATALOG.SKILL_LIBRARY || {};
+const FORM_RUNES_LIB = window.BD_RUNES?.form_runes || SOLVER_CATALOG.FORM_RUNES || {};
+const LOOP_RUNES_LIB = window.BD_RUNES?.loop_runes || SOLVER_CATALOG.LOOP_RUNES || {};
+const EDGE_RUNES_LIB = window.BD_RUNES?.edge_runes || SOLVER_CATALOG.EDGE_RUNES || {};
+const TICK_SECONDS = Number.isFinite(BOARD_CONFIG.tick_seconds) ? BOARD_CONFIG.tick_seconds : 0.5;
 const WUXING_COLORS = {
   金: '#E6E6E6',
   木: '#39D98A',
@@ -59,8 +75,9 @@ const WUXING_COLORS = {
   火: '#FF4D4D',
   土: '#FFD166',
 };
-const EDGE_ENABLED_CAP = 3;
-const PER_SKILL_EDGE_CAP = 2;
+const EDGE_LIMITS = BOARD_CONFIG.edge_limits || {};
+const EDGE_ENABLED_CAP = Number.isFinite(EDGE_LIMITS.total) ? EDGE_LIMITS.total : 3;
+const PER_SKILL_EDGE_CAP = Number.isFinite(EDGE_LIMITS.per_skill) ? EDGE_LIMITS.per_skill : 2;
 const SLOT_FILL = 'rgba(255,255,255,0.06)';
 const SLOT_VISUAL = {
   skill: { size: 20, stroke: 2.8, label: 14 },
@@ -70,8 +87,8 @@ const SLOT_VISUAL = {
   edgeEmpty: { size: 12, stroke: 1.6, label: 9 },
 };
 const SECTOR_ANGLE = (Math.PI * 2) / GUA_ORDER.length;
-const START_ANGLE = -Math.PI / 2;
-const CENTER_OFFSET = SECTOR_ANGLE / 2;
+const START_ANGLE = Number.isFinite(BOARD_CONFIG.start_angle) ? BOARD_CONFIG.start_angle : -Math.PI / 2;
+const CENTER_OFFSET = Number.isFinite(BOARD_CONFIG.center_offset) ? BOARD_CONFIG.center_offset : SECTOR_ANGLE / 2;
 
 const SLOT_KIND = {
   SKILL: 'skill',
@@ -87,19 +104,9 @@ const ITEM_CATEGORY = {
   EDGE: 'EDGE',
 };
 
-const SKILL_DESC = {
-  skill_qian_pierce: '单体穿透',
-  skill_dui_echo: '连击回荡',
-  skill_li_flare: '爆发焰击',
-  skill_zhen_chain: '连锁突刺',
-  skill_kan_tide: '水势压制',
-  skill_xun_guard: '护盾辅助',
-  skill_gen_shell: '高护持',
-  skill_kun_reforge: '持续守护',
-};
 const SKILLS = Object.values(SKILL_LIBRARY).map((skill) => ({
   ...skill,
-  desc: SKILL_DESC[skill.id] || '',
+  desc: skill.desc || '',
 }));
 
 const TERM_GLOSSARY = {
@@ -139,13 +146,14 @@ const SLOT_ACCEPTS = {
   [SLOT_KIND.EDGE]: [ITEM_CATEGORY.EDGE],
 };
 
-const VISUAL = {
+const DEFAULT_VISUAL = {
   size: 880,
   skillR: 190,
   runeR: 140,
   edgeR: 240,
   outerLabelR: 320,
 };
+const VISUAL = { ...DEFAULT_VISUAL, ...(BOARD_CONFIG.visual || {}) };
 
 let boardState = null;
 let presetFiles = [];
@@ -762,7 +770,7 @@ function clearSlot(slot) {
 
 function runSimulation() {
   if (issues.length) return;
-  const result = window.BaguaSolver.simulateBuild(boardState.build, { maxTicks: 20, tickSeconds: 0.5 });
+  const result = window.BaguaSolver.simulateBuild(boardState.build, { maxTicks: 20, tickSeconds: TICK_SECONDS });
   const metrics = result.metrics || {};
   dom.metrics.casts.textContent = JSON.stringify(metrics.casts_per_skill || {});
   dom.metrics.reactions.textContent = JSON.stringify(metrics.reaction_counts || {});
@@ -802,7 +810,7 @@ function exportBoard() {
 }
 
 async function loadPreset(name) {
-  const res = await fetch(`./configs/tiandao/${name}.json?t=${Date.now()}`);
+  const res = await fetch(`./configs/${name}.json?t=${Date.now()}`);
   const data = await res.json();
   buildBoardState(data);
   validateBuild();
@@ -901,4 +909,5 @@ function init() {
 }
 
 init();
+  })();
 }

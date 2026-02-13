@@ -1,0 +1,18 @@
+{
+  "gua_order": ["乾", "兑", "离", "震", "巽", "坎", "艮", "坤"],
+  "gua_info": {
+    "乾": { "element": "金", "verb": "贯", "symbol": "☰" },
+    "兑": { "element": "金", "verb": "回", "symbol": "☱" },
+    "离": { "element": "火", "verb": "燃", "symbol": "☲" },
+    "震": { "element": "木", "verb": "连", "symbol": "☳" },
+    "巽": { "element": "木", "verb": "散", "symbol": "☴" },
+    "坎": { "element": "水", "verb": "控", "symbol": "☵" },
+    "艮": { "element": "土", "verb": "镇", "symbol": "☶" },
+    "坤": { "element": "土", "verb": "护", "symbol": "☷" }
+  },
+  "tick_seconds": 0.5,
+  "edge_limits": { "total": 3, "per_skill": 2 },
+  "visual": { "size": 880, "skillR": 190, "runeR": 140, "edgeR": 240, "outerLabelR": 320 },
+  "start_angle": -1.5707963267948966,
+  "center_offset": null
+}

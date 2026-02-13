@@ -2,25 +2,67 @@
   const Model = {};
 
   const SOLVER_CATALOG = window.BaguaSolver || {};
-  const SKILL_LIBRARY = SOLVER_CATALOG.SKILL_LIBRARY || {};
-  const FORM_RUNES_LIB = SOLVER_CATALOG.FORM_RUNES || {};
-  const LOOP_RUNES_LIB = SOLVER_CATALOG.LOOP_RUNES || {};
-  const EDGE_RUNES_LIB = SOLVER_CATALOG.EDGE_RUNES || {};
-  const REACTIONS = SOLVER_CATALOG.REACTIONS || {};
-  const BOSS_PROFILES = SOLVER_CATALOG.BOSS_PROFILES || [];
-  const GUA_TRAITS = SOLVER_CATALOG.GUA_TRAITS || {};
+  let SKILL_LIBRARY = SOLVER_CATALOG.SKILL_LIBRARY || {};
+  let FORM_RUNES_LIB = SOLVER_CATALOG.FORM_RUNES || {};
+  let LOOP_RUNES_LIB = SOLVER_CATALOG.LOOP_RUNES || {};
+  let EDGE_RUNES_LIB = SOLVER_CATALOG.EDGE_RUNES || {};
+  let REACTIONS = SOLVER_CATALOG.REACTIONS || {};
+  let BOSS_PROFILES = SOLVER_CATALOG.BOSS_PROFILES || [];
+  let GUA_TRAITS = SOLVER_CATALOG.GUA_TRAITS || {};
 
-  const GUA_ORDER = ['乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
-  const GUA_INFO = {
-    乾: { element: '金', verb: '贯', symbol: '☰' },
-    兑: { element: '金', verb: '回', symbol: '☱' },
-    离: { element: '火', verb: '燃', symbol: '☲' },
-    震: { element: '木', verb: '连', symbol: '☳' },
-    巽: { element: '木', verb: '散', symbol: '☴' },
-    坎: { element: '水', verb: '控', symbol: '☵' },
-    艮: { element: '土', verb: '镇', symbol: '☶' },
-    坤: { element: '土', verb: '护', symbol: '☷' },
+  const DEFAULT_BOARD_CONFIG = {
+    gua_order: ['\u4e7e', '\u5151', '\u79bb', '\u9707', '\u5dfd', '\u574e', '\u826e', '\u5764'],
+    gua_info: {
+      '\u4e7e': { element: '\u91d1', verb: '\u8d2f', symbol: '\u2630' },
+      '\u5151': { element: '\u91d1', verb: '\u56de', symbol: '\u2631' },
+      '\u79bb': { element: '\u706b', verb: '\u71c3', symbol: '\u2632' },
+      '\u9707': { element: '\u6728', verb: '\u8fde', symbol: '\u2633' },
+      '\u5dfd': { element: '\u6728', verb: '\u6563', symbol: '\u2634' },
+      '\u574e': { element: '\u6c34', verb: '\u63a7', symbol: '\u2635' },
+      '\u826e': { element: '\u571f', verb: '\u9547', symbol: '\u2636' },
+      '\u5764': { element: '\u571f', verb: '\u62a4', symbol: '\u2637' },
+    },
+    tick_seconds: 0.5,
+    edge_limits: { total: 3, per_skill: 2 },
+    visual: { size: 880, skillR: 190, runeR: 140, edgeR: 240, outerLabelR: 320 },
+    start_angle: -1.5707963267948966,
+    center_offset: null,
   };
+
+  let GUA_ORDER = DEFAULT_BOARD_CONFIG.gua_order.slice();
+  let GUA_INFO = Object.assign({}, DEFAULT_BOARD_CONFIG.gua_info);
+  let TICK_SECONDS = DEFAULT_BOARD_CONFIG.tick_seconds;
+  let EDGE_ENABLED_CAP = DEFAULT_BOARD_CONFIG.edge_limits.total;
+  let PER_SKILL_EDGE_CAP = DEFAULT_BOARD_CONFIG.edge_limits.per_skill;
+  let VISUAL = Object.assign({}, DEFAULT_BOARD_CONFIG.visual);
+  let SECTOR_ANGLE = (Math.PI * 2) / GUA_ORDER.length;
+  let START_ANGLE = DEFAULT_BOARD_CONFIG.start_angle ?? -Math.PI / 2;
+  let CENTER_OFFSET = DEFAULT_BOARD_CONFIG.center_offset ?? SECTOR_ANGLE / 2;
+
+  function applyBoardConfig(config) {
+    const cfg = Object.assign({}, DEFAULT_BOARD_CONFIG, config || {});
+    GUA_ORDER = Array.isArray(cfg.gua_order) && cfg.gua_order.length ? cfg.gua_order.slice() : DEFAULT_BOARD_CONFIG.gua_order.slice();
+    GUA_INFO = Object.assign({}, DEFAULT_BOARD_CONFIG.gua_info, cfg.gua_info || {});
+    TICK_SECONDS = Number.isFinite(cfg.tick_seconds) ? cfg.tick_seconds : DEFAULT_BOARD_CONFIG.tick_seconds;
+    EDGE_ENABLED_CAP = cfg.edge_limits?.total ?? DEFAULT_BOARD_CONFIG.edge_limits.total;
+    PER_SKILL_EDGE_CAP = cfg.edge_limits?.per_skill ?? DEFAULT_BOARD_CONFIG.edge_limits.per_skill;
+    VISUAL = Object.assign({}, DEFAULT_BOARD_CONFIG.visual, cfg.visual || {});
+    SECTOR_ANGLE = (Math.PI * 2) / GUA_ORDER.length;
+    START_ANGLE = Number.isFinite(cfg.start_angle) ? cfg.start_angle : DEFAULT_BOARD_CONFIG.start_angle;
+    CENTER_OFFSET = Number.isFinite(cfg.center_offset) ? cfg.center_offset : SECTOR_ANGLE / 2;
+
+    Model.GUA_ORDER = GUA_ORDER;
+    Model.GUA_INFO = GUA_INFO;
+    Model.TICK_SECONDS = TICK_SECONDS;
+    Model.EDGE_ENABLED_CAP = EDGE_ENABLED_CAP;
+    Model.PER_SKILL_EDGE_CAP = PER_SKILL_EDGE_CAP;
+    Model.VISUAL = VISUAL;
+    Model.SECTOR_ANGLE = SECTOR_ANGLE;
+    Model.START_ANGLE = START_ANGLE;
+    Model.CENTER_OFFSET = CENTER_OFFSET;
+  }
+
+  applyBoardConfig(DEFAULT_BOARD_CONFIG);
 
   const SLOT_KIND = {
     SKILL: 'skill',
@@ -36,44 +78,6 @@
     EDGE: 'EDGE',
   };
 
-  const SKILL_DESC = {
-    skill_qian_pierce: '单体穿透',
-    skill_dui_echo: '连击回荡',
-    skill_li_flare: '爆发焰击',
-    skill_zhen_chain: '连锁突刺',
-    skill_kan_tide: '水势压制',
-    skill_xun_guard: '护盾辅助',
-    skill_gen_shell: '高护持',
-    skill_kun_reforge: '持续守护',
-  };
-
-  const SKILLS = Object.values(SKILL_LIBRARY).map((skill) => ({
-    ...skill,
-    desc: SKILL_DESC[skill.id] || skill.desc || '',
-  }));
-
-  const FORM_RUNES = Object.values(FORM_RUNES_LIB).map((r) => ({
-    ...r,
-    desc: r.desc || r.name,
-  }));
-
-  const LOOP_RUNES = Object.values(LOOP_RUNES_LIB).map((r) => ({
-    ...r,
-    desc: r.desc || r.name,
-  }));
-
-  const EDGE_RUNES = Object.values(EDGE_RUNES_LIB).map((r) => ({
-    ...r,
-    desc: r.desc || r.name,
-  }));
-
-  const ITEMS = [
-    ...SKILLS.map((s) => ({ ...s, category: ITEM_CATEGORY.SKILL })),
-    ...FORM_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.FORM })),
-    ...LOOP_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.LOOP })),
-    ...EDGE_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.EDGE })),
-  ];
-
   const SLOT_ACCEPTS = {
     [SLOT_KIND.SKILL]: [ITEM_CATEGORY.SKILL],
     [SLOT_KIND.FORM]: [ITEM_CATEGORY.FORM],
@@ -81,20 +85,44 @@
     [SLOT_KIND.EDGE]: [ITEM_CATEGORY.EDGE],
   };
 
-  const TICK_SECONDS = 0.5;
-  const EDGE_ENABLED_CAP = 3;
-  const PER_SKILL_EDGE_CAP = 2;
+  let SKILLS = [];
+  let FORM_RUNES = [];
+  let LOOP_RUNES = [];
+  let EDGE_RUNES = [];
+  let ITEMS = [];
 
-  const VISUAL = {
-    size: 880,
-    skillR: 190,
-    runeR: 140,
-    edgeR: 240,
-    outerLabelR: 320,
-  };
-  const SECTOR_ANGLE = (Math.PI * 2) / GUA_ORDER.length;
-  const START_ANGLE = -Math.PI / 2;
-  const CENTER_OFFSET = SECTOR_ANGLE / 2;
+  function rebuildItems() {
+    SKILLS = Object.values(SKILL_LIBRARY || {}).map((skill) => ({
+      ...skill,
+      desc: skill.desc || '',
+    }));
+    FORM_RUNES = Object.values(FORM_RUNES_LIB || {}).map((r) => ({
+      ...r,
+      desc: r.desc || r.name,
+    }));
+    LOOP_RUNES = Object.values(LOOP_RUNES_LIB || {}).map((r) => ({
+      ...r,
+      desc: r.desc || r.name,
+    }));
+    EDGE_RUNES = Object.values(EDGE_RUNES_LIB || {}).map((r) => ({
+      ...r,
+      desc: r.desc || r.name,
+    }));
+    ITEMS = [
+      ...SKILLS.map((s) => ({ ...s, category: ITEM_CATEGORY.SKILL })),
+      ...FORM_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.FORM })),
+      ...LOOP_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.LOOP })),
+      ...EDGE_RUNES.map((r) => ({ ...r, category: ITEM_CATEGORY.EDGE })),
+    ];
+
+    Model.SKILLS = SKILLS;
+    Model.FORM_RUNES = FORM_RUNES;
+    Model.LOOP_RUNES = LOOP_RUNES;
+    Model.EDGE_RUNES = EDGE_RUNES;
+    Model.ITEMS = ITEMS;
+  }
+
+  rebuildItems();
 
   function canonicalEdgeKey(a, b) {
     const ai = GUA_ORDER.indexOf(a);
@@ -253,7 +281,10 @@
     const edgeRunes = state?.build?.edge_runes || {};
     const enabledEdges = Object.entries(edgeRunes).filter(([, v]) => v);
     if (enabledEdges.length > EDGE_ENABLED_CAP) {
-      issuesOut.push({ id: 'edge_cap', message: `联结槽启用超过上限（${enabledEdges.length}/${EDGE_ENABLED_CAP}）` });
+      issuesOut.push({
+        id: 'edge_cap',
+        message: `\u8054\u7ed3\u69fd\u542f\u7528\u8d85\u8fc7\u4e0a\u9650\uff08${enabledEdges.length}/${EDGE_ENABLED_CAP}\uff09`,
+      });
     }
     const perSkillEdges = {};
     enabledEdges.forEach(([key]) => {
@@ -261,12 +292,18 @@
       perSkillEdges[a] = (perSkillEdges[a] || 0) + 1;
       perSkillEdges[b] = (perSkillEdges[b] || 0) + 1;
       if (!state.build.skills_by_gua?.[a] || !state.build.skills_by_gua?.[b]) {
-        issuesOut.push({ id: `edge_skill_${key}`, message: `联结 ${key} 需要两侧技能` });
+        issuesOut.push({
+          id: `edge_skill_${key}`,
+          message: `\u8054\u7ed3 ${key} \u9700\u8981\u4e24\u4fa7\u6280\u80fd`,
+        });
       }
     });
     Object.entries(perSkillEdges).forEach(([gua, count]) => {
       if (count > PER_SKILL_EDGE_CAP) {
-        issuesOut.push({ id: `skill_edge_${gua}`, message: `${gua} 参与联结超过上限（${count}/${PER_SKILL_EDGE_CAP}）` });
+        issuesOut.push({
+          id: `skill_edge_${gua}`,
+          message: `${gua} \u53c2\u4e0e\u8054\u7ed3\u8d85\u8fc7\u4e0a\u9650\uff08${count}/${PER_SKILL_EDGE_CAP}\uff09`,
+        });
       }
     });
     return issuesOut;
@@ -328,6 +365,35 @@
   Model.LOOP_RUNES = LOOP_RUNES;
   Model.EDGE_RUNES = EDGE_RUNES;
   Model.ITEMS = ITEMS;
+  Model.setSkillLibrary = function setSkillLibrary(library) {
+    SKILL_LIBRARY = library || {};
+    Model.SKILL_LIBRARY = SKILL_LIBRARY;
+    rebuildItems();
+  };
+  Model.setRuneLibrary = function setRuneLibrary(runes) {
+    FORM_RUNES_LIB = runes?.form_runes || {};
+    LOOP_RUNES_LIB = runes?.loop_runes || {};
+    EDGE_RUNES_LIB = runes?.edge_runes || {};
+    Model.FORM_RUNES_LIB = FORM_RUNES_LIB;
+    Model.LOOP_RUNES_LIB = LOOP_RUNES_LIB;
+    Model.EDGE_RUNES_LIB = EDGE_RUNES_LIB;
+    rebuildItems();
+  };
+  Model.setReactions = function setReactions(reactions) {
+    REACTIONS = reactions || {};
+    Model.REACTIONS = REACTIONS;
+  };
+  Model.setGuaTraits = function setGuaTraits(traits) {
+    GUA_TRAITS = traits || {};
+    Model.GUA_TRAITS = GUA_TRAITS;
+  };
+  Model.setBossProfiles = function setBossProfiles(bosses) {
+    BOSS_PROFILES = Array.isArray(bosses) ? bosses : [];
+    Model.BOSS_PROFILES = BOSS_PROFILES;
+  };
+  Model.setBoardConfig = function setBoardConfig(config) {
+    applyBoardConfig(config);
+  };
   Model.canonicalEdgeKey = canonicalEdgeKey;
   Model.nextGua = nextGua;
   Model.buildDefaultConfig = buildDefaultConfig;

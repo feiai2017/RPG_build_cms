@@ -305,7 +305,7 @@
   }
 
   async function loadPreset(name) {
-    const res = await fetch(`./configs/tiandao/${name}.json?t=${Date.now()}`);
+    const res = await fetch(`./configs/${name}.json?t=${Date.now()}`);
     const data = await res.json();
     boardState = Model.buildBoardState(data);
     issues = Model.validateBuild(boardState);
@@ -338,7 +338,7 @@
 
   async function loadBosses() {
     try {
-      const res = await fetch('./configs/tiandao/bosses.json?t=' + Date.now());
+      const res = await fetch('./configs/tiandao_bosses.json?t=' + Date.now());
       const data = await res.json();
       bossProfiles = Array.isArray(data.bosses) ? data.bosses : [];
     } catch (err) {
@@ -482,6 +482,13 @@
   }
 
   async function init() {
+    if (window.SkillLoader?.loadCatalog) {
+      try {
+        await window.SkillLoader.loadCatalog();
+      } catch (err) {
+        console.warn('技能库加载失败，将使用现有配置。', err);
+      }
+    }
     boardState = Model.buildBoardState(Model.buildDefaultConfig());
     issues = Model.validateBuild(boardState);
     updateIssuePanel();

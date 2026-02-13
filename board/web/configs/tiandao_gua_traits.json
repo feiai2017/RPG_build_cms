@@ -1,0 +1,52 @@
+{
+  "gua_traits": {
+    "乾": {
+      "id": "qian_pierce",
+      "name": "贯通",
+      "desc": "反应不消耗印记，可连续触发。",
+      "noConsumeMark": true
+    },
+    "兑": {
+      "id": "dui_echo",
+      "name": "回响",
+      "desc": "施放后追加一次回响施放（延迟1 tick）。",
+      "echoDelay": 1
+    },
+    "离": {
+      "id": "li_ignite",
+      "name": "引燃",
+      "desc": "印记持续时间 +1。",
+      "markBonus": 1
+    },
+    "震": {
+      "id": "zhen_chain",
+      "name": "连动",
+      "desc": "触发反应后当前技能冷却-1。",
+      "reactionCooldown": 1
+    },
+    "巽": {
+      "id": "xun_guard",
+      "name": "护持",
+      "desc": "输出技能命中后转化部分伤害为护持。",
+      "sustainFromDamageRatio": 0.08
+    },
+    "坎": {
+      "id": "kan_tide",
+      "name": "潮汐",
+      "desc": "目标已有印记时，施放后冷却-1。",
+      "accelOnMark": 1
+    },
+    "艮": {
+      "id": "gen_wall",
+      "name": "壁垒",
+      "desc": "命中后部分伤害转为续航。",
+      "damageToSustainRatio": 0.06
+    },
+    "坤": {
+      "id": "kun_revive",
+      "name": "回元",
+      "desc": "每次施放后获得固定续航。",
+      "flatSustain": 2
+    }
+  }
+}

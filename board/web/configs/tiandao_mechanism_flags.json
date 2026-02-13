@@ -1,0 +1,8 @@
+{
+  "default_flags": {
+    "lifesteal_loop_enabled": true,
+    "overheal_to_shield_enabled": true,
+    "dot_refresh_enabled": true,
+    "dr_stacking_enabled": true
+  }
+}
